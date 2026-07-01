@@ -1,0 +1,3 @@
+[submodule "2iREN"]
+	path = 2iREN
+	url = git@github.com:sleeepyskies/2iREN.git
