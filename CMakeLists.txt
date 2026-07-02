@@ -7,7 +7,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_subdirectory(2iREN)
 
-add_executable(oiter src/main.cpp)
+add_executable(oiter src/main.cpp
+        src/cli_parser.h
+)
 
 include(dependencies.cmake)
 

@@ -1,5 +1,6 @@
-#include <2iren/util/log.hpp>
+#include "cli_parser.h"
 
-auto main() -> siren::i32 {
-    siren::log::info("Hello, world!");
+auto main(const int argc, const char** argv) -> int {
+    const auto config = oiter::load_cli_config(argc, argv);
+    return 0;
 }
