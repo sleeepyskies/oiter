@@ -7,8 +7,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_subdirectory(2iREN)
 
-add_executable(oiter src/main.cpp
-        src/cli_parser.h
+add_executable(oiter
+        src/main.cpp
+        src/methods/dual_depth_peeling.cpp
 )
 
 include(dependencies.cmake)
