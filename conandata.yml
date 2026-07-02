@@ -3,3 +3,11 @@
 
 requirements:
   - "lyra/1.7.0"
+  - "stb/cci.20240531"
+  - "cgltf/1.15"
+  - "yaml-cpp/0.9.0"
+  - "glfw/3.3.8"
+  - "glm/1.0.1"
+  - "libassert/2.2.1"
+  - "glad/2.0.8"
+  - "opengl/system"
