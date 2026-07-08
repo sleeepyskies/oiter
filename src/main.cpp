@@ -1,14 +1,22 @@
 #include "2iren/asset/assets/gltf.hpp"
 #include "2iren/rhi/context.hpp"
 #include "2iren/rhi/device.hpp"
+#include "2iren/rhi/resources/swapchain.hpp"
+#include "2iren/util/filesystem.hpp"
 #include "2iren/window.hpp"
+#include "bake.hpp"
+#include "config.hpp"
 #include "methods/dual_depth_peeling.hpp"
-#include "render_params.hpp"
-#include "util/config.hpp"
-#include "util/load_scene.hpp"
+
+#ifndef  OITER_VFS
+#define OITER_VFS "."
+#endif
+
 
 auto main(const int argc, const char** argv) -> int {
-    const auto config = oiter::load_cli_config(argc, argv);
+    const auto config = oiter::parse_cli_args(argc, argv);
+
+    siren::FileSystem::mount("oiter", siren::Path{ OITER_VFS });
 
     siren::Context ctx{ { .debug = true, .level = siren::log::Level::Trace, .backend = siren::Backend::OpenGL } };
     siren::Window window{ {
@@ -21,21 +29,38 @@ auto main(const int argc, const char** argv) -> int {
             .resizable   = true,
             .transparent = false,
     } };
-    auto device = ctx.create_device(window);
+    auto device    = ctx.create_device(window);
+    auto swapchain = device->create_swapchain({
+            .label = std::nullopt,
+            .vsync = true,
+    });
     siren::AssetServer server{ *device };
 
-    oiter::RenderParams params{
-        .device = std::move(device),
-        .scene  = oiter::load_scene(config.scene_path, server),
-    };
-
-    if (config.oit_method == "ddp") {
-        oiter::DualDepthPeeling ddp;
-        ddp.render(params);
-    } else {
-        std::cerr << "OIT method not yet supported." << std::endl;
-        return 1;
+    auto scene = server.load<siren::Gltf>(config.scene_path);
+    while (!server.is_loaded_with_dependencies(scene)) {
+        /** wait until loaded */
     }
 
-    return 0;
+    auto baked = oiter::bake_scene(scene, server);
+
+    std::unique_ptr<oiter::OitMethod> oit = nullptr;
+
+    if (config.oit_method == "ddp") {
+        oit = std::make_unique<oiter::DualDepthPeeling>(*device, window, server);
+    } else {
+        std::cerr << "OIT method not yet supported." << std::endl;
+        std::exit(1);
+    }
+
+    while (!window.should_close()) {
+        window.poll_events();
+
+        const auto& image = oit->render(baked);
+        device->blit(image.handle(), swapchain.next_image().handle());
+        swapchain.present();
+        device->flush_delete_queue();
+    }
+
+    device->wait_until_idle();
+    std::exit(0);
 }

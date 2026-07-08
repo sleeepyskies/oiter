@@ -15,7 +15,7 @@ struct CliConfig {
     std::string oit_method = "dpeel";
 };
 
-inline auto load_cli_config(int argc, const char** argv) -> CliConfig {
+inline auto parse_cli_args(int argc, const char** argv) -> CliConfig {
     bool show_help = false;
     CliConfig config;
 

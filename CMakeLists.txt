@@ -9,9 +9,14 @@ add_subdirectory(2iREN)
 
 add_executable(oiter
         src/main.cpp
+
+        src/bake.cpp
+
         src/methods/dual_depth_peeling.cpp
 )
 
 include(dependencies.cmake)
 
 target_link_libraries(oiter PRIVATE 2iren)
+
+target_compile_definitions(2iren PRIVATE OITER_VFS="${CMAKE_CURRENT_SOURCE_DIR}")
