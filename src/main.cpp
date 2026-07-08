@@ -45,10 +45,10 @@ auto main(const int argc, const char** argv) -> int {
 
     std::unique_ptr<oiter::OitMethod> oit = nullptr;
 
-    if (config.oit_method == "ddp") {
+    if (config.oit_method == oiter::methods::DUAL_DEPTH_PEELING) {
         oit = std::make_unique<oiter::DualDepthPeeling>(*device, window, server);
     } else {
-        std::cerr << "OIT method not yet supported." << std::endl;
+        std::cerr << "OIT method: (" << config.oit_method << ") method not yet supported." << std::endl;
         std::exit(1);
     }
 

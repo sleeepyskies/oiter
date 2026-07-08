@@ -11,8 +11,8 @@ constexpr auto A_BUFFER           = "ab";
 } // namespace methods
 
 struct CliConfig {
-    std::string scene_path = "./assets/ABeautifulGame.glb";
-    std::string oit_method = "dpeel";
+    std::string scene_path = "oiter://assets/meshes/ABeautifulGame.glb";
+    std::string oit_method = methods::DUAL_DEPTH_PEELING;
 };
 
 inline auto parse_cli_args(int argc, const char** argv) -> CliConfig {

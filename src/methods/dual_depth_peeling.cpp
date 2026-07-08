@@ -42,7 +42,7 @@ auto DualDepthPeeling::perform_blending() const -> void {
 
 auto DualDepthPeeling::init_opaque_pass(siren::Device& device, const siren::Window& window, siren::AssetServer& server)
         -> OpaquePassData {
-    const auto shaderh = server.load<siren::ShaderAsset>("oiter://shaders/dual_depth_peeling/opaque.sshg");
+    const auto shaderh = server.load<siren::ShaderAsset>("oiter://assets/shaders/dual_depth_peeling/opaque.sshg");
     auto shader_asset  = server.get(shaderh);
     auto target_image  = device.create_image({
              .label         = "DDP Opaque Pass Target",
