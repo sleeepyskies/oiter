@@ -19,4 +19,4 @@ include(dependencies.cmake)
 
 target_link_libraries(oiter PRIVATE 2iren)
 
-target_compile_definitions(2iren PRIVATE OITER_VFS="${CMAKE_CURRENT_SOURCE_DIR}")
+target_compile_definitions(oiter PRIVATE OITER_VFS="${CMAKE_CURRENT_SOURCE_DIR}")
