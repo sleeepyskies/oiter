@@ -22,7 +22,7 @@ auto DualDepthPeeling::render(const BakedScene& scene) const -> const siren::Ima
 
 auto DualDepthPeeling::perform_opaque_pass(const BakedScene& scene) const -> void {
     m_device.render_submit([&](siren::RenderCommandRecorder& cmds) -> void {
-        cmds.render_pass({ .target = m_opaque.target }, [&](siren::RenderPassRecorder& pass) -> void {
+        cmds.render_pass({ .clear_color = siren::RGBA::green(), .target = m_opaque.target }, [&](siren::RenderPassRecorder& pass) -> void {
             pass.bind_graphics_pipeline(m_opaque.pipeline.handle());
             for (const auto& surface : scene.opaque) {
                 pass.bind_vertex_buffer(surface.vertex.buffer.handle(), 0, 0);
@@ -52,9 +52,12 @@ auto DualDepthPeeling::init_opaque_pass(siren::Device& device, const siren::Wind
              .mipmap_levels = 1,
     });
 
+    siren::log::info("Created opaque render target with img ID {}", target_image);
+
     return OpaquePassData{
-        .target_image = std::move(target_image),
+        .shaderh = shaderh,
         .target       = siren::RenderTarget{ target_image.handle() },
+        .target_image = std::move(target_image),
         .pipeline     = device.create_graphics_pipeline({
                     .label             = "Opaque Graphics Pipeline",
                     .layout            = siren::DEFAULT_VERTEX_LAYOUT,

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "2iren/asset/asset_server.hpp"
+#include "2iren/asset/assets/shader.hpp"
 #include "2iren/rhi/render_target.hpp"
 #include "2iren/rhi/resources/graphics_pipeline.hpp"
 #include "2iren/window.hpp"
@@ -18,8 +19,9 @@ private:
     siren::Device& m_device;
 
     struct OpaquePassData {
-        siren::Image target_image;  // needed bc render target doesn't take ownership of the image
+        siren::StrongHandle<siren::ShaderAsset> shaderh;
         siren::RenderTarget target;
+        siren::Image target_image;  // needed bc render target doesn't take ownership of the image
         siren::GraphicsPipeline pipeline;
     } m_opaque;
 

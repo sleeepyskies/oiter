@@ -8,10 +8,9 @@
 #include "config.hpp"
 #include "methods/dual_depth_peeling.hpp"
 
-#ifndef  OITER_VFS
+#ifndef OITER_VFS
 #define OITER_VFS "."
 #endif
-
 
 auto main(const int argc, const char** argv) -> int {
     const auto config = oiter::parse_cli_args(argc, argv);
@@ -20,14 +19,14 @@ auto main(const int argc, const char** argv) -> int {
 
     siren::Context ctx{ { .debug = true, .level = siren::log::Level::Trace, .backend = siren::Backend::OpenGL } };
     siren::Window window{ {
-            .title       = "Oiter",
-            .width       = 1280,
-            .height      = 720,
-            .fullscreen  = false,
-            .vsync       = true,
-            .decorated   = true,
-            .resizable   = true,
-            .transparent = false,
+            .title        = "Oiter",
+            .width        = 1280,
+            .height       = 720,
+            .vsync        = true,
+            .decorated    = true,
+            .resizable    = true,
+            .transparent  = false,
+            .initial_mode = siren::WindowMode::Normal,
     } };
     auto device    = ctx.create_device(window);
     auto swapchain = device->create_swapchain({
