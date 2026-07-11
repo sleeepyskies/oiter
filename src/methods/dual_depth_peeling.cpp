@@ -17,7 +17,7 @@ auto DualDepthPeeling::render(const BakedScene& scene) const -> const siren::Ima
     perform_opaque_pass(scene);
     perform_depth_peeling(scene);
     perform_blending();
-    return m_final_image;
+    return m_opaque.target_image;
 }
 
 auto DualDepthPeeling::perform_opaque_pass(const BakedScene& scene) const -> void {
