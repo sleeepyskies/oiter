@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../bake.hpp"
 #include "2iren/asset/asset_server.hpp"
 #include "2iren/asset/assets/shader.hpp"
 #include "2iren/rhi/render_target.hpp"
@@ -9,10 +10,38 @@
 #include "2iren/window.hpp"
 #include "oit_method.hpp"
 
+#define MAX_LAYERS 10
+#define MAX_MATERIALS 64
+#define GPU_ALIGNED alignas(16)
+
 namespace oiter {
 
-struct UniformBufferData {
+struct GPU_ALIGNED SceneData {
     glm::mat4 view_projection;
+    glm::vec3 camera_position;
+    float _pad0 = 0;
+};
+
+struct GPU_ALIGNED MaterialData {
+    std::array<BakedMaterial, MAX_MATERIALS> materials;
+};
+
+struct GPU_ALIGNED DrawCallData {
+    siren::u32 material_index;
+};
+
+struct Pipeline {
+    siren::StrongHandle<siren::ShaderAsset> shader;
+    siren::GraphicsPipeline pipeline;
+};
+
+struct Target {
+    explicit Target(std::vector<siren::Image>&& images) :
+        target(images | std::views::transform(&siren::Image::handle) | std::ranges::to<std::vector>()),
+        images(std::move(images)) {}
+
+    siren::RenderTarget target;
+    std::vector<siren::Image> images;
 };
 
 class DualDepthPeeling final : public OitMethod {
@@ -24,26 +53,50 @@ public:
 
 private:
     siren::Device& m_device;
-
-    struct OpaquePassData {
-        siren::StrongHandle<siren::ShaderAsset> shaderh;
-        siren::RenderTarget target;
-        siren::Image target_image;  // needed bc render target doesn't take ownership of the image
-        siren::GraphicsPipeline pipeline;
-    } m_opaque;
-
     siren::Image m_final_image;
-    siren::Buffer m_uniform_buffer;
+
+    struct UniformBuffers {
+        siren::Buffer scene_data;
+        siren::Buffer material_data;
+        siren::Buffer draw_call_data;
+    } m_uniforms;
+
+    struct GeometryPass {
+        Pipeline pipeline;
+        Target target;
+    } m_geometry;
+
+    struct InitPass {
+        Pipeline pipeline;
+    } m_init;
+
+    struct PeelPass {
+        Pipeline pipeline;
+        Target target0;     // holds front color, back color, depth range
+        Target target1;     // holds front color, back color, depth range
+        mutable bool flag;  // just a simple flag to toggle between both targets
+    } m_peel;
+
+    struct BlendPass {
+        Pipeline pipeline;
+        Target target;
+    } m_blend;
 
 private:
-    auto perform_opaque_pass(const siren::PerspectiveCamera& camera, const BakedScene& scene) const -> void;
-    auto perform_depth_peeling(const BakedScene& scene) const -> void;
-    auto perform_blending() const -> void;
+    auto geometry_pass(const BakedScene& scene) const -> void;
+    auto init_pass(const BakedScene& scene) const -> void;
+    auto peel_pass(const BakedScene& scene) const -> void;
+    auto blend_pass() const -> void;
 
-    auto init_opaque_pass(siren::Device& device, const siren::Window& window, siren::AssetServer& server)
-            -> OpaquePassData;
-    auto init_final_image(siren::Device& device, const siren::Window& window) -> siren::Image;
-    auto init_uniform_buffer(siren::Device& device) -> siren::Buffer;
+private:
+    auto init_uniforms(siren::Device& device) const -> UniformBuffers;
+    auto init_geometry_pass(siren::Device& device, siren::AssetServer& server, const siren::Window& window) const
+            -> GeometryPass;
+    auto init_init_pass(siren::Device& device, siren::AssetServer& server) const -> InitPass;
+    auto init_peel_pass(siren::Device& device, siren::AssetServer& server, const siren::Window& window) const
+            -> PeelPass;
+    auto init_blend_pass(siren::Device& device, siren::AssetServer& server, const siren::Window& window) const
+            -> BlendPass;
 };
 
 }  // namespace oiter

@@ -1,0 +1,30 @@
+name: blend
+stages:
+  vertex:
+    name: vertex
+    source: !glsl |
+      #version 460
+      
+      struct BakedMaterial {
+          vec4 color;
+          float alpha;
+          float padding[3];
+      };
+      
+      layout(std140, binding = 0) uniform UniformBuffer {
+          mat4 view_projection;
+          BakedMaterial materials[64];
+      };
+      
+      void main() {
+          gl_Position = view_projection * a_position;
+      }
+  fragment:
+    name: fragment
+    source: !glsl |
+      #version 460
+      layout(location = 0) out vec2 FragColor;
+      void main() {
+        float depth = gl_FragCoord.z;
+        FragColor.xy = vec2(-depth, depth);
+      }

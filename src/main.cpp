@@ -65,7 +65,7 @@ auto main(const int argc, const char** argv) -> int {
         controller.update(camera);
 
         const auto& image = oit->render(camera, baked);
-        device->blit(image.handle(), swapchain.next_image().handle());
+        device->blit(image.handle(), swapchain.next_image());
         swapchain.present();
         device->flush_delete_queue();
     }

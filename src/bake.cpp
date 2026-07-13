@@ -14,7 +14,7 @@ static auto bake_node(BakedScene& scene,
             siren::Surface& surface                 = server.get_unsafe(surfaceh);
             const siren::PBRMaterialAsset& material = server.get_unsafe(surface.material);
 
-            scene.materials.emplace_back(material.base_color());
+            scene.materials.emplace_back(material.base_color(), material.alpha_cutoff());
 
             BakedSurface baked_surface{
                 surface.vertex_buffer,

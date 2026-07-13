@@ -14,7 +14,8 @@ struct BakedSurface {
 };
 
 struct BakedMaterial {
-    siren::RGBA base_color;
+    siren::RGBA base_color;  // 16 bytes
+    siren::f32 alpha;        // 4 bytes
 };
 
 struct BakedScene {
@@ -25,4 +26,4 @@ struct BakedScene {
 
 auto bake_scene(const siren::StrongHandle<siren::Gltf>& gltf_handle, siren::AssetServer& server) -> BakedScene;
 
-} // namespace oiter
+}  // namespace oiter

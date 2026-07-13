@@ -1,8 +1,8 @@
-name: ddpeel_opaque
+name: peel
 stages:
   vertex:
     name: vertex
-    source: |
+    source: !glsl |
       #version 460
       layout(location = 0) in vec4 a_position;
       layout(location = 1) in vec4 a_normal;
@@ -16,10 +16,6 @@ stages:
       layout(location = 3) out vec2 v_texture;
       layout(location = 4) out vec4 v_tangent;
       
-      layout(std140, binding = 0) uniform UniformBuffer {
-        mat4 view_projection;
-      };
-
       void main() {
           v_color = a_color;
       
@@ -33,7 +29,7 @@ stages:
       }
   fragment:
     name: fragment
-    source: |
+    source: !glsl |
       #version 460
       layout(location = 0) in vec4 v_position;
       layout(location = 1) in vec4 v_normal;
@@ -42,7 +38,23 @@ stages:
       layout(location = 4) in vec4 v_tangent;
 
       layout(location = 0) out vec4 FragColor;
+      
+      struct BakedMaterial {
+          vec4 color;
+          float alpha;
+          float padding[3];
+      };
+      
+      layout(std140, binding = 0) uniform UniformBuffer {
+          mat4 view_projection;
+          BakedMaterial materials[64];
+      };
+      
+      layout(std140, binding = 1) uniform MaterialUniformBuffer {
+          uint index;
+      };
 
       void main() {
-          FragColor = v_color;
+        // todo
       }
+      
