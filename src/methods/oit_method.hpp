@@ -7,7 +7,8 @@ struct BakedScene;
 
 class OitMethod {
 public:
-    virtual ~OitMethod()                                                                    = default;
-    [[nodiscard]] virtual auto render(const BakedScene& scene) const -> const siren::Image& = 0;
+    virtual ~OitMethod() = default;
+    [[nodiscard]] virtual auto render(const siren::PerspectiveCamera& camera, const BakedScene& scene) const
+            -> const siren::Image& = 0;
 };
 }  // namespace oiter

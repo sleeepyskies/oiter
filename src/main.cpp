@@ -2,6 +2,7 @@
 #include "2iren/rhi/context.hpp"
 #include "2iren/rhi/device.hpp"
 #include "2iren/rhi/resources/swapchain.hpp"
+#include "2iren/util/camera.hpp"
 #include "2iren/util/filesystem.hpp"
 #include "2iren/window.hpp"
 #include "bake.hpp"
@@ -11,6 +12,10 @@
 #ifndef OITER_VFS
 #define OITER_VFS "."
 #endif
+
+struct UniformBuffer {
+    glm::mat4 projection_view;
+};
 
 auto main(const int argc, const char** argv) -> int {
     const auto config = oiter::parse_cli_args(argc, argv);
@@ -51,10 +56,15 @@ auto main(const int argc, const char** argv) -> int {
         std::exit(1);
     }
 
+    siren::PerspectiveCamera camera;
+    siren::PerspectiveCameraController controller;
+
     while (!window.should_close()) {
         window.poll_events();
 
-        const auto& image = oit->render(baked);
+        controller.update(camera);
+
+        const auto& image = oit->render(camera, baked);
         device->blit(image.handle(), swapchain.next_image().handle());
         swapchain.present();
         device->flush_delete_queue();

@@ -15,6 +15,10 @@ stages:
       layout(location = 2) out vec4 v_color;
       layout(location = 3) out vec2 v_texture;
       layout(location = 4) out vec4 v_tangent;
+      
+      layout(std140, binding = 0) uniform UniformBuffer {
+        mat4 view_projection;
+      };
 
       void main() {
           v_color = a_color;
@@ -25,7 +29,7 @@ stages:
           v_texture  = a_texture;
           v_tangent  = a_tangent;
       
-          gl_Position = a_position;
+          gl_Position = view_projection * a_position;
       }
   fragment:
     name: fragment
