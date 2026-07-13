@@ -4,16 +4,12 @@ stages:
     name: vertex
     source: !glsl |
       #version 460
+
+      layout(location = 0) in vec4 a_position;
       
-      struct BakedMaterial {
-          vec4 color;
-          float alpha;
-          float padding[3];
-      };
-      
-      layout(std140, binding = 0) uniform UniformBuffer {
+      layout(std140, binding = 0) uniform SceneData {
           mat4 view_projection;
-          BakedMaterial materials[64];
+          vec3 camera_position;
       };
       
       void main() {
@@ -23,7 +19,9 @@ stages:
     name: fragment
     source: !glsl |
       #version 460
+      
       layout(location = 0) out vec2 FragColor;
+      
       void main() {
         float depth = gl_FragCoord.z;
         FragColor.xy = vec2(-depth, depth);

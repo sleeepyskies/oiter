@@ -19,7 +19,7 @@ namespace oiter {
 struct GPU_ALIGNED SceneData {
     glm::mat4 view_projection;
     glm::vec3 camera_position;
-    float _pad0 = 0;
+    float _pad = 0;
 };
 
 struct GPU_ALIGNED MaterialData {

@@ -4,6 +4,7 @@ stages:
     name: vertex
     source: !glsl |
       #version 460
+      
       layout(location = 0) in vec4 a_position;
       layout(location = 1) in vec4 a_normal;
       layout(location = 2) in vec4 a_color;
@@ -15,6 +16,26 @@ stages:
       layout(location = 2) out vec4 v_color;
       layout(location = 3) out vec2 v_texture;
       layout(location = 4) out vec4 v_tangent;
+      
+      struct BakedMaterial {
+        vec4 color;
+        float alpha;
+        float padding[3];
+      };
+      
+      layout(std140, binding = 0) uniform SceneData {
+        mat4 view_projection;
+        vec3 camera_position;
+        float _pad;
+      };
+      
+      layout(std140, binding = 1) uniform MaterialData {
+          BakedMaterial materials[64];
+      };
+      
+      layout(std140, binding = 2) uniform DrawCallData {
+          uint index;
+      };
       
       void main() {
           v_color = a_color;
@@ -40,21 +61,26 @@ stages:
       layout(location = 0) out vec4 FragColor;
       
       struct BakedMaterial {
-          vec4 color;
-          float alpha;
-          float padding[3];
+        vec4 color;
+        float alpha;
+        float padding[3];
       };
       
-      layout(std140, binding = 0) uniform UniformBuffer {
-          mat4 view_projection;
+      layout(std140, binding = 0) uniform SceneData {
+        mat4 view_projection;
+        vec3 camera_position;
+        float _pad;
+      };
+      
+      layout(std140, binding = 1) uniform MaterialData {
           BakedMaterial materials[64];
       };
       
-      layout(std140, binding = 1) uniform MaterialUniformBuffer {
+      layout(std140, binding = 2) uniform DrawCallData {
           uint index;
       };
 
       void main() {
-        // todo
+          // pass
       }
-      
+        
