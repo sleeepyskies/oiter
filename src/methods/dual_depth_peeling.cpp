@@ -17,9 +17,9 @@ namespace oiter {
 }
 
 DualDepthPeeling::DualDepthPeeling(siren::Device& device, const siren::Window& window, siren::AssetServer& server) :
-    m_device(device), m_final_image(create_image(device, window)), m_uniforms(init_uniforms(device)),
-    m_geometry(init_geometry_pass(device, server, window)), m_init(init_init_pass(device, server)),
-    m_peel(init_peel_pass(device, server, window)), m_blend(init_blend_pass(device, server, window)) {
+    m_device(device), m_uniforms(init_uniforms(device)), m_geometry(init_geometry_pass(device, server, window)),
+    m_init(init_init_pass(device, server)), m_peel(init_peel_pass(device, server, window)),
+    m_blend(init_blend_pass(device, server, window)) {
     //
 }
 
@@ -46,8 +46,9 @@ auto DualDepthPeeling::render(const siren::PerspectiveCamera& camera, const Bake
 
     auto& target = m_peel.flag ? m_peel.target0 : m_peel.target1;
     m_peel.flag  = !m_peel.flag;
-    return m_geometry.target.images[0];
+    // return m_geometry.target.images[0];
     // return target.images[0];  // todo: just for testing init pass
+    return m_blend.target.images[0];
 }
 
 // ==================== RENDER PASSES ==============
@@ -56,7 +57,7 @@ auto DualDepthPeeling::geometry_pass(const BakedScene& scene) const -> void {
     // just renders all non-transparent aka opaque geometry into an image
 
     m_device.render_submit([&](siren::RenderCommandRecorder& cmds) -> void {
-        cmds.render_pass({ .target = m_geometry.target.target }, [&](siren::RenderPassRecorder& pass) -> void {
+        cmds.render_pass({ .target = m_geometry.target.render_target }, [&](siren::RenderPassRecorder& pass) -> void {
             pass.bind_graphics_pipeline(m_geometry.pipeline.pipeline.handle());
 
             pass.bind_uniform_buffer(m_uniforms.scene_data.handle(), 0);
@@ -78,43 +79,51 @@ auto DualDepthPeeling::init_pass(const BakedScene& scene) const -> void {
     // inits the depth min max image of the peel target to max and min depths of transparent geometry in the scene
 
     m_device.render_submit([this, &scene](siren::RenderCommandRecorder& cmds) -> void {
-        const auto& target = m_peel.flag ? m_peel.target0 : m_peel.target1;
-        cmds.render_pass({ .target = target.target }, [this, &scene](siren::RenderPassRecorder& pass) -> void {
-            pass.bind_graphics_pipeline(m_init.pipeline.pipeline.handle());
+        cmds.render_pass({ .target = m_peel.target0.render_target },
+                         [this, &scene](siren::RenderPassRecorder& pass) -> void {
+                             pass.bind_graphics_pipeline(m_init.pipeline.pipeline.handle());
 
-            pass.bind_uniform_buffer(m_uniforms.scene_data.handle(), 0);
-            pass.bind_uniform_buffer(m_uniforms.material_data.handle(), 1);
+                             pass.bind_uniform_buffer(m_uniforms.scene_data.handle(), 0);
+                             pass.bind_uniform_buffer(m_uniforms.material_data.handle(), 1);
 
-            for (const auto& surface : scene.transparent) {
-                m_uniforms.draw_call_data.upload(siren::ByteBuffer{ surface.material_index });
-                pass.bind_uniform_buffer(m_uniforms.draw_call_data.handle(), 2);
+                             for (const auto& surface : scene.transparent) {
+                                 m_uniforms.draw_call_data.upload(siren::ByteBuffer{ surface.material_index });
+                                 pass.bind_uniform_buffer(m_uniforms.draw_call_data.handle(), 2);
 
-                pass.bind_vertex_buffer(surface.vertex.buffer.handle(), 0, 0);
-                pass.bind_index_buffer(surface.index.buffer.handle(), surface.index.format);
-                pass.draw_indexed(surface.index.count, 0);
-            }
-        });
+                                 pass.bind_vertex_buffer(surface.vertex.buffer.handle(), 0, 0);
+                                 pass.bind_index_buffer(surface.index.buffer.handle(), surface.index.format);
+                                 pass.draw_indexed(surface.index.count, 0);
+                             }
+                         });
     });
 };
 
 auto DualDepthPeeling::peel_pass(const BakedScene& scene) const -> void {
     m_device.render_submit([this, &scene](siren::RenderCommandRecorder& cmds) -> void {
-        const auto& target = m_peel.flag ? m_peel.target0 : m_peel.target1;
-        cmds.render_pass({ .target = target.target }, [this, &scene](siren::RenderPassRecorder& pass) -> void {
-            pass.bind_graphics_pipeline(m_peel.pipeline.pipeline.handle());
+        const auto& write_target = !m_peel.flag ? m_peel.target0 : m_peel.target1;
 
-            pass.bind_uniform_buffer(m_uniforms.scene_data.handle(), 0);
-            pass.bind_uniform_buffer(m_uniforms.material_data.handle(), 1);
+        cmds.render_pass({ .target = write_target.render_target },
+                         [this, &scene](siren::RenderPassRecorder& pass) -> void {
+                             const auto& read_target = m_peel.flag ? m_peel.target0 : m_peel.target1;
 
-            for (const auto& surface : scene.transparent) {
-                m_uniforms.draw_call_data.upload(siren::ByteBuffer{ surface.material_index });
-                pass.bind_uniform_buffer(m_uniforms.draw_call_data.handle(), 2);
+                             pass.bind_graphics_pipeline(m_peel.pipeline.pipeline.handle());
 
-                pass.bind_vertex_buffer(surface.vertex.buffer.handle(), 0, 0);
-                pass.bind_index_buffer(surface.index.buffer.handle(), surface.index.format);
-                pass.draw_indexed(surface.index.count, 0);
-            }
-        });
+                             pass.bind_image(read_target.images[0].handle(), 0); // min max
+                             pass.bind_image(read_target.images[1].handle(), 1); // back
+                             pass.bind_image(read_target.images[2].handle(), 2); // front
+
+                             pass.bind_uniform_buffer(m_uniforms.scene_data.handle(), 0);
+                             pass.bind_uniform_buffer(m_uniforms.material_data.handle(), 1);
+
+                             for (const auto& surface : scene.transparent) {
+                                 m_uniforms.draw_call_data.upload(siren::ByteBuffer{ surface.material_index });
+                                 pass.bind_uniform_buffer(m_uniforms.draw_call_data.handle(), 2);
+
+                                 pass.bind_vertex_buffer(surface.vertex.buffer.handle(), 0, 0);
+                                 pass.bind_index_buffer(surface.index.buffer.handle(), surface.index.format);
+                                 pass.draw_indexed(surface.index.count, 0);
+                             }
+                         });
     });
 }
 
@@ -169,7 +178,14 @@ auto DualDepthPeeling::init_geometry_pass(siren::Device& device,
 
     return GeometryPass{
         .pipeline = std::move(pipeline),
-        .target   = Target{ std::move(images) },
+        .target =
+                Target{
+                        siren::RenderTarget{
+                                .colors        = { siren::Attachment{ .image = images[0].handle() } },
+                                .depth_stencil = std::nullopt,
+                        },
+                        std::move(images),
+                },
     };
 }
 
@@ -210,17 +226,42 @@ auto DualDepthPeeling::init_peel_pass(siren::Device& device,
                 .alpha_mode        = siren::AlphaMode::Opaque,
                 .depth_function    = siren::DepthFunction::Less,
                 .back_face_culling = true,
-                .depth_test        = true,
-                .depth_write       = true,
+                .depth_test        = false,
+                .depth_write       = false,
         }),
     };
 
     auto make_peel_target = [](siren::Device& d, const siren::Window& w) -> Target {
         std::vector<siren::Image> images;
+
+        // min max image
+        images.emplace_back(d.create_image({
+                .format        = siren::ImageFormat::RG32f,
+                .extent        = siren::ImageExtent{ .width = w.width(), .height = w.height() },
+                .dimension     = siren::ImageDimension::D2,
+                .mipmap_levels = 1,
+        }));
+
+        // front color
         images.emplace_back(create_image(d, w));
+
+        // back color
         images.emplace_back(create_image(d, w));
-        images.emplace_back(create_image(d, w));
-        return Target{ std::move(images) };
+
+        return Target{
+            siren::RenderTarget{
+                .colors = {
+                    {
+                        .clear_value = glm::vec4(-MAX_DEPTH, -MAX_DEPTH, 0.f, 0.f),
+                        .image = images[0].handle()
+                    },
+                    { .clear_value = glm::vec4(0) , .image = images[1].handle() },
+                    { .clear_value = glm::vec4(0) , .image = images[2].handle() },
+                },
+                .depth_stencil = std::nullopt,
+            },
+            std::move(images),
+        };
     };
 
     return PeelPass{
@@ -250,9 +291,21 @@ auto DualDepthPeeling::init_blend_pass(siren::Device& device,
         }),
     };
 
+    std::vector<siren::Image> images{};
+    images.emplace_back(create_image(device, window));
+
+    // todo: just temp values to compile, idk how right this is
     return BlendPass{
         .pipeline = std::move(pipeline),
-        .target   = Target{ {} },  // todo
+        .target   = Target{
+            siren::RenderTarget{
+                .colors = {
+                    siren::Attachment{.image = images[0].handle()},
+                },
+                .depth_stencil = std::nullopt,
+            },
+            std::move(images),
+        },
     };
 }
 

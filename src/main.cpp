@@ -40,7 +40,7 @@ auto main(const int argc, const char** argv) -> int {
     });
     siren::AssetServer server{ *device };
 
-    auto scene = server.load<siren::Gltf>(config.scene_path);
+    const auto scene = server.load<siren::Gltf>(config.scene_path);
     while (!server.is_loaded_with_dependencies(scene)) {
         /** wait until loaded */
     }

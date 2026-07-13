@@ -12,6 +12,7 @@
 
 #define MAX_LAYERS 10
 #define MAX_MATERIALS 64
+#define MAX_DEPTH 1
 #define GPU_ALIGNED alignas(16)
 
 namespace oiter {
@@ -37,11 +38,9 @@ struct Pipeline {
 };
 
 struct Target {
-    explicit Target(std::vector<siren::Image>&& images) :
-        target(images | std::views::transform(&siren::Image::handle) | std::ranges::to<std::vector>()),
-        images(std::move(images)) {}
-
-    siren::RenderTarget target;
+    Target(const siren::RenderTarget& render_target, std::vector<siren::Image>&& images) :
+        render_target(render_target), images(std::move(images)) {}
+    siren::RenderTarget render_target;
     std::vector<siren::Image> images;
 };
 
@@ -54,7 +53,6 @@ public:
 
 private:
     siren::Device& m_device;
-    siren::Image m_final_image;
 
     struct UniformBuffers {
         siren::Buffer scene_data;
@@ -73,8 +71,8 @@ private:
 
     struct PeelPass {
         Pipeline pipeline;
-        Target target0;     // holds front color, back color, depth range
-        Target target1;     // holds front color, back color, depth range
+        Target target0;     // holds min max, front and back color
+        Target target1;     // holds min max, front and back color
         mutable bool flag;  // just a simple flag to toggle between both targets
     } m_peel;
 
