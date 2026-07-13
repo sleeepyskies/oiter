@@ -11,7 +11,7 @@ constexpr auto A_BUFFER           = "ab";
 } // namespace methods
 
 struct CliConfig {
-    std::string scene_path = "oiter://assets/meshes/basic-oit-no-monkey.glb";
+    std::string scene_path = "oiter://assets/meshes/basic-oit.glb";
     std::string oit_method = methods::DUAL_DEPTH_PEELING;
 };
 

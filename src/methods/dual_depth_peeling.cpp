@@ -32,9 +32,11 @@ auto DualDepthPeeling::render(const siren::PerspectiveCamera& camera, const Bake
         m_uniforms.scene_data.upload(siren::ByteBuffer{ data });
     }
     {
-        // just upload once?
-        const auto materials = scene.materials;
-        m_uniforms.material_data.upload(siren::ByteBuffer{ materials });
+        MaterialData data;
+        for (const auto& [index, material] : std::views::enumerate(scene.materials)) {
+            data.materials[index] = material;
+        }
+        m_uniforms.material_data.upload(siren::ByteBuffer{ data });
     }
 
     geometry_pass(scene);
@@ -44,7 +46,8 @@ auto DualDepthPeeling::render(const siren::PerspectiveCamera& camera, const Bake
 
     auto& target = m_peel.flag ? m_peel.target0 : m_peel.target1;
     m_peel.flag  = !m_peel.flag;
-    return target.images[0];  // todo: just for testing init pass
+    return m_geometry.target.images[0];
+    // return target.images[0];  // todo: just for testing init pass
 }
 
 // ==================== RENDER PASSES ==============
@@ -73,9 +76,9 @@ auto DualDepthPeeling::geometry_pass(const BakedScene& scene) const -> void {
 
 auto DualDepthPeeling::init_pass(const BakedScene& scene) const -> void {
     // inits the depth min max image of the peel target to max and min depths of transparent geometry in the scene
-    auto& target = m_peel.flag ? m_peel.target0 : m_peel.target1;
 
-    m_device.render_submit([this, &target, &scene](siren::RenderCommandRecorder& cmds) -> void {
+    m_device.render_submit([this, &scene](siren::RenderCommandRecorder& cmds) -> void {
+        const auto& target = m_peel.flag ? m_peel.target0 : m_peel.target1;
         cmds.render_pass({ .target = target.target }, [this, &scene](siren::RenderPassRecorder& pass) -> void {
             pass.bind_graphics_pipeline(m_init.pipeline.pipeline.handle());
 
@@ -95,9 +98,8 @@ auto DualDepthPeeling::init_pass(const BakedScene& scene) const -> void {
 };
 
 auto DualDepthPeeling::peel_pass(const BakedScene& scene) const -> void {
-    auto& target = m_peel.flag ? m_peel.target0 : m_peel.target1;
-
-    m_device.render_submit([this, &scene, &target](siren::RenderCommandRecorder& cmds) -> void {
+    m_device.render_submit([this, &scene](siren::RenderCommandRecorder& cmds) -> void {
+        const auto& target = m_peel.flag ? m_peel.target0 : m_peel.target1;
         cmds.render_pass({ .target = target.target }, [this, &scene](siren::RenderPassRecorder& pass) -> void {
             pass.bind_graphics_pipeline(m_peel.pipeline.pipeline.handle());
 
@@ -157,8 +159,8 @@ auto DualDepthPeeling::init_geometry_pass(siren::Device& device,
                 .alpha_mode        = siren::AlphaMode::Opaque,
                 .depth_function    = siren::DepthFunction::Less,
                 .back_face_culling = true,
-                .depth_test        = true,
-                .depth_write       = true,
+                .depth_test        = false,
+                .depth_write       = false,
         }),
     };
 
@@ -250,7 +252,7 @@ auto DualDepthPeeling::init_blend_pass(siren::Device& device,
 
     return BlendPass{
         .pipeline = std::move(pipeline),
-        .target   = Target{{}}, // todo
+        .target   = Target{ {} },  // todo
     };
 }
 

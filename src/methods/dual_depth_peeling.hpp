@@ -28,6 +28,7 @@ struct GPU_ALIGNED MaterialData {
 
 struct GPU_ALIGNED DrawCallData {
     siren::u32 material_index;
+    siren::u32 _pad[3];
 };
 
 struct Pipeline {
