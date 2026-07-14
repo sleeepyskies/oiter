@@ -12,7 +12,7 @@
 #include "2iren/window.hpp"
 #include "oit_method.hpp"
 
-constexpr auto MAX_LAYERS    = 10;
+constexpr auto MAX_PEELS    = 5;
 constexpr auto MAX_MATERIALS = 64;
 constexpr auto MAX_DEPTH     = 1;
 
@@ -77,6 +77,9 @@ private:
         Target target0;     // holds min max, front and back color
         Target target1;     // holds min max, front and back color
         mutable bool flag;  // just a simple flag to toggle between both targets
+
+        auto read_target() const -> const Target& { return flag ? target0 : target1; }
+        auto write_target() const -> const Target& { return !flag ? target0 : target1; }
     } m_peel;
 
     struct BlendPass {

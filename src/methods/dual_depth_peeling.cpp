@@ -44,14 +44,15 @@ auto DualDepthPeeling::render(const siren::PerspectiveCamera& camera, const Bake
     geometry_pass(scene);
     init_pass(scene);
 
-    for (const auto index : siren::range(MAX_LAYERS / 2)) {
+    for (const auto _ : siren::range(MAX_PEELS)) {
         peel_pass(scene);
         blend_pass();
         m_peel.flag = !m_peel.flag;
     }
     final_pass();
 
-    return m_final.target.images[0];
+    // return m_final.target.images[0];
+    return m_geometry.target.images[0];
 }
 
 // ==================== RENDER PASSES ==============
@@ -103,11 +104,11 @@ auto DualDepthPeeling::init_pass(const BakedScene& scene) const -> void {
 
 auto DualDepthPeeling::peel_pass(const BakedScene& scene) const -> void {
     m_device.render_submit([this, &scene](siren::RenderCommandRecorder& cmds) -> void {
-        const auto& write_target = !m_peel.flag ? m_peel.target0 : m_peel.target1;
+        const auto& write_target = m_peel.write_target();
 
         cmds.render_pass({ .target = write_target.render_target },
                          [this, &scene](siren::RenderPassRecorder& pass) -> void {
-                             const auto& read_target = m_peel.flag ? m_peel.target0 : m_peel.target1;
+                             const auto& read_target = m_peel.read_target();
 
                              pass.bind_graphics_pipeline(m_peel.pipeline.graphics_pipeline.handle());
 
@@ -134,7 +135,7 @@ auto DualDepthPeeling::blend_pass() const -> void {
     m_device.render_submit([this](siren::RenderCommandRecorder& cmds) -> void {
         cmds.render_pass({ .target = m_blend.target.render_target }, [this](siren::RenderPassRecorder& pass) -> void {
             pass.bind_graphics_pipeline(m_blend.pipeline.graphics_pipeline.handle());
-            pass.bind_image(m_peel.flag ? m_peel.target0.images[2].handle() : m_peel.target1.images[2].handle(), 1);
+            pass.bind_image(m_peel.read_target().images[2].handle(), 0);
             pass.draw_arrays(0, 3);  // just draw to a fullscreen quad
         });
     });
@@ -228,8 +229,8 @@ auto DualDepthPeeling::init_init_pass(siren::Device& device, siren::AssetServer&
                 .blend_function    = siren::BlendFunction::Max,
                 .depth_function    = siren::DepthFunction::Less,
                 .back_face_culling = true,
-                .depth_test        = true,
-                .depth_write       = true,
+                .depth_test        = false,
+                .depth_write       = false,
         }),
     };
 
@@ -244,11 +245,12 @@ auto DualDepthPeeling::init_peel_pass(siren::Device& device,
     Pipeline pipeline{
         .shader            = shader,
         .graphics_pipeline = device.create_graphics_pipeline({
-                .label             = "Init Pipeline",
+                .label             = "Peel Pipeline",
                 .layout            = siren::DEFAULT_VERTEX_LAYOUT,
                 .shader            = server.get_unsafe(shader).shader.handle(),
                 .topology          = siren::PrimitiveTopology::Triangles,
-                .alpha_mode        = siren::AlphaMode::Opaque,
+                .alpha_mode        = siren::AlphaMode::Blend,
+                .blend_function    = siren::BlendFunction::Max,
                 .depth_function    = siren::DepthFunction::Less,
                 .back_face_culling = true,
                 .depth_test        = false,
@@ -308,11 +310,11 @@ auto DualDepthPeeling::init_blend_pass(siren::Device& device,
                 .layout            = siren::DEFAULT_VERTEX_LAYOUT,
                 .shader            = server.get_unsafe(shader).shader.handle(),
                 .topology          = siren::PrimitiveTopology::Triangles,
-                .alpha_mode        = siren::AlphaMode::Opaque,
+                .alpha_mode        = siren::AlphaMode::Blend,
                 .depth_function    = siren::DepthFunction::Less,
-                .back_face_culling = true,
-                .depth_test        = true,
-                .depth_write       = true,
+                .back_face_culling = false,
+                .depth_test        = false,
+                .depth_write       = false,
         }),
     };
 
@@ -325,7 +327,7 @@ auto DualDepthPeeling::init_blend_pass(siren::Device& device,
         .target   = Target{
             siren::RenderTarget{
                 .colors = {
-                    siren::Attachment{.image = images[0].handle()},
+                    siren::Attachment{.begin_operation = siren::BeginOperation::Fuckit, .image = images[0].handle() },
                 },
                 .depth_stencil = std::nullopt,
             },
@@ -348,9 +350,9 @@ auto DualDepthPeeling::init_final_pass(siren::Device& device,
                 .topology          = siren::PrimitiveTopology::Triangles,
                 .alpha_mode        = siren::AlphaMode::Opaque,
                 .depth_function    = siren::DepthFunction::Less,
-                .back_face_culling = true,
-                .depth_test        = true,
-                .depth_write       = true,
+                .back_face_culling = false,
+                .depth_test        = false,
+                .depth_write       = false,
         }),
     };
 

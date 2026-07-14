@@ -19,13 +19,13 @@ stages:
       struct BakedMaterial {
         vec4 color;
         float alpha;
-        float padding[3];
+        float _pad0[3];
       };
       
       layout(std140, binding = 0) uniform SceneData {
         mat4 view_projection;
         vec3 camera_position;
-        float _pad;
+        float _pad0;
       };
       
       layout(std140, binding = 1) uniform MaterialData {
@@ -34,6 +34,7 @@ stages:
       
       layout(std140, binding = 2) uniform DrawCallData {
           uint index;
+          uint _pad1[3];
       };
 
       void main() {
@@ -63,13 +64,13 @@ stages:
       struct BakedMaterial {
         vec4 color;
         float alpha;
-        float padding[3];
+        float _pad0[3];
       };
       
       layout(std140, binding = 0) uniform SceneData {
         mat4 view_projection;
         vec3 camera_position;
-        float _pad;
+        float _pad0;
       };
       
       layout(std140, binding = 1) uniform MaterialData {
@@ -78,9 +79,15 @@ stages:
       
       layout(std140, binding = 2) uniform DrawCallData {
           uint index;
+          uint _pad1[3];
       };
-
+      
+      vec4 shade() {
+          // return materials[index].color;
+          return vec4(1);
+      }
+      
       void main() {
         // todo: actual shading pls
-        out_color = materials[index].color;
+        out_color = shade();
       }
