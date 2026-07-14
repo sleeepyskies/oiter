@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 #include "../bake.hpp"
 #include "2iren/asset/asset_server.hpp"
 #include "2iren/asset/assets/shader.hpp"
@@ -34,12 +36,12 @@ struct GPU_ALIGNED DrawCallData {
 
 struct Pipeline {
     siren::StrongHandle<siren::ShaderAsset> shader;
-    siren::GraphicsPipeline pipeline;
+    siren::GraphicsPipeline graphics_pipeline;
 };
 
 struct Target {
-    Target(const siren::RenderTarget& render_target, std::vector<siren::Image>&& images) :
-        render_target(render_target), images(std::move(images)) {}
+    Target(siren::RenderTarget render_target, std::vector<siren::Image>&& images) :
+        render_target(std::move(render_target)), images(std::move(images)) {}
     siren::RenderTarget render_target;
     std::vector<siren::Image> images;
 };
@@ -81,11 +83,17 @@ private:
         Target target;
     } m_blend;
 
+    struct FinalPass {
+        Pipeline pipeline;
+        Target target;
+    } m_final;
+
 private:
     auto geometry_pass(const BakedScene& scene) const -> void;
     auto init_pass(const BakedScene& scene) const -> void;
     auto peel_pass(const BakedScene& scene) const -> void;
     auto blend_pass() const -> void;
+    auto final_pass() const -> void;
 
 private:
     auto init_uniforms(siren::Device& device) const -> UniformBuffers;
@@ -96,6 +104,8 @@ private:
             -> PeelPass;
     auto init_blend_pass(siren::Device& device, siren::AssetServer& server, const siren::Window& window) const
             -> BlendPass;
+    auto init_final_pass(siren::Device& device, siren::AssetServer& server, const siren::Window& window) const
+            -> FinalPass;
 };
 
 }  // namespace oiter

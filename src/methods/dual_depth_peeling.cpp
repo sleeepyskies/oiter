@@ -19,7 +19,7 @@ namespace oiter {
 DualDepthPeeling::DualDepthPeeling(siren::Device& device, const siren::Window& window, siren::AssetServer& server) :
     m_device(device), m_uniforms(init_uniforms(device)), m_geometry(init_geometry_pass(device, server, window)),
     m_init(init_init_pass(device, server)), m_peel(init_peel_pass(device, server, window)),
-    m_blend(init_blend_pass(device, server, window)) {
+    m_blend(init_blend_pass(device, server, window)), m_final(init_final_pass(device, server, window)) {
     //
 }
 
@@ -58,7 +58,7 @@ auto DualDepthPeeling::geometry_pass(const BakedScene& scene) const -> void {
 
     m_device.render_submit([&](siren::RenderCommandRecorder& cmds) -> void {
         cmds.render_pass({ .target = m_geometry.target.render_target }, [&](siren::RenderPassRecorder& pass) -> void {
-            pass.bind_graphics_pipeline(m_geometry.pipeline.pipeline.handle());
+            pass.bind_graphics_pipeline(m_geometry.pipeline.graphics_pipeline.handle());
 
             pass.bind_uniform_buffer(m_uniforms.scene_data.handle(), 0);
             pass.bind_uniform_buffer(m_uniforms.material_data.handle(), 1);
@@ -81,7 +81,7 @@ auto DualDepthPeeling::init_pass(const BakedScene& scene) const -> void {
     m_device.render_submit([this, &scene](siren::RenderCommandRecorder& cmds) -> void {
         cmds.render_pass({ .target = m_peel.target0.render_target },
                          [this, &scene](siren::RenderPassRecorder& pass) -> void {
-                             pass.bind_graphics_pipeline(m_init.pipeline.pipeline.handle());
+                             pass.bind_graphics_pipeline(m_init.pipeline.graphics_pipeline.handle());
 
                              pass.bind_uniform_buffer(m_uniforms.scene_data.handle(), 0);
                              pass.bind_uniform_buffer(m_uniforms.material_data.handle(), 1);
@@ -106,11 +106,11 @@ auto DualDepthPeeling::peel_pass(const BakedScene& scene) const -> void {
                          [this, &scene](siren::RenderPassRecorder& pass) -> void {
                              const auto& read_target = m_peel.flag ? m_peel.target0 : m_peel.target1;
 
-                             pass.bind_graphics_pipeline(m_peel.pipeline.pipeline.handle());
+                             pass.bind_graphics_pipeline(m_peel.pipeline.graphics_pipeline.handle());
 
-                             pass.bind_image(read_target.images[0].handle(), 0); // min max
-                             pass.bind_image(read_target.images[1].handle(), 1); // back
-                             pass.bind_image(read_target.images[2].handle(), 2); // front
+                             pass.bind_image(read_target.images[0].handle(), 0);  // min max
+                             pass.bind_image(read_target.images[1].handle(), 1);  // back
+                             pass.bind_image(read_target.images[2].handle(), 2);  // front
 
                              pass.bind_uniform_buffer(m_uniforms.scene_data.handle(), 0);
                              pass.bind_uniform_buffer(m_uniforms.material_data.handle(), 1);
@@ -128,6 +128,12 @@ auto DualDepthPeeling::peel_pass(const BakedScene& scene) const -> void {
 }
 
 auto DualDepthPeeling::blend_pass() const -> void {
+    m_device.render_submit([this](siren::RenderCommandRecorder& cmds) -> void {
+        cmds.render_pass({ .target = m_peel.target0.render_target }, []() -> void {});
+    });
+}
+
+auto DualDepthPeeling::final_pass() const -> void {
     return;
 }
 
@@ -159,8 +165,8 @@ auto DualDepthPeeling::init_geometry_pass(siren::Device& device,
     const auto shader = server.load<siren::ShaderAsset>("oiter://assets/shaders/dual_depth_peeling/geometry.sshg");
 
     Pipeline pipeline{
-        .shader   = shader,
-        .pipeline = device.create_graphics_pipeline({
+        .shader            = shader,
+        .graphics_pipeline = device.create_graphics_pipeline({
                 .label             = "Geometry Pipeline",
                 .layout            = siren::DEFAULT_VERTEX_LAYOUT,
                 .shader            = server.get_unsafe(shader).shader.handle(),
@@ -193,8 +199,8 @@ auto DualDepthPeeling::init_init_pass(siren::Device& device, siren::AssetServer&
     const auto shader = server.load<siren::ShaderAsset>("oiter://assets/shaders/dual_depth_peeling/init.sshg");
 
     Pipeline pipeline{
-        .shader   = shader,
-        .pipeline = device.create_graphics_pipeline({
+        .shader            = shader,
+        .graphics_pipeline = device.create_graphics_pipeline({
                 .label             = "Init Pipeline",
                 .layout            = siren::DEFAULT_VERTEX_LAYOUT,
                 .shader            = server.get_unsafe(shader).shader.handle(),
@@ -217,8 +223,8 @@ auto DualDepthPeeling::init_peel_pass(siren::Device& device,
     const auto shader = server.load<siren::ShaderAsset>("oiter://assets/shaders/dual_depth_peeling/peel.sshg");
 
     Pipeline pipeline{
-        .shader   = shader,
-        .pipeline = device.create_graphics_pipeline({
+        .shader            = shader,
+        .graphics_pipeline = device.create_graphics_pipeline({
                 .label             = "Init Pipeline",
                 .layout            = siren::DEFAULT_VERTEX_LAYOUT,
                 .shader            = server.get_unsafe(shader).shader.handle(),
@@ -277,8 +283,8 @@ auto DualDepthPeeling::init_blend_pass(siren::Device& device,
     const auto shader = server.load<siren::ShaderAsset>("oiter://assets/shaders/dual_depth_peeling/blend.sshg");
 
     Pipeline pipeline{
-        .shader   = shader,
-        .pipeline = device.create_graphics_pipeline({
+        .shader            = shader,
+        .graphics_pipeline = device.create_graphics_pipeline({
                 .label             = "Blend Pipeline",
                 .layout            = siren::DEFAULT_VERTEX_LAYOUT,
                 .shader            = server.get_unsafe(shader).shader.handle(),
@@ -306,6 +312,42 @@ auto DualDepthPeeling::init_blend_pass(siren::Device& device,
             },
             std::move(images),
         },
+    };
+}
+
+auto DualDepthPeeling::init_final_pass(siren::Device& device,
+                                       siren::AssetServer& server,
+                                       const siren::Window& window) const -> FinalPass {
+    const auto shader = server.load<siren::ShaderAsset>("oiter://assets/shaders/dual_depth_peeling/final.sshg");
+
+    Pipeline pipeline{
+        .shader            = shader,
+        .graphics_pipeline = device.create_graphics_pipeline({
+                .label             = "Blend Pipeline",
+                .layout            = siren::DEFAULT_VERTEX_LAYOUT,
+                .shader            = server.get_unsafe(shader).shader.handle(),
+                .topology          = siren::PrimitiveTopology::Triangles,
+                .alpha_mode        = siren::AlphaMode::Opaque,
+                .depth_function    = siren::DepthFunction::Less,
+                .back_face_culling = true,
+                .depth_test        = true,
+                .depth_write       = true,
+        }),
+    };
+
+    std::vector<siren::Image> images;
+    images.emplace_back(create_image(device, window));
+
+    return FinalPass{
+        .pipeline = std::move(pipeline),
+        .target =
+                Target{
+                        siren::RenderTarget{
+                                .colors        = { siren::Attachment{ .image = images[0].handle() } },
+                                .depth_stencil = std::nullopt,
+                        },
+                        std::move(images),
+                },
     };
 }
 
