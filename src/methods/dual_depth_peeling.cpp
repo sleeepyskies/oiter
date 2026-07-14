@@ -230,7 +230,7 @@ auto DualDepthPeeling::init_init_pass(siren::Device& device, siren::AssetServer&
                 .depth_function      = siren::DepthFunction::Less,
                 .source_blend_factor = siren::BlendFactor::One,
                 .dest_blend_factor   = siren::BlendFactor::One,
-                .back_face_culling   = true,
+                .back_face_culling   = false, // todo: should we make this true?
                 .depth_test          = false,
                 .depth_write         = false,
         }),
