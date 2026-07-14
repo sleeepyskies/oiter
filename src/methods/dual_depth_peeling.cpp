@@ -52,8 +52,7 @@ auto DualDepthPeeling::render(const siren::PerspectiveCamera& camera, const Bake
     }
     final_pass();
 
-    // return m_final.target.images[0];
-    return m_peel.target0.images[1];
+    return m_final.target.colors[0];
 }
 
 // ==================== RENDER PASSES ==============
