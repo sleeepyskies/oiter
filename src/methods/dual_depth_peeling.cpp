@@ -52,7 +52,7 @@ auto DualDepthPeeling::render(const siren::PerspectiveCamera& camera, const Bake
     final_pass();
 
     // return m_final.target.images[0];
-    return m_geometry.target.images[0];
+    return m_peel.target0.images[1];
 }
 
 // ==================== RENDER PASSES ==============
@@ -221,16 +221,18 @@ auto DualDepthPeeling::init_init_pass(siren::Device& device, siren::AssetServer&
     Pipeline pipeline{
         .shader            = shader,
         .graphics_pipeline = device.create_graphics_pipeline({
-                .label             = "Init Pipeline",
-                .layout            = siren::DEFAULT_VERTEX_LAYOUT,
-                .shader            = server.get_unsafe(shader).shader.handle(),
-                .topology          = siren::PrimitiveTopology::Triangles,
-                .alpha_mode        = siren::AlphaMode::Blend,
-                .blend_function    = siren::BlendFunction::Max,
-                .depth_function    = siren::DepthFunction::Less,
-                .back_face_culling = true,
-                .depth_test        = false,
-                .depth_write       = false,
+                .label               = "Init Pipeline",
+                .layout              = siren::DEFAULT_VERTEX_LAYOUT,
+                .shader              = server.get_unsafe(shader).shader.handle(),
+                .topology            = siren::PrimitiveTopology::Triangles,
+                .alpha_mode          = siren::AlphaMode::Blend,
+                .blend_function      = siren::BlendFunction::Max,
+                .depth_function      = siren::DepthFunction::Less,
+                .source_blend_factor = siren::BlendFactor::One,
+                .dest_blend_factor   = siren::BlendFactor::One,
+                .back_face_culling   = true,
+                .depth_test          = false,
+                .depth_write         = false,
         }),
     };
 

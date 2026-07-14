@@ -8,12 +8,12 @@ stages:
     source: !glsl |
       #version 460
       
-      layout(location = 0) out vec2 out_depth;
-      layout(location = 1) out vec4 out_front;
-      layout(location = 2) out vec4 out_back;
+      layout(location = 0) out vec2 out_depth; // RG32F min max depth buffer
+      layout(location = 1) out vec4 out_front; // RGBA8 front buffer
+      layout(location = 2) out vec4 out_back;  // RGB8 back buffer
       
       void main() {
         float depth = gl_FragCoord.z;
       
-        out_depth.xy = vec2(-depth, depth);
+        out_depth.xy = vec2(1);
       }
