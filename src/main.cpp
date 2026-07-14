@@ -4,6 +4,7 @@
 #include "2iren/rhi/resources/swapchain.hpp"
 #include "2iren/util/camera.hpp"
 #include "2iren/util/filesystem.hpp"
+#include "2iren/util/time.hpp"
 #include "2iren/window.hpp"
 #include "bake.hpp"
 #include "config.hpp"
@@ -59,7 +60,12 @@ auto main(const int argc, const char** argv) -> int {
     siren::PerspectiveCamera camera;
     siren::PerspectiveCameraController controller;
 
+    siren::usize interval = 0;
+
     while (!window.should_close()) {
+        if (!(interval % 60)) {
+            window.set_title(std::format("Oiter: {:.5f}ms | {}fps", siren::time::delta_ms(), 1 / siren::time::delta_s()));
+        }
         window.poll_events();
 
         controller.update(camera);
@@ -68,6 +74,8 @@ auto main(const int argc, const char** argv) -> int {
         device->blit(image.handle(), swapchain.next_image());
         swapchain.present();
         device->flush_delete_queue();
+        siren::time::tick();
+        interval++;
     }
 
     device->wait_until_idle();
