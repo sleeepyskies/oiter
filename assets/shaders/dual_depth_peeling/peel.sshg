@@ -63,22 +63,21 @@ stages:
           uint _pad1[3];
       };
       
+      // input textures
+      layout(binding = 0) uniform sampler2D depth_texture; // RG32F depth min max thing
+      layout(binding = 1) uniform sampler2D front_texture; // RGBA9 front
+      // layout(binding = 2) uniform sampler2D back_texture;  // RGB8  back  not used anyway so :P
+      
       // textues we writing to boi
       layout(location = 0) out vec2 out_depth;
       layout(location = 1) out vec4 out_front;
       layout(location = 2) out vec4 out_back;
       
-      // input textures
-      layout(binding = 0) uniform sampler2D depth_texture; // RG32F depth min max thing
-      layout(binding = 1) uniform sampler2D front_texture; // RGBA9 front
-      layout(binding = 2) uniform sampler2D back_texture;  // RGB8  back
-      
       const float MAX_DEPTH = 1.f;
       
       vec4 shade() {
           // todo: actual shading pls
-          // return materials[index].color;
-          return vec4(1, 0, 0, 0);
+          return materials[index].color;
       }
 
       void main() {

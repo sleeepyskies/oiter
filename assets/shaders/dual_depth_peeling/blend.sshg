@@ -9,10 +9,13 @@ stages:
       #version 460
       
       layout(location = 0) out vec4 out_color;
-      layout(binding = 0) uniform sampler2DRect temp_texture;
+      
+      layout(binding = 0) uniform sampler2D temp_texture;
 
       void main() {
-          const vec4 color = texture(temp_texture, gl_FragCoord.xy);
+          const vec2 uv = gl_FragCoord.xy / vec2(textureSize(temp_texture, 0));
+          
+          const vec4 color = texture(temp_texture, uv);
           if (color.a == 0.f) {
               discard;
           }

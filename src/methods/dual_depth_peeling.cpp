@@ -47,8 +47,8 @@ auto DualDepthPeeling::render(const siren::PerspectiveCamera& camera, const Bake
 
     for (const auto _ : siren::range(MAX_PEELS)) {
         peel_pass(scene);
-        blend_pass();
         m_peel.flag = !m_peel.flag;
+        blend_pass();
     }
     final_pass();
 
@@ -205,8 +205,8 @@ auto DualDepthPeeling::init_geometry_pass(siren::Device& device,
                 .alpha_mode        = siren::AlphaMode::Opaque,
                 .depth_function    = siren::DepthFunction::Less,
                 .back_face_culling = true,
-                .depth_test        = false,
-                .depth_write       = false,
+                .depth_test        = true,
+                .depth_write       = true,
         }),
     };
 
@@ -263,9 +263,9 @@ auto DualDepthPeeling::init_peel_pass(siren::Device& device,
                 .shader            = server.get_unsafe(shader).shader.handle(),
                 .topology          = siren::PrimitiveTopology::Triangles,
                 .alpha_mode        = siren::AlphaMode::Blend,
-                .blend_function    = siren::BlendFunction::Max,
+                .blend_function    = siren::BlendFunction::Add,
                 .depth_function    = siren::DepthFunction::Less,
-                .back_face_culling = true,
+                .back_face_culling = false, // todo: this should be enabled
                 .depth_test        = false,
                 .depth_write       = false,
         }),

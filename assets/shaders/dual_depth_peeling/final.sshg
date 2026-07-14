@@ -10,13 +10,15 @@ stages:
       
       layout(location = 0) out vec4 out_color;
       
-      layout(binding = 0) uniform sampler2DRect depth_texture; // RG32F
-      layout(binding = 1) uniform sampler2DRect front_texture; // RGBA8
-      layout(binding = 2) uniform sampler2DRect back_texture;  // RGB8
+      layout(binding = 0) uniform sampler2D depth_texture; // RG32F
+      layout(binding = 1) uniform sampler2D front_texture; // RGBA8
+      layout(binding = 2) uniform sampler2D back_texture;  // RGB8
 
       void main() {
-          const vec4 front_color = texture(front_texture, gl_FragCoord.xy);
-          const vec3 back_color = texture(back_texture, gl_FragCoord.xy).rgb;
+          const vec2 uv = gl_FragCoord.xy / vec2(textureSize(depth_texture, 0));
+          
+          const vec4 front_color = texture(front_texture, uv);
+          const vec3 back_color = texture(back_texture, uv).rgb;
           
           const float alpha = 1 - front_color.a;
           
