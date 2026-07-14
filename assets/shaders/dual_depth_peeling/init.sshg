@@ -10,8 +10,16 @@ stages:
       
       layout(location = 0) out vec2 out_depth; // RG32F min max depth buffer
       
+      // todo: dont do this, we should rely on the clear but this is just a quick fix until i know whats wrong
+      layout(location = 1) out vec4 out2;
+      layout(location = 2) out vec4 out3;
+      
       void main() {
           float depth = gl_FragCoord.z;
           
-          out_depth = vec2(1.f);
+          out_depth = vec2(-depth, depth);
+          
+          // todo: remove
+          out2 = vec4(0);
+          out3 = vec4(0);
       }
