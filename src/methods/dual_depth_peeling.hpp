@@ -12,24 +12,25 @@
 #include "2iren/window.hpp"
 #include "oit_method.hpp"
 
-#define MAX_LAYERS 10
-#define MAX_MATERIALS 64
-#define MAX_DEPTH 1
-#define GPU_ALIGNED alignas(16)
+constexpr auto MAX_LAYERS    = 10;
+constexpr auto MAX_MATERIALS = 64;
+constexpr auto MAX_DEPTH     = 1;
 
 namespace oiter {
 
-struct GPU_ALIGNED SceneData {
+// todo: query for number of fragments left in order to allow for early end
+
+struct alignas(16) SceneData {
     glm::mat4 view_projection;
     glm::vec3 camera_position;
     float _pad = 0;
 };
 
-struct GPU_ALIGNED MaterialData {
+struct alignas(16) MaterialData {
     std::array<BakedMaterial, MAX_MATERIALS> materials;
 };
 
-struct GPU_ALIGNED DrawCallData {
+struct alignas(16) DrawCallData {
     siren::u32 material_index;
     siren::u32 _pad[3];
 };
@@ -97,6 +98,7 @@ private:
 
 private:
     auto init_uniforms(siren::Device& device) const -> UniformBuffers;
+
     auto init_geometry_pass(siren::Device& device, siren::AssetServer& server, const siren::Window& window) const
             -> GeometryPass;
     auto init_init_pass(siren::Device& device, siren::AssetServer& server) const -> InitPass;

@@ -25,6 +25,8 @@ DualDepthPeeling::DualDepthPeeling(siren::Device& device, const siren::Window& w
 
 auto DualDepthPeeling::render(const siren::PerspectiveCamera& camera, const BakedScene& scene) const
         -> const siren::Image& {
+    m_peel.flag = true;
+
     {
         SceneData data;
         data.view_projection = camera.projection_view();
@@ -41,14 +43,14 @@ auto DualDepthPeeling::render(const siren::PerspectiveCamera& camera, const Bake
 
     geometry_pass(scene);
     init_pass(scene);
-    peel_pass(scene);
-    blend_pass();
 
-    auto& target = m_peel.flag ? m_peel.target0 : m_peel.target1;
-    m_peel.flag  = !m_peel.flag;
-    // return m_geometry.target.images[0];
-    // return target.images[0];  // todo: just for testing init pass
-    return m_blend.target.images[0];
+    for (const auto index : siren::range(MAX_LAYERS / 2)) {
+        peel_pass(scene);
+        blend_pass();
+        m_peel.flag = !m_peel.flag;
+    }
+
+    return m_final.target.images[0];
 }
 
 // ==================== RENDER PASSES ==============
@@ -129,12 +131,28 @@ auto DualDepthPeeling::peel_pass(const BakedScene& scene) const -> void {
 
 auto DualDepthPeeling::blend_pass() const -> void {
     m_device.render_submit([this](siren::RenderCommandRecorder& cmds) -> void {
-        cmds.render_pass({ .target = m_peel.target0.render_target }, []() -> void {});
+        cmds.render_pass({ .target = m_blend.target.render_target }, [this](siren::RenderPassRecorder& pass) -> void {
+            pass.bind_graphics_pipeline(m_blend.pipeline.graphics_pipeline.handle());
+            pass.bind_image(m_peel.flag ? m_peel.target0.images[2].handle() : m_peel.target1.images[2].handle(), 1);
+            pass.draw_arrays(0, 3);  // just draw to a fullscreen quad
+        });
     });
 }
 
 auto DualDepthPeeling::final_pass() const -> void {
-    return;
+    m_device.render_submit([this](siren::RenderCommandRecorder& cmds) -> void {
+        cmds.render_pass({ .target = m_final.target.render_target }, [this](auto& pass) {
+            pass.bind_graphics_pipeline(m_final.pipeline.graphics_pipeline.handle());
+
+            const auto& target = !m_peel.flag ? m_peel.target0 : m_peel.target1;
+
+            pass.bind_image(target.images[0].handle(), 0);
+            pass.bind_image(target.images[1].handle(), 1);
+            pass.bind_image(target.images[2].handle(), 2);
+
+            pass.draw_arrays(0, 3);
+        });
+    });
 }
 
 // ==================== DATA INIT ==============
