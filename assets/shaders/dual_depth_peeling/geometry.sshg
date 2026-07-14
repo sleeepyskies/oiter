@@ -18,8 +18,6 @@ stages:
       
       struct BakedMaterial {
         vec4 color;
-        float alpha;
-        float _pad0[3];
       };
       
       layout(std140, binding = 0) uniform SceneData {
@@ -63,8 +61,6 @@ stages:
       
       struct BakedMaterial {
         vec4 color;
-        float alpha;
-        float _pad0[3];
       };
       
       layout(std140, binding = 0) uniform SceneData {
@@ -83,10 +79,9 @@ stages:
       };
       
       vec4 shade() {
-          // return materials[index].color;
-          return vec4(1);
+          return materials[index].color;
       }
-      
+
       void main() {
         // todo: actual shading pls
         out_color = shade();

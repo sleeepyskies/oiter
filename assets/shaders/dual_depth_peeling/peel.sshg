@@ -46,8 +46,6 @@ stages:
       
       struct BakedMaterial {
           vec4 color;
-          float alpha;
-          float _pad0[3];
       };
       
       layout(std140, binding = 0) uniform SceneData {
