@@ -56,6 +56,7 @@ public:
 
 private:
     siren::Device& m_device;
+    siren::Sampler m_sampler;
 
     struct UniformBuffers {
         siren::Buffer scene_data;
@@ -74,8 +75,8 @@ private:
 
     struct PeelPass {
         Pipeline pipeline;
-        Target target0;     // holds min max, front and back color
-        Target target1;     // holds min max, front and back color
+        Target target0;     // holds min max, back and front color
+        Target target1;     // holds min max, back and front color
         mutable bool flag;  // just a simple flag to toggle between both targets
 
         auto read_target() const -> const Target& { return flag ? target0 : target1; }
@@ -101,6 +102,7 @@ private:
 
 private:
     auto init_uniforms(siren::Device& device) const -> UniformBuffers;
+    auto init_sampler(siren::Device& device) const -> siren::Sampler;
 
     auto init_geometry_pass(siren::Device& device, siren::AssetServer& server, const siren::Window& window) const
             -> GeometryPass;

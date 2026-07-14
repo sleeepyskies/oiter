@@ -17,9 +17,10 @@ namespace oiter {
 }
 
 DualDepthPeeling::DualDepthPeeling(siren::Device& device, const siren::Window& window, siren::AssetServer& server) :
-    m_device(device), m_uniforms(init_uniforms(device)), m_geometry(init_geometry_pass(device, server, window)),
-    m_init(init_init_pass(device, server)), m_peel(init_peel_pass(device, server, window)),
-    m_blend(init_blend_pass(device, server, window)), m_final(init_final_pass(device, server, window)) {
+    m_device(device), m_sampler(init_sampler(device)), m_uniforms(init_uniforms(device)),
+    m_geometry(init_geometry_pass(device, server, window)), m_init(init_init_pass(device, server)),
+    m_peel(init_peel_pass(device, server, window)), m_blend(init_blend_pass(device, server, window)),
+    m_final(init_final_pass(device, server, window)) {
     //
 }
 
@@ -112,9 +113,9 @@ auto DualDepthPeeling::peel_pass(const BakedScene& scene) const -> void {
 
                              pass.bind_graphics_pipeline(m_peel.pipeline.graphics_pipeline.handle());
 
-                             pass.bind_image(read_target.images[0].handle(), 0);  // min max
-                             pass.bind_image(read_target.images[1].handle(), 1);  // back
-                             pass.bind_image(read_target.images[2].handle(), 2);  // front
+                             pass.bind_sampled_image(read_target.images[0].handle(), m_sampler.handle(), 0);  // min max
+                             pass.bind_sampled_image(read_target.images[1].handle(), m_sampler.handle(), 1);  // back
+                             pass.bind_sampled_image(read_target.images[2].handle(), m_sampler.handle(), 2);  // front
 
                              pass.bind_uniform_buffer(m_uniforms.scene_data.handle(), 0);
                              pass.bind_uniform_buffer(m_uniforms.material_data.handle(), 1);
@@ -135,7 +136,7 @@ auto DualDepthPeeling::blend_pass() const -> void {
     m_device.render_submit([this](siren::RenderCommandRecorder& cmds) -> void {
         cmds.render_pass({ .target = m_blend.target.render_target }, [this](siren::RenderPassRecorder& pass) -> void {
             pass.bind_graphics_pipeline(m_blend.pipeline.graphics_pipeline.handle());
-            pass.bind_image(m_peel.read_target().images[2].handle(), 0);
+            pass.bind_sampled_image(m_peel.read_target().images[2].handle(), m_sampler.handle(), 0);
             pass.draw_arrays(0, 3);  // just draw to a fullscreen quad
         });
     });
@@ -143,14 +144,14 @@ auto DualDepthPeeling::blend_pass() const -> void {
 
 auto DualDepthPeeling::final_pass() const -> void {
     m_device.render_submit([this](siren::RenderCommandRecorder& cmds) -> void {
-        cmds.render_pass({ .target = m_final.target.render_target }, [this](auto& pass) {
+        cmds.render_pass({ .target = m_final.target.render_target }, [this](siren::RenderPassRecorder& pass) {
             pass.bind_graphics_pipeline(m_final.pipeline.graphics_pipeline.handle());
 
             const auto& target = !m_peel.flag ? m_peel.target0 : m_peel.target1;
 
-            pass.bind_image(target.images[0].handle(), 0);
-            pass.bind_image(target.images[1].handle(), 1);
-            pass.bind_image(target.images[2].handle(), 2);
+            pass.bind_sampled_image(target.images[0].handle(), m_sampler.handle(), 0);
+            pass.bind_sampled_image(target.images[1].handle(), m_sampler.handle(), 1);
+            pass.bind_sampled_image(target.images[2].handle(), m_sampler.handle(), 2);
 
             pass.draw_arrays(0, 3);
         });
@@ -177,6 +178,16 @@ auto DualDepthPeeling::init_uniforms(siren::Device& device) const -> UniformBuff
                 .usage = siren::BufferUsage::Static,
         }),
     };
+}
+
+auto DualDepthPeeling::init_sampler(siren::Device& device) const -> siren::Sampler {
+    return device.create_sampler({
+            .min_filter    = siren::ImageFilterMode::Linear,
+            .max_filter    = siren::ImageFilterMode::Nearest,
+            .mipmap_filter = siren::ImageFilterMode::Nearest,
+            .s_wrap        = siren::ImageWrapMode::ClampEdge,
+            .t_wrap        = siren::ImageWrapMode::ClampEdge,
+    });
 }
 
 auto DualDepthPeeling::init_geometry_pass(siren::Device& device,
@@ -230,7 +241,7 @@ auto DualDepthPeeling::init_init_pass(siren::Device& device, siren::AssetServer&
                 .depth_function      = siren::DepthFunction::Less,
                 .source_blend_factor = siren::BlendFactor::One,
                 .dest_blend_factor   = siren::BlendFactor::One,
-                .back_face_culling   = false, // todo: should we make this true?
+                .back_face_culling   = false,  // todo: should we make this true?
                 .depth_test          = false,
                 .depth_write         = false,
         }),
