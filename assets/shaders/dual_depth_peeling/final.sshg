@@ -2,7 +2,7 @@ name: final
 stages:
   vertex:
     name: vertex
-    path: default.vert
+    path: fullscreen.vert
   fragment:
     name: fragment
     source: |
