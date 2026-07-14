@@ -2,19 +2,7 @@ name: init
 stages:
   vertex:
     name: vertex
-    source: !glsl |
-      #version 460
-
-      layout(location = 0) in vec4 a_position;
-      
-      layout(std140, binding = 0) uniform SceneData {
-          mat4 view_projection;
-          vec3 camera_position;
-      };
-      
-      void main() {
-          gl_Position = view_projection * a_position;
-      }
+    path: default.vert
   fragment:
     name: fragment
     source: !glsl |
@@ -26,6 +14,6 @@ stages:
       
       void main() {
         float depth = gl_FragCoord.z;
-          
+      
         out_depth.xy = vec2(-depth, depth);
       }
