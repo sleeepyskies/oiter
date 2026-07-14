@@ -49,6 +49,7 @@ auto DualDepthPeeling::render(const siren::PerspectiveCamera& camera, const Bake
         blend_pass();
         m_peel.flag = !m_peel.flag;
     }
+    final_pass();
 
     return m_final.target.images[0];
 }
