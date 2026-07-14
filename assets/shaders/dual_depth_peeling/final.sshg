@@ -13,14 +13,18 @@ stages:
       layout(binding = 0) uniform sampler2D depth_texture; // RG32F
       layout(binding = 1) uniform sampler2D front_texture; // RGBA8
       layout(binding = 2) uniform sampler2D back_texture;  // RGB8
+      layout(binding = 3) uniform sampler2D opaque_texture;
 
       void main() {
           const vec2 uv = gl_FragCoord.xy / vec2(textureSize(depth_texture, 0));
           
           const vec4 front_color = texture(front_texture, uv);
           const vec3 back_color = texture(back_texture, uv).rgb;
+          const vec4 opaque_color = texture(opaque_texture, uv);
           
           const float alpha = 1 - front_color.a;
+          const vec3 comp = front_color.rgb + back_color * alpha;
           
-          out_color = vec4(front_color.rgb + back_color * alpha, 1.f);
+          
+          out_color = vec4(comp + opaque_color.rgb * (alpha * (1.0 - front_color.a)), 1.0);
       }
