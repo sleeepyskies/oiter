@@ -88,7 +88,6 @@ stages:
           const float diffuse = max(dot(face_normal, light_dir), 0.2);
           const vec3 mat_color = materials[index].color.rgb;
           
-          return vec4(1,0,0,1);
           return vec4(diffuse * mat_color, 1.f);
       }
 
