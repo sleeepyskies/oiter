@@ -14,7 +14,7 @@ struct BakedSurface {
 };
 
 struct alignas(16) BakedMaterial {
-    siren::RGBA base_color = siren::RGBA::black();
+    siren::Rgba base_color = siren::Rgba::black();
 };
 
 struct BakedScene {

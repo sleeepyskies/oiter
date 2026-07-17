@@ -58,13 +58,22 @@ auto main(const int argc, const char** argv) -> int {
     }
 
     siren::PerspectiveCamera camera;
+    camera.set_position(-glm::vec3{ 0.f, -3.f, -2.f });
+
+    const glm::vec3 target = glm::vec3{ 0.f };
+    glm::vec3 dir          = glm::normalize(target - camera.position());
+
+    camera.set_yaw(std::atan2(dir.x, dir.z));
+    camera.set_pitch(std::asin(dir.y));
+
     siren::PerspectiveCameraController controller;
 
     siren::usize interval = 0;
 
     while (!window.should_close()) {
         if (!(interval % 60)) {
-            window.set_title(std::format("Oiter: {:.5f}ms | {}fps", siren::time::delta_ms(), 1 / siren::time::delta_s()));
+            window.set_title(
+                    std::format("Oiter: {:.5f}ms | {}fps", siren::time::delta_ms(), 1 / siren::time::delta_s()));
         }
         window.poll_events();
 

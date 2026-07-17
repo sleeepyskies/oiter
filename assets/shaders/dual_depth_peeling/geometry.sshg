@@ -79,7 +79,17 @@ stages:
       };
       
       vec4 shade() {
-          return materials[index].color;
+          // simple flat shading for now
+          vec3 face_normal = normalize(cross(dFdx(v_position.xyz), dFdy(v_position.xyz)));
+          
+          const vec3 light_dir = normalize(vec3(1.f)); // just fake a light for now lol
+          const vec3 light_color = vec3(1.f);
+          
+          const float diffuse = max(dot(face_normal, light_dir), 0.2);
+          const vec3 mat_color = materials[index].color.rgb;
+          
+          return vec4(1,0,0,1);
+          return vec4(diffuse * mat_color, 1.f);
       }
 
       void main() {

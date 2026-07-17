@@ -12,7 +12,7 @@
 #include "2iren/window.hpp"
 #include "oit_method.hpp"
 
-constexpr auto MAX_PEELS    = 5;
+constexpr auto MAX_PEELS     = 5;
 constexpr auto MAX_MATERIALS = 64;
 constexpr auto MAX_DEPTH     = 1;
 
@@ -41,10 +41,11 @@ struct Pipeline {
 };
 
 struct Target {
-    Target(siren::RenderTarget render_target, std::vector<siren::Image>&& images) :
-        render_target(std::move(render_target)), images(std::move(images)) {}
+    explicit Target(siren::RenderTarget render_target, std::vector<siren::Image>&& images, std::optional<siren::Image>&& depth = std::nullopt) :
+        render_target(std::move(render_target)), colors(std::move(images)), depth_stencil(std::move(depth)) {}
     siren::RenderTarget render_target;
-    std::vector<siren::Image> images;
+    std::vector<siren::Image> colors;
+    std::optional<siren::Image> depth_stencil;
 };
 
 class DualDepthPeeling final : public OitMethod {
