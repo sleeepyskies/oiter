@@ -14,7 +14,6 @@ add_executable(oiter
 
         src/methods/dual_depth_peeling.cpp
 )
-
 include(dependencies.cmake)
 
 target_link_libraries(oiter PRIVATE 2iren)

@@ -12,7 +12,7 @@ static auto bake_node(BakedScene& scene,
     if (node.mesh) {
         for (const siren::Mesh& mesh = server.get_unsafe(*node.mesh); const auto& surfaceh : mesh.surfaces) {
             siren::Surface& surface                 = server.get_unsafe(surfaceh);
-            const siren::PBRMaterialAsset& material = server.get_unsafe(surface.material);
+            const siren::MaterialAsset& material = server.get_unsafe(surface.material);
 
             scene.materials.emplace_back(material.base_color());
 
