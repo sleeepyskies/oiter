@@ -1,4 +1,5 @@
 #include "2iren/asset/assets/gltf.hpp"
+#include "2iren/input/input.hpp"
 #include "2iren/rhi/context.hpp"
 #include "2iren/rhi/device.hpp"
 #include "2iren/rhi/resources/swapchain.hpp"
@@ -43,6 +44,7 @@ auto main(const int argc, const char** argv) -> int {
             .vsync = true,
     });
     siren::AssetServer server{ *device };
+    siren::Input input{ window };
 
     const auto scene = server.load<siren::Gltf>(config.scene_path);
     while (!server.is_loaded_with_dependencies(scene)) {
@@ -71,15 +73,14 @@ auto main(const int argc, const char** argv) -> int {
 
     siren::PerspectiveCameraController controller;
 
-
     while (!window.should_close()) {
         window.poll_events();
-
-        controller.update(camera);
+        controller.update(camera, input);
+        input.update();
 
         const auto& image = oit->render(camera, baked);
         device->blit(image.handle(), swapchain.next_image());
-        swapchain.present_overlay([&device] { oiter::render_debug_info(device->statistics()); });
+        swapchain.present_overlay([&] { oiter::render_debug_info(device->statistics(), camera); });
         device->flush_delete_queue();
         siren::time::tick();
     }
