@@ -8,6 +8,7 @@
 #include "2iren/window.hpp"
 #include "bake.hpp"
 #include "config.hpp"
+#include "imgui.hpp"
 #include "methods/dual_depth_peeling.hpp"
 
 #ifndef OITER_VFS
@@ -34,7 +35,9 @@ auto main(const int argc, const char** argv) -> int {
             .transparent  = false,
             .initial_mode = siren::WindowMode::Normal,
     } };
-    auto device    = ctx.create_device(window);
+    auto device = ctx.create_device(window);
+    oiter::init_imgui(window);  // have to init after device since it loads opengl fn ptrs
+
     auto swapchain = device->create_swapchain({
             .label = std::nullopt,
             .vsync = true,
@@ -68,23 +71,17 @@ auto main(const int argc, const char** argv) -> int {
 
     siren::PerspectiveCameraController controller;
 
-    siren::usize interval = 0;
 
     while (!window.should_close()) {
-        if (!(interval % 60)) {
-            window.set_title(
-                    std::format("Oiter: {:.5f}ms | {}fps", siren::time::delta_ms(), 1 / siren::time::delta_s()));
-        }
         window.poll_events();
 
         controller.update(camera);
 
         const auto& image = oit->render(camera, baked);
         device->blit(image.handle(), swapchain.next_image());
-        swapchain.present();
+        swapchain.present_overlay([&device] { oiter::render_debug_info(device->statistics()); });
         device->flush_delete_queue();
         siren::time::tick();
-        interval++;
     }
 
     device->wait_until_idle();
