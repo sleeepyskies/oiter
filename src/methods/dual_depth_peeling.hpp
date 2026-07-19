@@ -13,7 +13,7 @@
 #include "oit_method.hpp"
 
 constexpr auto MAX_PEELS     = 5;
-constexpr auto MAX_MATERIALS = 64;
+constexpr auto MAX_MATERIALS = 256;
 constexpr auto MAX_DEPTH     = 1;
 
 namespace oiter {

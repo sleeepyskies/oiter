@@ -51,7 +51,7 @@ auto main(const int argc, const char** argv) -> int {
         /** wait until loaded */
     }
 
-    auto baked = oiter::bake_scene(scene, server);
+    auto baked = oiter::bake_scene(scene, server, 0.5f);
 
     std::unique_ptr<oiter::OitMethod> oit = nullptr;
 
@@ -72,17 +72,25 @@ auto main(const int argc, const char** argv) -> int {
     camera.set_pitch(std::asin(dir.y));
 
     siren::PerspectiveCameraController controller;
+    bool show_debug_menu = false;
 
     while (!window.should_close()) {
         window.poll_events();
         controller.update(camera, input);
-        input.update();
+        if (input.keyboard().just_pressed(siren::Key::F1)) {
+            show_debug_menu = !show_debug_menu;
+        }
 
         const auto& image = oit->render(camera, baked);
         device->blit(image.handle(), swapchain.next_image());
-        swapchain.present_overlay([&] { oiter::render_debug_info(device->statistics(), camera); });
+        swapchain.present_overlay([&] {
+            if (show_debug_menu) {
+                oiter::render_debug_info(device->statistics(), camera, controller);
+            }
+        });
         device->flush_delete_queue();
         siren::time::tick();
+        input.update();
     }
 
     device->wait_until_idle();

@@ -55,7 +55,7 @@ stages:
       };
       
       layout(std140, binding = 1) uniform MaterialData {
-          BakedMaterial materials[64];
+          BakedMaterial materials[256];
       };
       
       layout(std140, binding = 2) uniform DrawCallData {
@@ -94,11 +94,6 @@ stages:
           const float nearest_depth = -depth_blender.x;
           const float farthest_depth = depth_blender.y;
           const float alpha_multiplier = 1.f - forward_temp.w;
-          // Add this temporarily to your main() to see if you are actually hitting the "peel" logic
-          if (frag_depth > nearest_depth && frag_depth < farthest_depth) {
-            out_front = vec4(1.0, 0.0, 0.0, 1.0); // If you see red, your peeling logic is hitting
-            return;
-          }
           
           if (frag_depth < nearest_depth || frag_depth > farthest_depth) {
               out_depth.xy = vec2(-MAX_DEPTH);

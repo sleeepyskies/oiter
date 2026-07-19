@@ -27,7 +27,7 @@ stages:
       };
       
       layout(std140, binding = 1) uniform MaterialData {
-          BakedMaterial materials[64];
+          BakedMaterial materials[256];
       };
       
       layout(std140, binding = 2) uniform DrawCallData {
@@ -70,7 +70,7 @@ stages:
       };
       
       layout(std140, binding = 1) uniform MaterialData {
-          BakedMaterial materials[64];
+          BakedMaterial materials[256];
       };
       
       layout(std140, binding = 2) uniform DrawCallData {

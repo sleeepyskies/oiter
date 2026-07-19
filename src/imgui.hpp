@@ -30,23 +30,27 @@ inline auto end_imgui_frame() -> void {
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-inline auto render_debug_info(const siren::Statistics& statistics, const siren::PerspectiveCamera& camera) -> void {
+inline auto render_debug_info(const siren::Statistics& statistics,
+                              const siren::PerspectiveCamera& camera,
+                              siren::PerspectiveCameraController& controller) -> void {
     new_imgui_frame();
+    static siren::usize interval = 0;
+    static float speed            = controller.speed();
+    static float sensitivity      = controller.sensitivity();
+    static auto fps              = interval;
+    static auto frametime        = interval;
+
+    interval++;
+
+    if (!(interval % 60)) {
+        frametime = siren::time::delta_ms();
+        fps       = 1 / siren::time::delta_s();
+    }
 
     ImGui::Begin("Debug");
 
     if (ImGui::BeginTabBar("DebugTabs")) {
         if (ImGui::BeginTabItem("Render Statistics")) {
-            static siren::usize interval = 0;
-            static auto fps              = interval;
-            static auto frametime        = interval;
-
-            interval++;
-
-            if (!(interval % 60)) {
-                frametime = siren::time::delta_ms();
-                fps       = 1 / siren::time::delta_s();
-            }
 
             ImGui::Text("FPS: %u fps", fps);
             ImGui::Text("Frametime: %u ms", frametime);
@@ -64,6 +68,7 @@ inline auto render_debug_info(const siren::Statistics& statistics, const siren::
             ImGui::Text("Draw Indexed: %u", statistics.count_draw_indexed);
             ImGui::Text("Upload Buffer: %u", statistics.count_upload_buffer);
             ImGui::Text("Upload Image: %u", statistics.count_upload_image);
+            ImGui::Text("Draw Calls: %u", statistics.count_draw_calls);
 
             ImGui::EndTabItem();
         }
@@ -74,6 +79,12 @@ inline auto render_debug_info(const siren::Statistics& statistics, const siren::
             ImGui::Text("Camera Position: (%f, %f, %f)", position.x, position.y, position.z);
             ImGui::Text("Camera Yaw: %f", camera.yaw());
             ImGui::Text("Camera Pitch: %f", camera.pitch());
+            ImGui::SliderFloat("Camera Speed", &speed, 0.f, 20.f);
+            ImGui::SliderFloat("Camera Sensitivity", &sensitivity, 0.f, 1.f);
+
+            if (speed != controller.speed()) { controller.set_speed(speed); }
+            if (sensitivity != controller.sensitivity()) { controller.set_sensitivity(sensitivity); }
+
 
             ImGui::EndTabItem();
         }

@@ -14,7 +14,7 @@ struct BakedSurface {
 };
 
 struct alignas(16) BakedMaterial {
-    siren::Rgba base_color = siren::Rgba::black();
+    siren::Rgba base_color;
 };
 
 struct BakedScene {
@@ -23,6 +23,8 @@ struct BakedScene {
     std::vector<BakedMaterial> materials{};
 };
 
-auto bake_scene(const siren::StrongHandle<siren::Gltf>& gltf_handle, siren::AssetServer& server) -> BakedScene;
+auto bake_scene(const siren::StrongHandle<siren::Gltf>& gltf_handle,
+                siren::AssetServer& server,
+                std::optional<siren::f32> forced_alpha = std::nullopt) -> BakedScene;
 
 }  // namespace oiter
