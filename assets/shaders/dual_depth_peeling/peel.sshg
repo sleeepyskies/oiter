@@ -23,16 +23,22 @@ stages:
           float _pad0;
       };
       
+      layout(std140, binding = 2) uniform DrawCallData {
+          mat4 model;
+          uint index;
+          uint _pad1[3];
+      };
+      
       void main() {
           v_color = a_color;
-          
-          v_position = a_position;
-          v_normal = a_normal;
+      
+          v_position = model * a_position;
+          v_normal = vec4(normalize(mat3(transpose(inverse(model))) * a_normal.xyz), 0.0);
           v_color = a_color;
           v_texture = a_texture;
           v_tangent = a_tangent;
-          
-          gl_Position = view_projection * a_position;
+      
+          gl_Position = view_projection * model * a_position;
       }
   fragment:
     name: fragment
@@ -59,6 +65,7 @@ stages:
       };
       
       layout(std140, binding = 2) uniform DrawCallData {
+          mat4 model;
           uint index;
           uint _pad1[3];
       };
@@ -83,33 +90,33 @@ stages:
       void main() {
           const vec2 uv = gl_FragCoord.xy / vec2(textureSize(depth_texture, 0));
           const float frag_depth = gl_FragCoord.z;
-          
+      
           vec2 depth_blender = texture(depth_texture, uv).xy;
           vec4 forward_temp = texture(front_texture, uv);
-          
+      
           out_depth.xy = depth_blender;
           out_front = forward_temp;
           out_back = vec4(0.f);
-          
+      
           const float nearest_depth = -depth_blender.x;
           const float farthest_depth = depth_blender.y;
           const float alpha_multiplier = 1.f - forward_temp.w;
-          
+      
           if (frag_depth < nearest_depth || frag_depth > farthest_depth) {
               out_depth.xy = vec2(-MAX_DEPTH);
               return;
           }
-          
+      
           if (frag_depth > nearest_depth && frag_depth < farthest_depth) {
               out_depth.xy = vec2(-frag_depth, frag_depth);
               return;
           }
-          
+      
           const vec4 color = shade();
           out_depth.xy = vec2(-MAX_DEPTH);
-          
+      
           if (abs(frag_depth - nearest_depth) < 0.001) {
-              out_front.xyz = color.rgb * color.a * alpha_multiplier;
+              out_front.xyz += color.rgb * color.a * alpha_multiplier;
               out_front.w = 1.f - alpha_multiplier * (1.f - color.a);
           } else {
               out_back += color;

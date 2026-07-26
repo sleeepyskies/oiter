@@ -3,15 +3,14 @@
 #include "../bake.hpp"
 #include "2iren/asset/assets/shader.hpp"
 #include "2iren/rhi/device.hpp"
-#include "2iren/window.hpp"
 
 namespace oiter {
 
-DualDepthPeeling::DualDepthPeeling(siren::Device& device, const siren::Window& window, siren::AssetServer& server) :
+DualDepthPeeling::DualDepthPeeling(siren::Device& device, const glm::uvec2 extent, siren::AssetServer& server) :
     m_device(device), m_sampler(init_sampler(device)), m_uniforms(init_uniforms(device)),
-    m_geometry(init_geometry_pass(device, server, window)), m_init(init_init_pass(device, server)),
-    m_peel(init_peel_pass(device, server, window)), m_blend(init_blend_pass(device, server, window)),
-    m_final(init_final_pass(device, server, window)) {
+    m_geometry(init_geometry_pass(device, server, extent)), m_init(init_init_pass(device, server)),
+    m_peel(init_peel_pass(device, server, extent)), m_blend(init_blend_pass(device, server, extent)),
+    m_final(init_final_pass(device, server, extent)) {
     //
 }
 
@@ -59,7 +58,8 @@ auto DualDepthPeeling::geometry_pass(const BakedScene& scene) const -> void {
             pass.bind_uniform_buffer(m_uniforms.material_data.handle(), 1);
 
             for (const auto& surface : scene.opaque) {
-                m_uniforms.draw_call_data.upload(siren::ByteBuffer{ surface.material_index });
+                m_uniforms.draw_call_data.upload(siren::ByteBuffer{
+                        DrawCallData{ .model = surface.transform, .material_index = surface.material_index } });
                 pass.bind_uniform_buffer(m_uniforms.draw_call_data.handle(), 2);
 
                 pass.bind_vertex_buffer(surface.vertex.buffer.handle(), 0, 0);
@@ -81,7 +81,8 @@ auto DualDepthPeeling::init_pass(const BakedScene& scene) const -> void {
                              pass.bind_uniform_buffer(m_uniforms.material_data.handle(), 1);
 
                              for (const auto& surface : scene.transparent) {
-                                 m_uniforms.draw_call_data.upload(siren::ByteBuffer{ surface.material_index });
+                                 m_uniforms.draw_call_data.upload(siren::ByteBuffer{ DrawCallData{
+                                         .model = surface.transform, .material_index = surface.material_index } });
                                  pass.bind_uniform_buffer(m_uniforms.draw_call_data.handle(), 2);
 
                                  pass.bind_vertex_buffer(surface.vertex.buffer.handle(), 0, 0);
@@ -108,7 +109,8 @@ auto DualDepthPeeling::peel_pass(const BakedScene& scene) const -> void {
                              pass.bind_uniform_buffer(m_uniforms.material_data.handle(), 1);
 
                              for (const auto& surface : scene.transparent) {
-                                 m_uniforms.draw_call_data.upload(siren::ByteBuffer{ surface.material_index });
+                                 m_uniforms.draw_call_data.upload(siren::ByteBuffer{ DrawCallData{
+                                         .model = surface.transform, .material_index = surface.material_index } });
                                  pass.bind_uniform_buffer(m_uniforms.draw_call_data.handle(), 2);
 
                                  pass.bind_vertex_buffer(surface.vertex.buffer.handle(), 0, 0);
@@ -134,7 +136,7 @@ auto DualDepthPeeling::final_pass() const -> void {
         cmds.render_pass({ .target = m_final.target.render_target }, [this](siren::RenderPassRecorder& pass) {
             pass.bind_graphics_pipeline(m_final.pipeline.graphics_pipeline.handle());
 
-            const auto& target = !m_peel.flag ? m_peel.target0 : m_peel.target1;
+            const auto& target = m_peel.read_target();
 
             pass.bind_sampled_image(target.colors[0].handle(), m_sampler.handle(), 0);             // min max
             pass.bind_sampled_image(target.colors[1].handle(), m_sampler.handle(), 1);             // front
@@ -180,7 +182,8 @@ auto DualDepthPeeling::init_sampler(siren::Device& device) const -> siren::Sampl
 
 auto DualDepthPeeling::init_geometry_pass(siren::Device& device,
                                           siren::AssetServer& server,
-                                          const siren::Window& window) const -> GeometryPass {
+                                          const glm::uvec2 extent
+                                          ) const -> GeometryPass {
     const auto shaderh = server.load<siren::ShaderAsset>("oiter://assets/shaders/dual_depth_peeling/geometry.sshg");
 
     Pipeline pipeline{
@@ -202,7 +205,7 @@ auto DualDepthPeeling::init_geometry_pass(siren::Device& device,
     colors.emplace_back(device.create_image({
             .label         = "Geometry Pass Color Buffer",
             .format        = siren::ImageFormat::RGBA8,
-            .extent        = siren::ImageExtent{ .width = window.width(), .height = window.height() },
+            .extent        = siren::ImageExtent{ .width = extent.x, .height = extent.y },
             .dimension     = siren::ImageDimension::D2,
             .mipmap_levels = 1,
     }));
@@ -210,7 +213,7 @@ auto DualDepthPeeling::init_geometry_pass(siren::Device& device,
     auto depth = device.create_image({
             .label         = "Geometry Pass Depth Buffer",
             .format        = siren::ImageFormat::Depth24Stencil8,
-            .extent        = siren::ImageExtent{ .width = window.width(), .height = window.height() },
+            .extent        = siren::ImageExtent{ .width = extent.x, .height = extent.y },
             .dimension     = siren::ImageDimension::D2,
             .mipmap_levels = 1,
     });
@@ -264,7 +267,8 @@ auto DualDepthPeeling::init_init_pass(siren::Device& device, siren::AssetServer&
 
 auto DualDepthPeeling::init_peel_pass(siren::Device& device,
                                       siren::AssetServer& server,
-                                      const siren::Window& window) const -> PeelPass {
+                                      const glm::uvec2 extent
+                                      ) const -> PeelPass {
     const auto shader = server.load<siren::ShaderAsset>("oiter://assets/shaders/dual_depth_peeling/peel.sshg");
 
     Pipeline pipeline{
@@ -283,29 +287,29 @@ auto DualDepthPeeling::init_peel_pass(siren::Device& device,
         }),
     };
 
-    auto create_peel_target = [](siren::Device& d, const siren::Window& w) -> Target {
+    auto create_peel_target = [&]() -> Target {
         std::vector<siren::Image> images;
 
         // min max image
-        images.emplace_back(d.create_image({
+        images.emplace_back(device.create_image({
                 .format        = siren::ImageFormat::RG32f,
-                .extent        = siren::ImageExtent{ .width = w.width(), .height = w.height() },
+                .extent        = siren::ImageExtent{ .width = extent.x, .height = extent.y },
                 .dimension     = siren::ImageDimension::D2,
                 .mipmap_levels = 1,
         }));
 
         // front color
-        images.emplace_back(d.create_image({
+        images.emplace_back(device.create_image({
                 .format        = siren::ImageFormat::RGBA8,
-                .extent        = siren::ImageExtent{ .width = w.width(), .height = w.height() },
+                .extent        = siren::ImageExtent{ .width = extent.x, .height = extent.y },
                 .dimension     = siren::ImageDimension::D2,
                 .mipmap_levels = 1,
         }));
 
         // back color
-        images.emplace_back(d.create_image({
+        images.emplace_back(device.create_image({
                 .format        = siren::ImageFormat::RGBA8,
-                .extent        = siren::ImageExtent{ .width = w.width(), .height = w.height() },
+                .extent        = siren::ImageExtent{ .width = extent.x, .height = extent.y },
                 .dimension     = siren::ImageDimension::D2,
                 .mipmap_levels = 1,
         }));
@@ -324,14 +328,15 @@ auto DualDepthPeeling::init_peel_pass(siren::Device& device,
 
     return PeelPass{
         .pipeline = std::move(pipeline),
-        .target0  = create_peel_target(device, window),
-        .target1  = create_peel_target(device, window),
+        .target0  = create_peel_target(),
+        .target1  = create_peel_target(),
     };
 }
 
 auto DualDepthPeeling::init_blend_pass(siren::Device& device,
                                        siren::AssetServer& server,
-                                       const siren::Window& window) const -> BlendPass {
+                                       const glm::uvec2 extent
+                                       ) const -> BlendPass {
     const auto shader = server.load<siren::ShaderAsset>("oiter://assets/shaders/dual_depth_peeling/blend.sshg");
 
     Pipeline pipeline{
@@ -355,7 +360,7 @@ auto DualDepthPeeling::init_blend_pass(siren::Device& device,
     images.emplace_back(device.create_image({
             .label         = "Blend Image",
             .format        = siren::ImageFormat::RGB8,
-            .extent        = siren::ImageExtent{ .width = window.width(), .height = window.height() },
+            .extent        = siren::ImageExtent{ .width = extent.x, .height = extent.y },
             .dimension     = siren::ImageDimension::D2,
             .mipmap_levels = 1,
     }));
@@ -380,7 +385,8 @@ auto DualDepthPeeling::init_blend_pass(siren::Device& device,
 
 auto DualDepthPeeling::init_final_pass(siren::Device& device,
                                        siren::AssetServer& server,
-                                       const siren::Window& window) const -> FinalPass {
+                                       const glm::uvec2 extent
+                                       ) const -> FinalPass {
     const auto shader = server.load<siren::ShaderAsset>("oiter://assets/shaders/dual_depth_peeling/final.sshg");
 
     Pipeline pipeline{
@@ -402,7 +408,7 @@ auto DualDepthPeeling::init_final_pass(siren::Device& device,
     colors.emplace_back(device.create_image({
             .label         = "Final Image",
             .format        = siren::ImageFormat::RGB8,
-            .extent        = siren::ImageExtent{ .width = window.width(), .height = window.height() },
+            .extent        = siren::ImageExtent{ .width = extent.x, .height = extent.y },
             .dimension     = siren::ImageDimension::D2,
             .mipmap_levels = 1,
     }));

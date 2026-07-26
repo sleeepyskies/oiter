@@ -10,7 +10,7 @@ struct BakedSurface {
     siren::VertexBuffer& vertex;
     siren::IndexBuffer& index;
     glm::mat4 transform;
-    siren::usize material_index;
+    siren::u32 material_index;
 };
 
 struct alignas(16) BakedMaterial {

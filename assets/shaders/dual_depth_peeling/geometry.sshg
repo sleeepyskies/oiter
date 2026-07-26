@@ -31,6 +31,7 @@ stages:
       };
       
       layout(std140, binding = 2) uniform DrawCallData {
+          mat4 model;
           uint index;
           uint _pad1[3];
       };
@@ -74,6 +75,7 @@ stages:
       };
       
       layout(std140, binding = 2) uniform DrawCallData {
+          mat4 model;
           uint index;
           uint _pad1[3];
       };

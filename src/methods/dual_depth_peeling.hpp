@@ -9,7 +9,6 @@
 #include "2iren/rhi/resources/buffer.hpp"
 #include "2iren/rhi/resources/graphics_pipeline.hpp"
 #include "2iren/util/camera.hpp"
-#include "2iren/window.hpp"
 #include "oit_method.hpp"
 
 constexpr auto MAX_PEELS     = 5;
@@ -31,6 +30,7 @@ struct alignas(16) MaterialData {
 };
 
 struct alignas(16) DrawCallData {
+    glm::mat4 model;
     siren::u32 material_index;
     siren::u32 _pad[3];
 };
@@ -50,7 +50,7 @@ struct Target {
 
 class DualDepthPeeling final : public OitMethod {
 public:
-    explicit DualDepthPeeling(siren::Device& device, const siren::Window& window, siren::AssetServer& server);
+    explicit DualDepthPeeling(siren::Device& device, const glm::uvec2 extent, siren::AssetServer& server);
 
     [[nodiscard]] auto render(const siren::PerspectiveCamera& camera, const BakedScene& scene) const
             -> const siren::Image& override;
@@ -105,14 +105,14 @@ private:
     auto init_uniforms(siren::Device& device) const -> UniformBuffers;
     auto init_sampler(siren::Device& device) const -> siren::Sampler;
 
-    auto init_geometry_pass(siren::Device& device, siren::AssetServer& server, const siren::Window& window) const
+    auto init_geometry_pass(siren::Device& device, siren::AssetServer& server, glm::uvec2 extent) const
             -> GeometryPass;
     auto init_init_pass(siren::Device& device, siren::AssetServer& server) const -> InitPass;
-    auto init_peel_pass(siren::Device& device, siren::AssetServer& server, const siren::Window& window) const
+    auto init_peel_pass(siren::Device& device, siren::AssetServer& server, glm::uvec2 extent) const
             -> PeelPass;
-    auto init_blend_pass(siren::Device& device, siren::AssetServer& server, const siren::Window& window) const
+    auto init_blend_pass(siren::Device& device, siren::AssetServer& server, glm::uvec2 extent) const
             -> BlendPass;
-    auto init_final_pass(siren::Device& device, siren::AssetServer& server, const siren::Window& window) const
+    auto init_final_pass(siren::Device& device, siren::AssetServer& server, glm::uvec2 extent) const
             -> FinalPass;
 };
 

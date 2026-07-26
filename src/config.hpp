@@ -10,14 +10,14 @@ constexpr auto DUAL_DEPTH_PEELING = "ddp";
 constexpr auto A_BUFFER           = "ab";
 } // namespace methods
 
-struct CliConfig {
+struct Config {
     std::string scene_path = "oiter://assets/meshes/car.glb";
     std::string oit_method = methods::DUAL_DEPTH_PEELING;
 };
 
-inline auto parse_cli_args(int argc, const char** argv) -> CliConfig {
+inline auto parse_cli_args(int argc, const char** argv) -> Config {
     bool show_help = false;
-    CliConfig config;
+    Config config;
 
     const auto cli = lyra::help(show_help).description("oiter is a simple showcase of various oit methods.") |
             lyra::opt(config.scene_path, "scene")["--scene"]["-s"]("Path to scene file.") |

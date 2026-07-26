@@ -28,7 +28,7 @@ static auto bake_node(BakedScene& scene,
                 surface.vertex_buffer,
                 surface.index_buffer,
                 world_transform,
-                scene.materials.size() - 1,
+                (siren::u32)scene.materials.size() - 1,
             };
 
             if (forced_alpha.has_value()) {

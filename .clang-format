@@ -8,10 +8,12 @@ AlignConsecutiveDeclarations: false
 AlignOperands: false
 AlignTrailingComments: true
 AllowShortCaseLabelsOnASingleLine: true
-AlwaysBreakAfterDefinitionReturnType: false
 AlwaysBreakTemplateDeclarations: Yes
 BinPackParameters: false
-BraceWrapping: 
+AllowAllParametersOfDeclarationOnNextLine: false
+PenaltyBreakBeforeFirstCallParameter: 0
+BreakAfterOpenBracketFunction: true
+BraceWrapping:
   AfterCaseLabel: false
   AfterClass: false
   AfterControlStatement: false
@@ -35,7 +37,7 @@ ColumnLimit: 120
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 ContinuationIndentWidth: 8
 Cpp11BracedListStyle: false
-IncludeCategories: 
+IncludeCategories:
   - Regex: '^<.*'
     Priority: 1
   - Regex: '^".*'
