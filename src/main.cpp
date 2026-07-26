@@ -28,6 +28,15 @@
     throw std::runtime_error("Oit method (" + config.oit_method + ") is not supported.");
 }
 
+[[nodiscard]] auto create_swapchain(siren::Device* device, siren::Window& window) -> siren::Swapchain {
+    return device->create_swapchain({
+        .label = std::nullopt,
+        .vsync = true,
+        .extent = {window.width(), window.height()},
+        .window = &window,
+    });
+}
+
 auto main(const int argc, const char** argv) -> int {
     const auto config = oiter::parse_cli_args(argc, argv);
 
@@ -42,21 +51,19 @@ auto main(const int argc, const char** argv) -> int {
             .title        = "Oiter",
             .width        = 1280,
             .height       = 720,
-            .vsync        = true,
             .decorated    = true,
             .resizable    = true,
             .transparent  = false,
             .initial_mode = siren::WindowMode::Normal,
     });
-    auto device = ctx.create_device(window); // todo: maybe not pass window here? kinda sucks lmao, maybe just pass in create_swapchain?
+
+    // todo: maybe not pass window here? kinda sucks lmao, maybe just pass in create_swapchain?
+    auto device = ctx.create_device({
+        .window = window,
+    });
     oiter::init_imgui(window);  // have to init after device since it loads opengl fn ptrs
 
-    auto swapchain = device->create_swapchain({
-            .label = std::nullopt,
-            .vsync = true,
-            .extent = {window.width(), window.height()},
-            .window = &window,
-    });
+    auto swapchain = create_swapchain(device.get(), window);
     siren::AssetServer server{ *device };
     siren::Input input{ window };
 
@@ -81,12 +88,7 @@ auto main(const int argc, const char** argv) -> int {
             return;
         }
         camera.set_aspect(static_cast<float>(size.x) / size.y);
-        swapchain = device->create_swapchain({
-                .label = std::nullopt,
-                .vsync = true,
-                .extent = {size.x, size.y},
-                .window = &window,
-        });
+        swapchain = create_swapchain(device.get(), window);
         oit_method = create_method(config, *device, {size.x, size.y}, server);
     });
 
