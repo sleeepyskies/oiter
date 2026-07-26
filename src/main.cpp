@@ -33,7 +33,11 @@ auto main(const int argc, const char** argv) -> int {
 
     siren::FileSystem::mount("oiter", siren::Path{ OITER_VFS });
 
-    const auto ctx = siren::Context::create({ .debug = true, .level = siren::log::Level::Trace, .backend = siren::Backend::Auto, });
+    const auto ctx = siren::Context::create({
+        .debug = true,
+        .level = siren::log::Level::Trace,
+        .backend = siren::Backend::Auto,
+    });
     auto window = ctx.create_window({
             .title        = "Oiter",
             .width        = 1280,
@@ -44,27 +48,28 @@ auto main(const int argc, const char** argv) -> int {
             .transparent  = false,
             .initial_mode = siren::WindowMode::Normal,
     });
-    auto device = ctx.create_device(window);
+    auto device = ctx.create_device(window); // todo: maybe not pass window here? kinda sucks lmao, maybe just pass in create_swapchain?
     oiter::init_imgui(window);  // have to init after device since it loads opengl fn ptrs
 
     auto swapchain = device->create_swapchain({
             .label = std::nullopt,
             .vsync = true,
             .extent = {window.width(), window.height()},
+            .window = &window,
     });
     siren::AssetServer server{ *device };
     siren::Input input{ window };
 
     const auto sceneh = server.load<siren::Gltf>(config.scene_path);
     while (!server.is_loaded_with_dependencies(sceneh)) {
-        /** wait until loaded */
+        /** wait until loaded */ // todo: this eats cpu lol
     }
 
     auto baked = oiter::bake_scene(sceneh, server, 0.5f);
 
-    std::unique_ptr<oiter::OitMethod> oit_method = create_method(config, *device, {window.width(), window.height()}, server);
+    auto oit_method = create_method(config, *device, {window.width(), window.height()}, server);
 
-    siren::PerspectiveCamera camera;
+    siren::PerspectiveCamera camera{};
     siren::PerspectiveCameraController controller;
     camera.set_position(glm::vec3{ 0.f, 3.f, 2.f });
     camera.look_at(glm::vec3{0.f});
@@ -80,6 +85,7 @@ auto main(const int argc, const char** argv) -> int {
                 .label = std::nullopt,
                 .vsync = true,
                 .extent = {size.x, size.y},
+                .window = &window,
         });
         oit_method = create_method(config, *device, {size.x, size.y}, server);
     });
