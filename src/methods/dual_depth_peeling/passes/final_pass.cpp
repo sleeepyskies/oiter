@@ -36,9 +36,7 @@ FinalPass::FinalPass(
 ) : m_device(device),
     m_asset_server(asset_server),
     m_pipeline(create_pipeline(device, asset_server)),
-    m_target(create_target(device, extent)) {
-    resize(extent);
-}
+    m_target(create_target(device, extent)) {}
 
 auto FinalPass::execute(
     const siren::Sampler& sampler,
