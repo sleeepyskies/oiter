@@ -6,7 +6,7 @@
 namespace oiter {
 static auto create_target(siren::Device& device, const glm::uvec2 extent) -> RenderTargetResources {
     return RenderTargetBuilder::create(device, extent, "Final Pass")
-           .add_color(siren::ImageFormat::RGB8, siren::BeginOperation::Clear, siren::Rgba::zero())
+           .add_color(siren::ImageFormat::RGBA8, siren::BeginOperation::Clear, siren::Rgba::zero())
            .build();
 }
 
