@@ -89,7 +89,7 @@ auto main(const int argc, const char** argv) -> int {
         }
         camera.set_aspect(static_cast<float>(size.x) / size.y);
         swapchain = create_swapchain(device.get(), window);
-        oit_method = create_method(config, *device, {size.x, size.y}, server);
+        oit_method->resize({size.x, size.y});
     });
 
     while (!window.should_close()) {
@@ -112,5 +112,5 @@ auto main(const int argc, const char** argv) -> int {
     }
 
     device->wait_until_idle();
-    std::exit(0);
+    return 0;
 }
