@@ -10,7 +10,7 @@
 #include "bake.hpp"
 #include "config.hpp"
 #include "imgui.hpp"
-#include "methods/dual_depth_peeling.hpp"
+#include "methods/dual_depth_peeling/dual_depth_peeling.hpp"
 
 #ifndef OITER_VFS
 #define OITER_VFS "."
@@ -40,7 +40,7 @@
 auto main(const int argc, const char** argv) -> int {
     const auto config = oiter::parse_cli_args(argc, argv);
 
-    siren::FileSystem::mount("oiter", siren::Path{ OITER_VFS });
+    siren::FileSystem::mount("oiter", siren::Path{OITER_VFS});
 
     const auto ctx = siren::Context::create({
         .debug = true,
@@ -48,24 +48,24 @@ auto main(const int argc, const char** argv) -> int {
         .backend = siren::Backend::Auto,
     });
     auto window = ctx.create_window({
-            .title        = "Oiter",
-            .width        = 1280,
-            .height       = 720,
-            .decorated    = true,
-            .resizable    = true,
-            .transparent  = false,
-            .initial_mode = siren::WindowMode::Normal,
+        .title = "Oiter",
+        .width = 1280,
+        .height = 720,
+        .decorated = true,
+        .resizable = true,
+        .transparent = false,
+        .initial_mode = siren::WindowMode::Normal,
     });
 
     // todo: maybe not pass window here? kinda sucks lmao, maybe just pass in create_swapchain?
     auto device = ctx.create_device({
         .window = window,
     });
-    oiter::init_imgui(window);  // have to init after device since it loads opengl fn ptrs
+    oiter::init_imgui(window); // have to init after device since it loads opengl fn ptrs
 
     auto swapchain = create_swapchain(device.get(), window);
-    siren::AssetServer server{ *device };
-    siren::Input input{ window };
+    siren::AssetServer server{*device};
+    siren::Input input{window};
 
     const auto sceneh = server.load<siren::Gltf>(config.scene_path);
     while (!server.is_loaded_with_dependencies(sceneh)) {
@@ -78,7 +78,7 @@ auto main(const int argc, const char** argv) -> int {
 
     siren::PerspectiveCamera camera{};
     siren::PerspectiveCameraController controller;
-    camera.set_position(glm::vec3{ 0.f, 3.f, 2.f });
+    camera.set_position(glm::vec3{0.f, 3.f, 2.f});
     camera.look_at(glm::vec3{0.f});
 
     bool show_debug_menu = false;
@@ -103,7 +103,7 @@ auto main(const int argc, const char** argv) -> int {
         device->blit(image.handle(), swapchain.next_image());
         swapchain.present_overlay([&] {
             if (show_debug_menu) {
-                oiter::render_debug_info(device->statistics(), camera, controller);
+                oiter::render_debug_info(device->statistics(), camera, controller, oit_method.get());
             }
         });
         device->flush_delete_queue();

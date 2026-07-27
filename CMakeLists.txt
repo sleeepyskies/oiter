@@ -15,8 +15,17 @@ add_executable(oiter
 
         src/bake.cpp
 
-        src/methods/dual_depth_peeling.cpp
-        src/imgui.hpp
+        src/methods/util.cpp
+
+        src/methods/dual_depth_peeling/dual_depth_peeling.cpp
+        src/methods/dual_depth_peeling/passes/final_pass.cpp
+        src/methods/dual_depth_peeling/passes/blend_pass.cpp
+        src/methods/dual_depth_peeling/passes/blend_pass.hpp
+        src/methods/dual_depth_peeling/passes/peel_pass.cpp
+        src/methods/dual_depth_peeling/passes/peel_pass.hpp
+        src/methods/dual_depth_peeling/uniforms.hpp
+        src/methods/dual_depth_peeling/passes/init_pass.cpp
+        src/methods/dual_depth_peeling/passes/init_pass.hpp
 )
 include(dependencies.cmake)
 target_include_directories(oiter PRIVATE

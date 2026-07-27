@@ -5,8 +5,9 @@
 #include <imgui/backends/imgui_impl_opengl3.h>
 
 #include "2iren/window.hpp"
+#include "methods/oit_method.hpp"
 
-namespace oiter {
+namespace oiter {class OitMethod;
 
 inline auto init_imgui(const siren::Window& window) -> void {
     IMGUI_CHECKVERSION();
@@ -30,9 +31,12 @@ inline auto end_imgui_frame() -> void {
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-inline auto render_debug_info(const siren::Statistics& statistics,
-                              const siren::PerspectiveCamera& camera,
-                              siren::PerspectiveCameraController& controller) -> void {
+inline auto render_debug_info(
+    const siren::Statistics& statistics,
+    const siren::PerspectiveCamera& camera,
+    siren::PerspectiveCameraController& controller,
+    OitMethod* oit_method
+) -> void {
     new_imgui_frame();
     static siren::usize interval = 0;
     static float speed            = controller.speed();
@@ -87,6 +91,10 @@ inline auto render_debug_info(const siren::Statistics& statistics,
 
 
             ImGui::EndTabItem();
+        }
+
+        if (oit_method != nullptr && ImGui::BeginTabItem(oit_method->name().data())) {
+            oit_method->render_debug_info();
         }
 
         ImGui::EndTabBar();
