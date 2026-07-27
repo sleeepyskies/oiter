@@ -20,7 +20,6 @@ struct alignas(16) MaterialData {
 struct alignas(16) DrawCallData {
     glm::mat4 model;
     siren::u32 material_index;
-    siren::u32 _pad[3];
 };
 
 struct DualDepthPeelingUniforms {

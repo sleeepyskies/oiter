@@ -9,6 +9,7 @@
 #include "2iren/rhi/device.hpp"
 #include "2iren/rhi/render_target.hpp"
 #include "2iren/rhi/resources/graphics_pipeline.hpp"
+#include "2iren/rhi/resources/image.hpp"
 
 namespace oiter {
 /**

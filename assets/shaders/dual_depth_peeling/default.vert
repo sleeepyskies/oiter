@@ -9,7 +9,6 @@ layout(std140, binding = 0) uniform SceneData {
 layout(std140, binding = 2) uniform DrawCallData {
     mat4 model;
     uint index;
-    uint _pad1[3];
 };
 
 layout(location = 0) in vec4 a_position;
@@ -24,8 +23,18 @@ layout(location = 2) out vec4 v_color;
 layout(location = 3) out vec2 v_texture;
 layout(location = 4) out vec4 v_tangent;
 
+// unite the cubes unit what absolute unit
+vec3 positions[3] = vec3[](
+        vec3(-1, -1, 0),
+        vec3( 1, -1, 0),
+        vec3( 0,  1, 0)
+);
+
 void main() {
     v_position = model * a_position;
     v_normal = vec4(normalize(mat3(transpose(inverse(model))) * a_normal.xyz), 0.0);
+    v_color = a_color;
+    v_texture = a_texture;
+    v_tangent = a_tangent;
     gl_Position = view_projection * model * a_position;
 }

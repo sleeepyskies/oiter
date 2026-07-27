@@ -51,9 +51,11 @@ static auto bake_node(BakedScene& scene,
     }
 }
 
-auto bake_scene(const siren::StrongHandle<siren::Gltf>& gltf_handle,
-                siren::AssetServer& server,
-                const std::optional<siren::f32> forced_alpha) -> BakedScene {
+auto bake_scene(
+    const siren::StrongHandle<siren::Gltf>& gltf_handle,
+    siren::AssetServer& server,
+    const std::optional<siren::f32> forced_alpha
+) -> BakedScene {
     BakedScene baked{};
 
     auto& gltf = server.get_unsafe(gltf_handle);
@@ -66,8 +68,12 @@ auto bake_scene(const siren::StrongHandle<siren::Gltf>& gltf_handle,
         bake_node(baked, server, node, glm::mat4{ 1 }, forced_alpha);
     }
 
-    siren::log::debug("Loaded scene with {} transparent surfaces, {} opaque surfaces, {} materials",
-                      baked.transparent.size(), baked.opaque.size(), baked.materials.size());
+    siren::log::debug(
+        "Loaded scene with {} transparent surfaces, {} opaque surfaces, {} materials",
+        baked.transparent.size(),
+        baked.opaque.size(),
+        baked.materials.size()
+    );
     return baked;
 }
 
