@@ -27,7 +27,8 @@ public:
     auto execute(
         const BakedScene& scene,
         const siren::Sampler& sampler,
-        const DualDepthPeelingUniforms& uniforms
+        const DualDepthPeelingUniforms& uniforms,
+        const siren::usize ubo_alignment
     ) const -> void;
 
     /**

@@ -5,6 +5,7 @@
 #include "2iren/base.hpp"
 
 constexpr auto MAX_MATERIALS = 256;
+constexpr auto MAX_MESHES = 512;
 
 namespace oiter {
 struct alignas(16) SceneData {
@@ -17,7 +18,7 @@ struct alignas(16) MaterialData {
     std::array<BakedMaterial, MAX_MATERIALS> materials;
 };
 
-struct alignas(16) DrawCallData {
+struct alignas(16) PerMeshData {
     glm::mat4 model;
     siren::u32 material_index;
 };
@@ -25,6 +26,6 @@ struct alignas(16) DrawCallData {
 struct DualDepthPeelingUniforms {
     siren::Buffer scene_data;
     siren::Buffer material_data;
-    siren::Buffer draw_call_data;
+    siren::Buffer per_mesh_data;
 };
 } // namespace oiter

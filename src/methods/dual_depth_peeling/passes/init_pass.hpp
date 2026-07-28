@@ -13,7 +13,8 @@ public:
     auto execute(
         const BakedScene& scene,
         const siren::RenderTarget& read_target,
-        const DualDepthPeelingUniforms& uniforms
+        const DualDepthPeelingUniforms& uniforms,
+        const siren::usize ubo_alignment
     ) const -> void;
 
 private:

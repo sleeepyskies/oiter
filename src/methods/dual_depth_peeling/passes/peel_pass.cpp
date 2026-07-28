@@ -29,15 +29,15 @@ static auto create_target(siren::Device& device, const glm::uvec2 extent) -> Pin
 
 static auto create_pipeline(siren::Device& device, siren::AssetServer& server) -> GraphicsPipelineResources {
     siren::GraphicsPipelineDescriptor descriptor{
-        .label = "Peel Pass Pipeline",
-        .layout = siren::DEFAULT_VERTEX_LAYOUT,
-        .topology = siren::PrimitiveTopology::Triangles,
-        .alpha_mode = siren::AlphaMode::Blend,
-        .blend_function = siren::BlendFunction::Max,
-        .depth_function = siren::DepthFunction::Less,
+        .label             = "Peel Pass Pipeline",
+        .layout            = siren::DEFAULT_VERTEX_LAYOUT,
+        .topology          = siren::PrimitiveTopology::Triangles,
+        .alpha_mode        = siren::AlphaMode::Blend,
+        .blend_function    = siren::BlendFunction::Max,
+        .depth_function    = siren::DepthFunction::Less,
         .back_face_culling = false, // todo: this should be enabled
-        .depth_test = false,
-        .depth_write = false,
+        .depth_test        = false,
+        .depth_write       = false,
     };
 
     return GraphicsPipelineResources::create(
@@ -59,15 +59,16 @@ PeelPass::PeelPass(
 auto PeelPass::execute(
     const BakedScene& scene,
     const siren::Sampler& sampler,
-    const DualDepthPeelingUniforms& uniforms
+    const DualDepthPeelingUniforms& uniforms,
+    const siren::usize ubo_alignment
 ) const -> void {
     const auto sampler_handle = sampler.handle();
 
     // lil risky pass into lambda by ref but DualDepthPeeling is sure to keep alive :D
-    m_device.render_submit([this, &scene, &uniforms, sampler_handle](siren::RenderCommandRecorder& cmds) -> void {
+    m_device.render_submit([this, &scene, &uniforms, sampler_handle, ubo_alignment](siren::RenderCommandRecorder& cmds) -> void {
         cmds.render_pass(
             siren::RenderPassDescriptor{.target = m_target.write_target().render_target},
-            [this, &scene, &uniforms, sampler_handle](siren::RenderPassRecorder& pass) -> void {
+            [this, &scene, &uniforms, sampler_handle, ubo_alignment](siren::RenderPassRecorder& pass) -> void {
                 const auto& read_target = m_target.read_target();
 
                 pass.bind_graphics_pipeline(m_pipeline.graphics_pipeline.handle());
@@ -79,13 +80,13 @@ auto PeelPass::execute(
                 pass.bind_uniform_buffer(uniforms.scene_data.handle(), 0);
                 pass.bind_uniform_buffer(uniforms.material_data.handle(), 1);
 
-                for (const auto& surface : scene.transparent) {
-                    uniforms.draw_call_data.upload(siren::ByteBuffer{
-                        DrawCallData{
-                            .model = surface.transform, .material_index = surface.material_index
-                        }
-                    });
-                    pass.bind_uniform_buffer(uniforms.draw_call_data.handle(), 2);
+                for (const auto& [index, surface]: std::views::enumerate(scene.transparent)) {
+                    pass.bind_uniform_buffer_range(
+                        uniforms.per_mesh_data.handle(),
+                        2,
+                        ubo_alignment * (scene.opaque.size() + index),
+                        sizeof(PerMeshData)
+                    );
 
                     pass.bind_vertex_buffer(surface.vertex.buffer.handle(), 0, 0);
                     pass.bind_index_buffer(surface.index.buffer.handle(), surface.index.format);
