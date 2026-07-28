@@ -95,6 +95,8 @@ inline auto render_debug_info(
 
         if (oit_method != nullptr && ImGui::BeginTabItem(oit_method->name().data())) {
             oit_method->render_debug_info();
+
+            ImGui::EndTabItem();
         }
 
         ImGui::EndTabBar();

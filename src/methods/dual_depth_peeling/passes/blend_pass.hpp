@@ -2,9 +2,11 @@
 
 #include <glm/vec2.hpp>
 
+#include "../config.hpp"
 #include "../../util.hpp"
 #include "2iren/asset/asset_server.hpp"
 #include "2iren/rhi/device.hpp"
+#include "2iren/rhi/resources/query.hpp"
 
 namespace oiter {
 /**
@@ -19,17 +21,23 @@ namespace oiter {
  */
 class BlendPass {
 public:
-    BlendPass(siren::Device& device, siren::AssetServer& server, const glm::uvec2& extent);
+    BlendPass(
+        siren::Device& device,
+        siren::AssetServer& server,
+        const glm::uvec2& extent,
+        const std::shared_ptr<DualDepthPeelingConfig>& config
+    );
 
     /**
      * @brief Performs the blending pass of the dual depth peeling method.
      * @param sampler A shared default sampler to use.
      * @param read_target The read target of the @ref PeelPass.
+     * @return Whether to stop early or not. Dependent on the occlusion query param in the config.
      */
     auto execute(
         const siren::Sampler& sampler,
         const RenderTargetResources& read_target
-    ) const -> void;
+    ) const -> bool;
 
     /**
      * @brief Reconstructs any sized resources owned by this render pass.
@@ -42,5 +50,7 @@ private:
 
     GraphicsPipelineResources m_pipeline;
     RenderTargetResources m_target;
+    siren::Query m_query;
+    std::shared_ptr<DualDepthPeelingConfig> m_config;
 };
 } // namespace oiter

@@ -55,10 +55,12 @@ static auto create_pipeline(siren::Device& device, siren::AssetServer& server) -
 PeelPass::PeelPass(
     siren::Device& device,
     siren::AssetServer& server,
-    const glm::uvec2& extent
+    const glm::uvec2& extent,
+    const std::shared_ptr<DualDepthPeelingConfig>& config
 ) : m_device(device),
     m_target(create_target(device, extent)),
-    m_pipeline(create_pipeline(device, server)) {}
+    m_pipeline(create_pipeline(device, server)),
+    m_config(config) {}
 
 auto PeelPass::execute(
     const BakedScene& scene,

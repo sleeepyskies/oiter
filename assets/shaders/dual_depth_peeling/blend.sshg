@@ -14,7 +14,6 @@ stages:
 
       void main() {
           const vec2 uv = gl_FragCoord.xy / vec2(textureSize(temp_texture, 0));
-          // todo: add this check back in
-          // if (color.a == 0.f) { discard; } // for the occlusion query
           out_color = texture(temp_texture, uv);
+          if (out_color.a == 0.f) { discard; } // for the occlusion query
       }

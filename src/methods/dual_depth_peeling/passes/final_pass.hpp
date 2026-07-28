@@ -2,12 +2,12 @@
 
 #include <glm/vec2.hpp>
 
+#include "../config.hpp"
 #include "../../util.hpp"
 #include "2iren/asset/asset_server.hpp"
 #include "2iren/rhi/device.hpp"
 
 namespace oiter {
-
 /**
  * @brief The final pass of the dual depth peeling method.
  *
@@ -19,7 +19,12 @@ namespace oiter {
  */
 class FinalPass {
 public:
-    FinalPass(siren::Device& device, siren::AssetServer& asset_server, const glm::uvec2 extent);
+    FinalPass(
+        siren::Device& device,
+        siren::AssetServer& asset_server,
+        const glm::uvec2 extent,
+        const std::shared_ptr<DualDepthPeelingConfig>& config
+    );
 
     /**
      * @brief Performs the final pass.
@@ -41,5 +46,6 @@ private:
 
     GraphicsPipelineResources m_pipeline;
     RenderTargetResources m_target;
+    std::shared_ptr<DualDepthPeelingConfig> m_config;
 };
 } // namespace oiter

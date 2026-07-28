@@ -2,6 +2,7 @@
 
 #include <glm/vec2.hpp>
 
+#include "../config.hpp"
 #include "../../util.hpp"
 #include "../../../bake.hpp"
 #include "2iren/asset/asset_server.hpp"
@@ -22,7 +23,12 @@ struct PingPongTarget {
 
 class PeelPass {
 public:
-    PeelPass(siren::Device& device, siren::AssetServer& server, const glm::uvec2& extent);
+    PeelPass(
+        siren::Device& device,
+        siren::AssetServer& server,
+        const glm::uvec2& extent,
+        const std::shared_ptr<DualDepthPeelingConfig>& config
+    );
 
     auto execute(
         const BakedScene& scene,
@@ -46,5 +52,6 @@ private:
 
     PingPongTarget m_target;
     GraphicsPipelineResources m_pipeline;
+    std::shared_ptr<DualDepthPeelingConfig> m_config;
 };
 } // namespace oiter

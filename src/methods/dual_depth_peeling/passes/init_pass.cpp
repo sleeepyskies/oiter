@@ -25,9 +25,10 @@ static auto create_pipeline(siren::Device& device, siren::AssetServer& server) -
 
 InitPass::InitPass(
     siren::Device& device,
-    siren::AssetServer& server
+    siren::AssetServer& server,
+    const std::shared_ptr<DualDepthPeelingConfig>& config
 ) : m_device(device),
-    m_pipeline(create_pipeline(device, server)) {}
+    m_pipeline(create_pipeline(device, server)), m_config(config) {}
 
 auto InitPass::execute(
     const BakedScene& scene,

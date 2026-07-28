@@ -1,17 +1,20 @@
 #include "dual_depth_peeling.hpp"
 
+#include <imgui.h>
+
 #include "../../bake.hpp"
 #include "2iren/rhi/device.hpp"
 
 namespace oiter {
 DualDepthPeeling::DualDepthPeeling(siren::Device& device, const glm::uvec2 extent, siren::AssetServer& server) :
+    m_config(std::make_shared<DualDepthPeelingConfig>()),
     m_device(device),
     m_sampler(init_sampler(device)),
     m_uniforms(init_uniforms(device)),
-    m_init(device, server),
-    m_peel(device, server, extent),
-    m_blend(device, server, extent),
-    m_final(device, server, extent) {}
+    m_init(device, server, m_config),
+    m_peel(device, server, extent, m_config),
+    m_blend(device, server, extent, m_config),
+    m_final(device, server, extent, m_config) {}
 
 auto DualDepthPeeling::render(
     const siren::PerspectiveCamera& camera,
@@ -59,11 +62,11 @@ auto DualDepthPeeling::render(
 
     m_init.execute(scene, m_peel.read_target().render_target, m_uniforms, aligned_ubo_size);
 
-    // todo: query to see if we can early stop
-    for (const auto _ : siren::range(MAX_PEELS)) {
+    for (const auto _ : siren::range(m_config->max_peels)) {
+        m_last_frame_peels++;
         m_peel.execute(scene, m_sampler, m_uniforms, aligned_ubo_size);
         m_peel.swap_targets();
-        m_blend.execute(m_sampler, m_peel.read_target());
+        if (m_blend.execute(m_sampler, m_peel.read_target())) { break; }
     }
     return m_final.execute(m_sampler, m_peel.read_target());
 }
@@ -75,14 +78,16 @@ auto DualDepthPeeling::resize(const glm::uvec2 extent) -> void {
 }
 
 void DualDepthPeeling::render_debug_info() {
-    // todo: impl some debug stuffs here, maybe put into own panel class? idk
+    ImGui::Text("Peels performed last frame %u", m_last_frame_peels);
+    ImGui::SliderInt("Max Peels", &m_config->max_peels, 1, 100);
+    ImGui::Checkbox("Occlusion Query", &m_config->occlusion_query);
+
+    m_last_frame_peels = 0;
 }
 
 // ==================== DATA INIT ==============
 
 auto DualDepthPeeling::init_uniforms(siren::Device& device) const -> DualDepthPeelingUniforms {
-    siren::log::info("ALIGNED UBO SISE {}", device.limits().uniform_buffer_offset_alignment);
-
     return DualDepthPeelingUniforms{
         .scene_data = device.create_buffer(
             {
