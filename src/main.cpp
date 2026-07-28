@@ -29,12 +29,14 @@
 }
 
 [[nodiscard]] auto create_swapchain(siren::Device* device, siren::Window& window) -> siren::Swapchain {
-    return device->create_swapchain({
-        .label = std::nullopt,
-        .vsync = true,
-        .extent = {window.width(), window.height()},
-        .window = &window,
-    });
+    return device->create_swapchain(
+        {
+            .label  = std::nullopt,
+            .vsync  = true,
+            .extent = {window.width(), window.height()},
+            .window = &window,
+        }
+    );
 }
 
 auto main(const int argc, const char** argv) -> int {
@@ -42,25 +44,31 @@ auto main(const int argc, const char** argv) -> int {
 
     siren::FileSystem::mount("oiter", siren::Path{OITER_VFS});
 
-    const auto ctx = siren::Context::create({
-        .debug = true,
-        .level = siren::log::Level::Trace,
-        .backend = siren::Backend::Auto,
-    });
-    auto window = ctx.create_window({
-        .title = "Oiter",
-        .width = 1280,
-        .height = 720,
-        .decorated = true,
-        .resizable = true,
-        .transparent = false,
-        .initial_mode = siren::WindowMode::Normal,
-    });
+    const auto ctx = siren::Context::create(
+        {
+            .debug   = true,
+            .level   = siren::log::Level::Debug,
+            .backend = siren::Backend::Auto,
+        }
+    );
+    auto window = ctx.create_window(
+        {
+            .title        = "Oiter",
+            .width        = 1280,
+            .height       = 720,
+            .decorated    = true,
+            .resizable    = true,
+            .transparent  = false,
+            .initial_mode = siren::WindowMode::Normal,
+        }
+    );
 
     // todo: maybe not pass window here? kinda sucks lmao, maybe just pass in create_swapchain?
-    auto device = ctx.create_device({
-        .window = window,
-    });
+    auto device = ctx.create_device(
+        {
+            .window = window,
+        }
+    );
     oiter::init_imgui(window); // have to init after device since it loads opengl fn ptrs
 
     auto swapchain = create_swapchain(device.get(), window);
@@ -83,14 +91,16 @@ auto main(const int argc, const char** argv) -> int {
 
     bool show_debug_menu = false;
 
-    window.on_resize([&](const glm::ivec2 size) {
-        if (size.x == 0 || size.y == 0) {
-            return;
+    window.on_resize(
+        [&](const glm::ivec2 size) {
+            if (size.x == 0 || size.y == 0) {
+                return;
+            }
+            camera.set_aspect(static_cast<float>(size.x) / size.y);
+            swapchain = create_swapchain(device.get(), window);
+            oit_method->resize({size.x, size.y});
         }
-        camera.set_aspect(static_cast<float>(size.x) / size.y);
-        swapchain = create_swapchain(device.get(), window);
-        oit_method->resize({size.x, size.y});
-    });
+    );
 
     while (!window.should_close()) {
         window.poll_events();
@@ -101,11 +111,13 @@ auto main(const int argc, const char** argv) -> int {
 
         const auto& image = oit_method->render(camera, baked);
         device->blit(image.handle(), swapchain.next_image());
-        swapchain.present_overlay([&] {
-            if (show_debug_menu) {
-                oiter::render_debug_info(device->statistics(), camera, controller, oit_method.get());
+        swapchain.present_overlay(
+            [&] {
+                if (show_debug_menu) {
+                    oiter::render_debug_info(device->statistics(), camera, controller, oit_method.get());
+                }
             }
-        });
+        );
         device->flush_delete_queue();
         siren::time::tick();
         input.update();

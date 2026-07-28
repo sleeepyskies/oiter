@@ -4,12 +4,13 @@
 #include "2iren/util/log.hpp"
 
 namespace oiter {
-
-static auto bake_node(BakedScene& scene,
-                      siren::AssetServer& server,
-                      const siren::GltfNode& node,
-                      const glm::mat4& ptransform,
-                      const std::optional<siren::f32> forced_alpha) -> void {
+static auto bake_node(
+    BakedScene& scene,
+    siren::AssetServer& server,
+    const siren::GltfNode& node,
+    const glm::mat4& ptransform,
+    const std::optional<siren::f32> forced_alpha
+) -> void {
     // bake this node
     const auto world_transform = ptransform * node.transform;
     if (node.mesh) {
@@ -22,7 +23,6 @@ static auto bake_node(BakedScene& scene,
                 color.a = forced_alpha.value();
             }
             scene.materials.emplace_back(color);
-            siren::log::debug("Added material with color: {}", color);
 
             BakedSurface baked_surface{
                 surface.vertex_buffer,
@@ -35,10 +35,12 @@ static auto bake_node(BakedScene& scene,
                 scene.transparent.emplace_back(std::move(baked_surface));
             } else {
                 switch (material.alpha_mode()) {
-                    case siren::AlphaMode::Blend: scene.transparent.emplace_back(std::move(baked_surface)); break;
+                    case siren::AlphaMode::Blend: scene.transparent.emplace_back(std::move(baked_surface));
+                        break;
 
                     case siren::AlphaMode::Opaque:
-                    case siren::AlphaMode::Mask: scene.opaque.emplace_back(std::move(baked_surface)); break;
+                    case siren::AlphaMode::Mask: scene.opaque.emplace_back(std::move(baked_surface));
+                        break;
                 }
             }
         }
@@ -65,7 +67,7 @@ auto bake_scene(
 
     for (const auto& nodeh : scene.root_nodes) {
         auto& node = server.get_unsafe(nodeh);
-        bake_node(baked, server, node, glm::mat4{ 1 }, forced_alpha);
+        bake_node(baked, server, node, glm::mat4{1}, forced_alpha);
     }
 
     siren::log::debug(
@@ -76,5 +78,4 @@ auto bake_scene(
     );
     return baked;
 }
-
-}  // namespace oiter
+} // namespace oiter

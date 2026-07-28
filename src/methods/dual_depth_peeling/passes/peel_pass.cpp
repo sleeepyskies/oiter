@@ -1,9 +1,12 @@
 #include "peel_pass.hpp"
 
 namespace oiter {
-PingPongTarget::PingPongTarget(RenderTargetResources&& target0, RenderTargetResources&& target1) : targets({
-    std::move(target0), std::move(target1)
-}) {}
+PingPongTarget::PingPongTarget(RenderTargetResources&& target0, RenderTargetResources&& target1) : targets(
+    {
+        std::move(target0),
+        std::move(target1)
+    }
+) {}
 
 auto PingPongTarget::read_target() const -> const RenderTargetResources& { return targets[index]; }
 auto PingPongTarget::write_target() const -> const RenderTargetResources& { return targets[1 - index]; }
@@ -29,13 +32,14 @@ static auto create_target(siren::Device& device, const glm::uvec2 extent) -> Pin
 
 static auto create_pipeline(siren::Device& device, siren::AssetServer& server) -> GraphicsPipelineResources {
     siren::GraphicsPipelineDescriptor descriptor{
-        .label             = "Peel Pass Pipeline",
-        .layout            = siren::DEFAULT_VERTEX_LAYOUT,
-        .topology          = siren::PrimitiveTopology::Triangles,
-        .alpha_mode        = siren::AlphaMode::Blend,
-        .blend_function    = siren::BlendFunction::Max,
-        .depth_function    = siren::DepthFunction::Less,
-        .back_face_culling = false, // todo: this should be enabled
+        .label          = "Peel Pass Pipeline",
+        .layout         = siren::DEFAULT_VERTEX_LAYOUT,
+        .topology       = siren::PrimitiveTopology::Triangles,
+        .alpha_mode     = siren::AlphaMode::Blend,
+        .blend_function = siren::BlendFunction::Max,
+        .depth_function = siren::DepthFunction::Less,
+        // todo: should this be enabled? back face cull
+        .back_face_culling = false,
         .depth_test        = false,
         .depth_write       = false,
     };
@@ -65,35 +69,38 @@ auto PeelPass::execute(
     const auto sampler_handle = sampler.handle();
 
     // lil risky pass into lambda by ref but DualDepthPeeling is sure to keep alive :D
-    m_device.render_submit([this, &scene, &uniforms, sampler_handle, ubo_alignment](siren::RenderCommandRecorder& cmds) -> void {
-        cmds.render_pass(
-            siren::RenderPassDescriptor{.target = m_target.write_target().render_target},
-            [this, &scene, &uniforms, sampler_handle, ubo_alignment](siren::RenderPassRecorder& pass) -> void {
-                const auto& read_target = m_target.read_target();
+    m_device.render_submit(
+        [this, &scene, &uniforms, sampler_handle, ubo_alignment](siren::RenderCommandRecorder& cmds) -> void {
+            cmds.render_pass(
+                siren::RenderPassDescriptor{.target = m_target.write_target().render_target},
+                [this, &scene, &uniforms, sampler_handle, ubo_alignment](siren::RenderPassRecorder& pass) -> void {
+                    const auto& read_target = m_target.read_target();
 
-                pass.bind_graphics_pipeline(m_pipeline.graphics_pipeline.handle());
+                    pass.bind_graphics_pipeline(m_pipeline.graphics_pipeline.handle());
 
-                pass.bind_sampled_image(read_target.colors[0].handle(), sampler_handle, 0); // min max
-                pass.bind_sampled_image(read_target.colors[1].handle(), sampler_handle, 1); // front
-                pass.bind_sampled_image(read_target.colors[2].handle(), sampler_handle, 2); // back
+                    pass.bind_sampled_image(read_target.colors[0].handle(), sampler_handle, 0); // min max
+                    pass.bind_sampled_image(read_target.colors[1].handle(), sampler_handle, 1); // front
+                    pass.bind_sampled_image(read_target.colors[2].handle(), sampler_handle, 2); // back
 
-                pass.bind_uniform_buffer(uniforms.scene_data.handle(), 0);
-                pass.bind_uniform_buffer(uniforms.material_data.handle(), 1);
+                    pass.bind_uniform_buffer(uniforms.scene_data.handle(), 0);
+                    pass.bind_uniform_buffer(uniforms.material_data.handle(), 1);
 
-                for (const auto& [index, surface]: std::views::enumerate(scene.transparent)) {
-                    pass.bind_uniform_buffer_range(
-                        uniforms.per_mesh_data.handle(),
-                        2,
-                        ubo_alignment * (scene.opaque.size() + index),
-                        sizeof(PerMeshData)
-                    );
+                    for (const auto& [index, surface] : std::views::enumerate(scene.transparent)) {
+                        pass.bind_uniform_buffer_range(
+                            uniforms.per_mesh_data.handle(),
+                            2,
+                            ubo_alignment * (scene.opaque.size() + index),
+                            sizeof(PerMeshData)
+                        );
 
-                    pass.bind_vertex_buffer(surface.vertex.buffer.handle(), 0, 0);
-                    pass.bind_index_buffer(surface.index.buffer.handle(), surface.index.format);
-                    pass.draw_indexed(surface.index.count, 0);
+                        pass.bind_vertex_buffer(surface.vertex.buffer.handle(), 0, 0);
+                        pass.bind_index_buffer(surface.index.buffer.handle(), surface.index.format);
+                        pass.draw_indexed(surface.index.count, 0);
+                    }
                 }
-            });
-    });
+            );
+        }
+    );
 }
 
 auto PeelPass::resize(const glm::uvec2 extent) -> void { m_target = create_target(m_device, extent); }
