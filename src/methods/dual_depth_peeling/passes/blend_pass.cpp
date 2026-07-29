@@ -38,7 +38,7 @@ BlendPass::BlendPass(
     siren::Device& device,
     siren::AssetServer& server,
     const glm::uvec2& extent,
-    const std::shared_ptr<DualDepthPeelingConfig>& config
+    const std::shared_ptr<DdpConfig>& config
 ) : m_device(device),
     m_pipeline(create_pipeline(device, server)),
     m_target(create_target(device, extent)),
@@ -47,22 +47,22 @@ BlendPass::BlendPass(
 
 auto BlendPass::execute(
     const siren::Sampler& sampler,
-    const RenderTargetResources& read_target
+    const RenderTargetResources& write_target
 ) const -> bool {
     const auto pipeline_handle = m_pipeline.graphics_pipeline.handle();
     const auto sampler_handle  = sampler.handle();
-    const auto read_handle     = read_target.colors[0].handle();
+    const auto write_handle    = write_target.colors[2].handle();
 
     m_device.render_submit(
-        [this, sampler_handle, pipeline_handle, read_handle](siren::RenderCommandRecorder& cmds) -> void {
+        [this, sampler_handle, pipeline_handle, write_handle](siren::RenderCommandRecorder& cmds) -> void {
             cmds.render_pass(
                 siren::RenderPassDescriptor{.target = m_target.render_target},
-                [this, sampler_handle, pipeline_handle, read_handle](siren::RenderPassRecorder& pass) -> void {
+                [this, sampler_handle, pipeline_handle, write_handle](siren::RenderPassRecorder& pass) -> void {
                     if (m_config->occlusion_query) {
                         pass.begin_query(m_query.handle());
                     }
                     pass.bind_graphics_pipeline(pipeline_handle);
-                    pass.bind_sampled_image(read_handle, sampler_handle, 0);
+                    pass.bind_sampled_image(write_handle, sampler_handle, 0);
                     pass.draw_arrays(0, 3);
                     if (m_config->occlusion_query) {
                         pass.end_query(m_query.handle());
@@ -74,7 +74,7 @@ auto BlendPass::execute(
 
     if (m_config->occlusion_query) {
         const auto samples_passed = m_device.query(m_query.handle());
-        siren::log::debug("Samples passed: {}", samples_passed);
+        siren::log::trace("Samples passed: {}", samples_passed);
         return samples_passed == 0;
     }
     return false;

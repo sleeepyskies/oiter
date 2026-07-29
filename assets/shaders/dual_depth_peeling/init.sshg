@@ -17,6 +17,8 @@ stages:
       void main() {
           float depth = gl_FragCoord.z;
           
+          // R channel encodes closest, G channel encodes farthest.
+          // We have Blending::Max enabled
           out_depth = vec2(-depth, depth);
           
           // todo: remove

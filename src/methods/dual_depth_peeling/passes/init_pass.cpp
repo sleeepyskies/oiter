@@ -9,7 +9,6 @@ static auto create_pipeline(siren::Device& device, siren::AssetServer& server) -
         .topology          = siren::PrimitiveTopology::Triangles,
         .alpha_mode        = siren::AlphaMode::Blend,
         .blend_function    = siren::BlendFunction::Max,
-        .depth_function    = siren::DepthFunction::Less,
         .back_face_culling = false,
         .depth_test        = false,
         .depth_write       = false,
@@ -26,7 +25,7 @@ static auto create_pipeline(siren::Device& device, siren::AssetServer& server) -
 InitPass::InitPass(
     siren::Device& device,
     siren::AssetServer& server,
-    const std::shared_ptr<DualDepthPeelingConfig>& config
+    const std::shared_ptr<DdpConfig>& config
 ) : m_device(device),
     m_pipeline(create_pipeline(device, server)), m_config(config) {}
 

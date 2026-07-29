@@ -7,7 +7,7 @@
 
 namespace oiter {
 DualDepthPeeling::DualDepthPeeling(siren::Device& device, const glm::uvec2 extent, siren::AssetServer& server) :
-    m_config(std::make_shared<DualDepthPeelingConfig>()),
+    m_config(std::make_shared<DdpConfig>()),
     m_device(device),
     m_sampler(init_sampler(device)),
     m_uniforms(init_uniforms(device)),
@@ -65,10 +65,21 @@ auto DualDepthPeeling::render(
     for (const auto _ : siren::range(m_config->max_peels)) {
         m_last_frame_peels++;
         m_peel.execute(scene, m_sampler, m_uniforms, aligned_ubo_size);
+
+        if (m_config->output_image == DdpOutputImage::Init) {
+            return m_peel.read_image();
+        }
+
+        if (m_blend.execute(m_sampler, m_peel.write_target())) { break; }
         m_peel.swap_targets();
-        if (m_blend.execute(m_sampler, m_peel.read_target())) { break; }
     }
-    return m_final.execute(m_sampler, m_peel.read_target());
+
+    if (m_config->output_image == DdpOutputImage::Peel) {
+        return m_peel.write_image();
+    }
+
+    m_final.execute(m_sampler, m_peel.read_target());
+    return m_final.image();
 }
 
 auto DualDepthPeeling::resize(const glm::uvec2 extent) -> void {
@@ -81,6 +92,14 @@ void DualDepthPeeling::render_debug_info() {
     ImGui::Text("Peels performed last frame %u", m_last_frame_peels);
     ImGui::SliderInt("Max Peels", &m_config->max_peels, 1, 100);
     ImGui::Checkbox("Occlusion Query", &m_config->occlusion_query);
+
+    // clang-format off
+    auto output = static_cast<siren::i32>(m_config->output_image);
+    ImGui::RadioButton("Init", &output, static_cast<int>(DdpOutputImage::Init)); ImGui::SameLine();
+    ImGui::RadioButton("Peel", &output, static_cast<int>(DdpOutputImage::Peel)); ImGui::SameLine();
+    ImGui::RadioButton("Final", &output, static_cast<int>(DdpOutputImage::Final)); ImGui::SameLine();
+    m_config->output_image = static_cast<DdpOutputImage>(output);
+    // clang-format on
 
     m_last_frame_peels = 0;
 }

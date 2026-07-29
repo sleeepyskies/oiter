@@ -37,7 +37,6 @@ static auto create_pipeline(siren::Device& device, siren::AssetServer& server) -
         .topology       = siren::PrimitiveTopology::Triangles,
         .alpha_mode     = siren::AlphaMode::Blend,
         .blend_function = siren::BlendFunction::Max,
-        .depth_function = siren::DepthFunction::Less,
         // todo: should this be enabled? back face cull
         .back_face_culling = false,
         .depth_test        = false,
@@ -56,7 +55,7 @@ PeelPass::PeelPass(
     siren::Device& device,
     siren::AssetServer& server,
     const glm::uvec2& extent,
-    const std::shared_ptr<DualDepthPeelingConfig>& config
+    const std::shared_ptr<DdpConfig>& config
 ) : m_device(device),
     m_target(create_target(device, extent)),
     m_pipeline(create_pipeline(device, server)),
@@ -109,4 +108,7 @@ auto PeelPass::resize(const glm::uvec2 extent) -> void { m_target = create_targe
 auto PeelPass::read_target() const -> const RenderTargetResources& { return m_target.read_target(); }
 auto PeelPass::write_target() const -> const RenderTargetResources& { return m_target.write_target(); }
 auto PeelPass::swap_targets() const -> void { m_target.swap_targets(); }
+
+auto PeelPass::read_image() const -> const siren::Image& { return m_target.read_target().colors[0]; }
+auto PeelPass::write_image() const -> const siren::Image& { return m_target.write_target().colors[0]; }
 } // namespace oiter

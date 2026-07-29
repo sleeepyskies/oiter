@@ -12,16 +12,16 @@ stages:
       
       layout(binding = 0) uniform sampler2D front_texture; // RGBA8
       layout(binding = 1) uniform sampler2D back_texture;  // RGB8
+      
+      const vec2 UV = gl_FragCoord.xy / vec2(textureSize(front_texture, 0));
+      
+      const vec4 INPUT_FRONT = texture(front_texture, UV);
+      const vec3 INPUT_BACK = texture(back_texture, UV).rgb;
+      
+      const float ALPHA = 1.f - INPUT_FRONT.a;
 
       void main() {
-          // find the normalized uv coords by diving by texture size
-          const vec2 uv = gl_FragCoord.xy / vec2(textureSize(front_texture, 0));
-          
-          // sample front and back textures
-          const vec4 front_color = texture(front_texture, uv);
-          const vec3 back_color = texture(back_texture, uv).rgb;
-          
-          // final image blend
-          const float alpha = 1 - front_color.a;
-          out_color = vec4(front_color.rgb + back_color * alpha, 1.f);
+          // blend front over back, alpha is how much of the background is blocked by the front
+          out_color.rgb = INPUT_FRONT.rgb + INPUT_BACK * ALPHA;
+          out_color.a = 1.f;
       }

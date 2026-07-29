@@ -73,6 +73,7 @@ inline auto render_debug_info(
             ImGui::Text("Upload Buffer: %u", statistics.count_upload_buffer);
             ImGui::Text("Upload Image: %u", statistics.count_upload_image);
             ImGui::Text("Draw Calls: %u", statistics.count_draw_calls);
+            ImGui::Text("Render Passes: %u", statistics.count_render_passes);
 
             ImGui::EndTabItem();
         }

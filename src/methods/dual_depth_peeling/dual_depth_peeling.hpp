@@ -1,6 +1,6 @@
 #pragma once
 
-#include "config.hpp"
+#include "ddpconfig.hpp"
 #include "uniforms.hpp"
 #include "../../bake.hpp"
 #include "2iren/asset/asset_server.hpp"
@@ -11,11 +11,7 @@
 #include "passes/init_pass.hpp"
 #include "passes/peel_pass.hpp"
 
-constexpr auto MAX_DEPTH = 1;
-
 namespace oiter {
-// todo: query for number of fragments left in order to allow for early end
-
 class DualDepthPeeling final : public OitMethod {
 public:
     explicit DualDepthPeeling(siren::Device& device, const glm::uvec2 extent, siren::AssetServer& server);
@@ -31,7 +27,7 @@ public:
     auto render_debug_info() -> void override;
 
 private:
-    std::shared_ptr<DualDepthPeelingConfig> m_config;
+    std::shared_ptr<DdpConfig> m_config;
     mutable siren::u32 m_last_frame_peels = 0;
     siren::Device& m_device;
     siren::Sampler m_sampler;

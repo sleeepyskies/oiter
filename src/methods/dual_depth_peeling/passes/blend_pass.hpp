@@ -2,7 +2,7 @@
 
 #include <glm/vec2.hpp>
 
-#include "../config.hpp"
+#include "../ddpconfig.hpp"
 #include "../../util.hpp"
 #include "2iren/asset/asset_server.hpp"
 #include "2iren/rhi/device.hpp"
@@ -10,14 +10,17 @@
 
 namespace oiter {
 /**
- * @brief The blend pass of the Dual Depth Peeling OIT method.
+ * @brief The blend pass of the Dual Depth Peeling OIT method. This handles
+ * accumulating layer colors into the back texture. Since for back layers,
+ * we find them in reverse order C -> B -> A, we use the following to blend:
+ * Cdst = Asrc * Csrc + (1 - Asrc) * Cdst
  *
- * The blend pass performs a full screen shader pass.
+ * To do this, we simply use hardware blending with:
+ * .source_blend_factor = siren::BlendFactor::SourceAlpha,
+ * .dest_blend_factor   = siren::BlendFactor::OneMinusSourceAlpha,
  *
- * The blend pass runs in combination with the @ref PeelPass for a total of n/2 times, where
- * n is the total number of transparent layers in the scene.
- *
- * @todo: finish explanation
+ * Furthermore, in this step we can do the occlusion query. If no samples
+ * passed the blend pass, we can stop early :D!
  */
 class BlendPass {
 public:
@@ -25,18 +28,18 @@ public:
         siren::Device& device,
         siren::AssetServer& server,
         const glm::uvec2& extent,
-        const std::shared_ptr<DualDepthPeelingConfig>& config
+        const std::shared_ptr<DdpConfig>& config
     );
 
     /**
      * @brief Performs the blending pass of the dual depth peeling method.
      * @param sampler A shared default sampler to use.
-     * @param read_target The read target of the @ref PeelPass.
+     * @param write_target The write target of the @ref PeelPass.
      * @return Whether to stop early or not. Dependent on the occlusion query param in the config.
      */
-    auto execute(
+    [[nodiscard]] auto execute(
         const siren::Sampler& sampler,
-        const RenderTargetResources& read_target
+        const RenderTargetResources& write_target
     ) const -> bool;
 
     /**
@@ -51,6 +54,6 @@ private:
     GraphicsPipelineResources m_pipeline;
     RenderTargetResources m_target;
     siren::Query m_query;
-    std::shared_ptr<DualDepthPeelingConfig> m_config;
+    std::shared_ptr<DdpConfig> m_config;
 };
 } // namespace oiter

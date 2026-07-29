@@ -11,9 +11,10 @@ stages:
       layout(location = 0) out vec4 out_color;
       
       layout(binding = 0) uniform sampler2D temp_texture; // the back texture
+      
+      const vec2 UV = gl_FragCoord.xy / vec2(textureSize(temp_texture, 0));
 
       void main() {
-          const vec2 uv = gl_FragCoord.xy / vec2(textureSize(temp_texture, 0));
-          out_color = texture(temp_texture, uv);
+          out_color = texture(temp_texture, UV);
           if (out_color.a == 0.f) { discard; } // for the occlusion query
       }

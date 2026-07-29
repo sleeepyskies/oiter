@@ -33,7 +33,7 @@ FinalPass::FinalPass(
     siren::Device& device,
     siren::AssetServer& asset_server,
     const glm::uvec2 extent,
-    const std::shared_ptr<DualDepthPeelingConfig>& config
+    const std::shared_ptr<DdpConfig>& config
 ) : m_device(device),
     m_asset_server(asset_server),
     m_pipeline(create_pipeline(device, asset_server)),
@@ -43,7 +43,7 @@ FinalPass::FinalPass(
 auto FinalPass::execute(
     const siren::Sampler& sampler,
     const RenderTargetResources& read_target
-) const -> const siren::Image& {
+) const -> void {
     const auto sampler_handle  = sampler.handle();
     const auto img_handle1     = read_target.colors[1].handle();
     const auto img_handle2     = read_target.colors[2].handle();
@@ -68,11 +68,13 @@ auto FinalPass::execute(
             );
         }
     );
-
-    return m_target.colors[0];
 }
 
 auto FinalPass::resize(const glm::uvec2 extent) -> void {
     m_target = create_target(m_device, extent);
+}
+
+auto FinalPass::image() const -> const siren::Image& {
+    return m_target.colors[0];
 }
 } // namespace oiter
