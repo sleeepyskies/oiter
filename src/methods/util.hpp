@@ -41,6 +41,9 @@ struct GraphicsPipelineResources {
  * @brief Utility struct that has ownership of all resources used by a @ref siren::RenderTarget.
  */
 struct RenderTargetResources {
+    /** @brief Default constructs a new empty RenderTargetResources(). */
+    RenderTargetResources() = default;
+
     /** @brief Constructs a new render target and takes ownership of all resources. */
     explicit RenderTargetResources(
         siren::RenderTarget render_target,
@@ -49,11 +52,11 @@ struct RenderTargetResources {
     ) : render_target(std::move(render_target)), colors(std::move(images)), depth_stencil(std::move(depth)) {}
 
     /** @brief The actual @ref siren::RenderTarget. */
-    siren::RenderTarget render_target;
+    siren::RenderTarget render_target = {};
     /** @brief All color images to ensure lifetime. */
-    std::vector<siren::Image> colors;
+    std::vector<siren::Image> colors = {};
     /** @brief Optional depth + stencil image to ensure lifetime. */
-    std::optional<siren::Image> depth_stencil;
+    std::optional<siren::Image> depth_stencil = std::nullopt;
 };
 
 /**
@@ -98,7 +101,7 @@ public:
     auto add_depth_stencil(
         siren::ImageFormat format,
         siren::BeginOperation begin_op,
-        siren::f32 clear_depth = 1.f,
+        siren::f32 clear_depth  = 1.f,
         siren::u8 clear_stencil = 0
     ) -> RenderTargetBuilder&;
 

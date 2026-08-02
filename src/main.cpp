@@ -10,6 +10,7 @@
 #include "bake.hpp"
 #include "config.hpp"
 #include "imgui.hpp"
+#include "methods/depth_peeling/depth_peeling.hpp"
 #include "methods/dual_depth_peeling/dual_depth_peeling.hpp"
 
 #ifndef OITER_VFS
@@ -24,6 +25,9 @@
 ) -> std::unique_ptr<oiter::OitMethod> {
     if (config.oit_method == oiter::methods::DUAL_DEPTH_PEELING) {
         return std::make_unique<oiter::DualDepthPeeling>(device, extent, server);
+    }
+    if (config.oit_method == oiter::methods::DEPTH_PEELING) {
+        return std::make_unique<oiter::DepthPeeling>(device, extent, server);
     }
     throw std::runtime_error("Oit method (" + config.oit_method + ") is not supported.");
 }
@@ -59,16 +63,12 @@ auto main(const int argc, const char** argv) -> int {
             .decorated    = true,
             .resizable    = true,
             .transparent  = false,
-            .initial_mode = siren::WindowMode::Normal,
+            .initial_mode = config.fullscreen ? siren::WindowMode::Fullscreen : siren::WindowMode::Normal,
         }
     );
 
     // todo: maybe not pass window here? kinda sucks lmao, maybe just pass in create_swapchain?
-    auto device = ctx.create_device(
-        {
-            .window = window,
-        }
-    );
+    auto device = ctx.create_device({.window = window});
     oiter::init_imgui(window); // have to init after device since it loads opengl fn ptrs
 
     auto swapchain = create_swapchain(device.get(), window);

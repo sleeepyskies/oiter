@@ -8,7 +8,7 @@ static auto create_pipeline(siren::Device& device, siren::AssetServer& server) -
         .layout            = siren::DEFAULT_VERTEX_LAYOUT,
         .topology          = siren::PrimitiveTopology::Triangles,
         .alpha_mode        = siren::AlphaMode::Blend,
-        .blend_function    = siren::BlendFunction::Max,
+        .color_blend_function    = siren::BlendFunction::Max,
         .back_face_culling = false,
         .depth_test        = false,
         .depth_write       = false,

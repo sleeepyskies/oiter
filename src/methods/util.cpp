@@ -10,7 +10,7 @@ auto GraphicsPipelineResources::create(
     siren::GraphicsPipelineDescriptor& descriptor
 ) -> GraphicsPipelineResources {
     const auto shaderh = server.load<siren::ShaderAsset>(path);
-    descriptor.shader = server.get_unsafe(shaderh).shader.handle();
+    descriptor.shader  = server.get_unsafe(shaderh).shader.handle();
     return GraphicsPipelineResources{
         .shader            = shaderh,
         .graphics_pipeline = device.create_graphics_pipeline(descriptor),

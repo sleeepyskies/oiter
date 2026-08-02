@@ -22,6 +22,8 @@ add_executable(oiter
         src/methods/dual_depth_peeling/passes/blend_pass.cpp
         src/methods/dual_depth_peeling/passes/peel_pass.cpp
         src/methods/dual_depth_peeling/passes/init_pass.cpp
+        src/methods/depth_peeling/depth_peeling.cpp
+        src/methods/depth_peeling/depth_peeling.hpp
 )
 include(dependencies.cmake)
 target_include_directories(oiter PRIVATE

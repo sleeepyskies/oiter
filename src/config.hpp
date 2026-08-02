@@ -4,15 +4,16 @@
 #include <string>
 
 namespace oiter {
-
 namespace methods {
-constexpr auto DUAL_DEPTH_PEELING = "ddp";
-constexpr auto A_BUFFER           = "ab";
+    constexpr auto DUAL_DEPTH_PEELING = "ddp";
+    constexpr auto DEPTH_PEELING      = "dp";
+    constexpr auto A_BUFFER           = "ab";
 } // namespace methods
 
 struct Config {
     std::string scene_path = "oiter://assets/meshes/car.glb";
     std::string oit_method = methods::DUAL_DEPTH_PEELING;
+    bool fullscreen = false;
 };
 
 inline auto parse_cli_args(int argc, const char** argv) -> Config {
@@ -20,11 +21,12 @@ inline auto parse_cli_args(int argc, const char** argv) -> Config {
     Config config;
 
     const auto cli = lyra::help(show_help).description("oiter is a simple showcase of various oit methods.") |
-            lyra::opt(config.scene_path, "scene")["--scene"]["-s"]("Path to scene file.") |
-            lyra::opt(config.oit_method, "method")["--method"]["-m"]("Choice of OIT method.")
-                    .choices(methods::DUAL_DEPTH_PEELING, methods::A_BUFFER);
+        lyra::opt(config.scene_path, "scene")["--scene"]["-s"]("Path to scene file.") |
+        lyra::opt(config.fullscreen)["--fullscreen"]["-f"]("Whether to launch in fullscreen mode.") |
+        lyra::opt(config.oit_method, "method")["--method"]["-m"]("Choice of OIT method.")
+        .choices(methods::DUAL_DEPTH_PEELING, methods::A_BUFFER);
 
-    if (const auto parse_result = cli.parse({ argc, argv }); !parse_result) {
+    if (const auto parse_result = cli.parse({argc, argv}); !parse_result) {
         std::cerr << parse_result.message() << "\n\n";
         std::cout << cli;
         std::exit(1);
@@ -37,5 +39,4 @@ inline auto parse_cli_args(int argc, const char** argv) -> Config {
 
     return config;
 }
-
 } // namespace oiter
