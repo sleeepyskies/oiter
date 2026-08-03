@@ -1,0 +1,35 @@
+name: gather_first
+stages:
+  vertex:
+    name: vertex
+    path: fullscreen.vert
+  fragment:
+    name: fragment
+    source: |
+      #version 460
+      
+      const uint LAYER_COUNT = 8;
+
+      layout(location = 0) in vec4 v_position;
+      layout(location = 1) in vec4 v_normal;
+      layout(location = 2) in vec4 v_color;
+      layout(location = 3) in vec2 v_texture;
+      layout(location = 4) in vec4 v_tangent;
+      
+      layout(location = 0) out vec4 out_color;
+      
+      layout(binding = 0) uniform sampler2D layers[LAYER_COUNT];
+
+      void main() {
+          vec4 color = vec4(0, 0, 0, 1);
+          
+          // todo: do we need to go in reverse oreder?
+          for (int i = 0; i < LAYER_COUNT; i++) {
+              const vec4 frag_color = texture(layers[i], v_texture);
+              color.rgb = mix(color.rgb, frag_color.rgb, frag_color.a);
+              color.a *= 1.f - frag_color.a;
+          }
+          
+          color.a = 1 - color.a;
+          out_color = color;
+      }

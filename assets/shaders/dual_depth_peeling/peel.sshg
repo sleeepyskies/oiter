@@ -17,19 +17,15 @@ stages:
           vec4 color;
       };
       
-      layout(std140, binding = 0) uniform SceneData {
-          mat4 view_projection;
+      layout(std140, binding = 0) uniform SceneUniforms {
+          mat4 projection_view;
           vec3 camera_position;
           float _pad0;
       };
       
-      layout(std140, binding = 1) uniform MaterialData {
-          BakedMaterial materials[256];
-      };
-      
-      layout(std140, binding = 2) uniform DrawCallData {
-          mat4 model;
-          uint index;
+      layout(std140, binding = 1) uniform MeshUniforms {
+        BakedMaterial material;
+        mat4 model;
       };
       
       // input textures
@@ -56,7 +52,7 @@ stages:
       
       vec4 shade() {
           // todo: actual shading pls
-          return materials[index].color;
+          return material.color;
       }
       
       bool has_fragment_been_peeled() {

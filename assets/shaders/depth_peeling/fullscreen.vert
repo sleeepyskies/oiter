@@ -28,10 +28,11 @@ layout(location = 3) out vec2 v_texture;
 layout(location = 4) out vec4 v_tangent;
 
 void main() {
-    v_position = model * a_position;
-    v_normal = vec4(normalize(mat3(transpose(inverse(model))) * a_normal.xyz), 0.0);
-    v_color = a_color;
-    v_texture = a_texture;
-    v_tangent = a_tangent;
-    gl_Position = projection_view * model * a_position;
+    vec2 pos[3] = vec2[](
+            vec2(-1, -1),
+            vec2(3, -1),
+            vec2(-1, 3)
+    );
+
+    gl_Position = vec4(pos[gl_VertexID], 0, 1);
 }

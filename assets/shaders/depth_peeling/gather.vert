@@ -1,14 +1,18 @@
 #version 460
 
-layout(std140, binding = 0) uniform SceneData {
-    mat4 view_projection;
+struct BakedMaterial {
+    vec4 color;
+};
+
+layout(std140, binding = 0) uniform SceneUniforms {
+    mat4 projection_view;
     vec3 camera_position;
     float _pad0;
 };
 
-layout(std140, binding = 2) uniform DrawCallData {
+layout(std140, binding = 1) uniform MeshUniforms {
+    BakedMaterial material;
     mat4 model;
-    uint index;
 };
 
 layout(location = 0) in vec4 a_position;
@@ -29,5 +33,8 @@ void main() {
     v_color = a_color;
     v_texture = a_texture;
     v_tangent = a_tangent;
-    gl_Position = view_projection * model * a_position;
+    gl_Position = projection_view * model * a_position;
+
+    // todo: do we do this instead?
+    // outColor = vec4(a_texture, 0.0f, material.alpha);
 }

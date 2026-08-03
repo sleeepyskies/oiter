@@ -13,5 +13,7 @@ stages:
       layout(location = 0) out vec4 out_color;
 
       void main() {
+          // the first 'gather' pass is just required to render the top layer
+          // of objects. so we do a simple pass pass (um)
           out_color = v_color;
       }

@@ -18,12 +18,9 @@ add_executable(oiter
         src/methods/util.cpp
 
         src/methods/dual_depth_peeling/dual_depth_peeling.cpp
-        src/methods/dual_depth_peeling/passes/final_pass.cpp
-        src/methods/dual_depth_peeling/passes/blend_pass.cpp
-        src/methods/dual_depth_peeling/passes/peel_pass.cpp
-        src/methods/dual_depth_peeling/passes/init_pass.cpp
         src/methods/depth_peeling/depth_peeling.cpp
-        src/methods/depth_peeling/depth_peeling.hpp
+        src/methods/oit_method.cpp
+        src/log_timer.hpp
 )
 include(dependencies.cmake)
 target_include_directories(oiter PRIVATE
