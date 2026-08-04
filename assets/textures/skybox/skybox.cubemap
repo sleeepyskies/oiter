@@ -1,0 +1,7 @@
+name: skybox
+nx: nx.png
+ny: ny.png
+nz: nz.png
+px: px.png
+py: py.png
+pz: pz.png
