@@ -19,8 +19,9 @@ stages:
       void main() {
           vec4 color = vec4(0, 0, 0, 1);
           
-          // todo: do we need to go in reverse oreder?
-          for (int i = 0; i < LAYER_COUNT; i++) {
+          // todo: do we need to go in reverse order?
+          // for (int i = 0; i < LAYER_COUNT; i++) {
+          for (uint i = LAYER_COUNT - 1; i >= 0; i--) {
               const vec4 frag_color = texture(layers[i], v_texture);
               color.rgb = mix(color.rgb, frag_color.rgb, frag_color.a);
               color.a *= 1.f - frag_color.a;

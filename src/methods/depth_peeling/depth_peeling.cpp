@@ -1,5 +1,7 @@
 #include "depth_peeling.hpp"
 
+#include <imgui.h>
+
 #include "2iren/asset/asset_server.hpp"
 
 namespace oiter {
@@ -81,7 +83,7 @@ auto DepthPeeling::resize(const glm::uvec2 extent) -> void {
 }
 
 auto DepthPeeling::render_debug_info() -> void {
-    // PANIC("depth peeling debug info is not yet implemented");
+    ImGui::Text("TODO");
 }
 
 auto DepthPeeling::create_images(const glm::uvec2 extent) -> void {

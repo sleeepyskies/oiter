@@ -71,19 +71,19 @@ inline auto end_imgui_frame() -> void {
     );
 
     if (ImGui::CollapsingHeader("OIT Method", ImGuiTreeNodeFlags_DefaultOpen)) {
-        static auto method = static_cast<int>(MethodKind::DualDepthPeeling);
-        const auto old = method;
+        static auto method = static_cast<int>(config.oit_method.value);
+        const auto old     = method;
 
         ImGui::RadioButton(
             "Dual Depth Peeling",
             &method,
-            MethodKind::DualDepthPeeling
+            std::to_underlying(MethodKind::DualDepthPeeling)
         );
 
         ImGui::RadioButton(
             "Depth Peeling",
             &method,
-            MethodKind::DepthPeeling
+            std::to_underlying(MethodKind::DepthPeeling)
         );
 
         config.oit_method = static_cast<MethodKind::Value>(method);
@@ -128,7 +128,8 @@ inline auto end_imgui_frame() -> void {
         if (sensitivity != controller.sensitivity()) { controller.set_sensitivity(sensitivity); }
     }
 
-    if (oit_method && ImGui::CollapsingHeader(oit_method->name().data(), ImGuiTreeNodeFlags_DefaultOpen)) {
+    const auto title = std::format("{} Controls", oit_method->name().data());
+    if (ImGui::CollapsingHeader(title.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
         oit_method->render_debug_info();
     }
 
