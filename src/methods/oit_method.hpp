@@ -105,7 +105,7 @@ protected:
     std::unique_ptr<siren::Buffer> m_mesh_buffer;
 
     /** @brief Image for the skybox. */
-    std::unique_ptr<siren::Image> m_cubemap;
+    siren::StrongHandle<siren::Texture> m_skybox_texture = siren::NullHandle;
 
     /** @brief Unit cube mesh. */
     std::unique_ptr<siren::Buffer> m_cube;

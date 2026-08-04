@@ -74,6 +74,16 @@ auto OitMethod::create_buffers() -> void {
 }
 
 auto OitMethod::create_background_resources() -> void {
-    auto thing = m_assets.load<siren::Texture>("oiter://assets/textures/skybox/skybox.cubemap");
+    siren::TextureLoader::ConfigType config{
+        .name                   = std::nullopt,
+        .format                 = siren::ImageFormat::RGBA8,
+        .sampler                = m_device.create_sampler({}),
+        .generate_mipmap_levels = false,
+    };
+
+    m_skybox_texture = m_assets.load<siren::Texture>(
+        "oiter://assets/textures/skybox/skybox.cubemap",
+        std::move(config)
+    );
 }
 } // namespace oiter
