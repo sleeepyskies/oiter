@@ -86,13 +86,24 @@ auto OitMethod::update_buffers(const siren::PerspectiveCamera& camera, const Bak
     m_mesh_buffer->upload(buffer);
 }
 
-auto OitMethod::render_skybox() const -> void {
+auto OitMethod::render_skybox_into_target(const siren::Image& image) const -> void {
     auto& texture = m_assets.get_unsafe(m_skybox_texture);
     auto& cube    = m_assets.get_unsafe(m_cube);
     auto& surface = m_assets.get_unsafe(cube.surfaces[0]);
 
     m_device.render_pass(
-        {.target = m_skybox_render_target},
+        {
+            .target = siren::RenderTarget{
+                .colors = {
+                    siren::ColorAttachment{
+                        .image       = image.handle(),
+                        .begin_operation = siren::BeginOperation::Clear,
+                        .clear_color = siren::Rgba::zero()
+                    },
+                },
+                .depth_stencil = std::nullopt,
+            }
+        },
         [&](siren::RenderPassRecorder& pass) {
             pass.bind_graphics_pipeline(m_skybox_pipeline->handle());
             pass.bind_uniform_buffer(m_scene_buffer->handle(), 0);
@@ -154,12 +165,12 @@ auto OitMethod::create_background_resources() -> void {
                 .shader            = shader_asset.shader.handle(),
                 .topology          = siren::PrimitiveTopology::Triangles,
                 .alpha_mode        = siren::AlphaMode::Opaque,
-                .depth_function    = siren::DepthFunction::Less,
+                .depth_function    = siren::DepthFunction::LessEqual,
                 .color_blend       = {},
                 .alpha_blend       = {},
                 .back_face_culling = false,
                 .depth_test        = true,
-                .depth_write       = true,
+                .depth_write       = false,
             }
         )
     );
@@ -212,29 +223,6 @@ auto OitMethod::create_background_resources() -> void {
             }
         )
     );
-
-    m_skybox_target_image = std::make_unique<siren::Image>(
-        m_device.create_image(
-            {
-                .format = siren::ImageFormat::RGBA8,
-                // todo: this NEEDS to be resizable
-                .extent        = {.width = 1280, .height = 720},
-                .dimension     = siren::ImageDimension::D2,
-                .mipmap_levels = 1,
-            }
-        )
-    );
-
-    m_skybox_render_target = siren::RenderTarget{
-        .colors = {
-            {
-                .image           = m_skybox_target_image->handle(),
-                .begin_operation = siren::BeginOperation::Clear,
-                .clear_color     = siren::Rgba::zero()
-            },
-        },
-        .depth_stencil = std::nullopt,
-    };
 
     while (!m_assets.is_loaded_with_dependencies(m_skybox_texture)) {
         /** wait lmao */

@@ -116,9 +116,6 @@ protected:
     /** @brief Shader handle for the skybox. */
     siren::StrongHandle<siren::ShaderAsset> m_skybox_shader = siren::NullHandle;
 
-    siren::RenderTarget m_skybox_render_target;
-    std::unique_ptr<siren::Image> m_skybox_target_image;
-
 protected:
     /** @brief Updates the contents of the methods buffers. */
     auto update_buffers(const siren::PerspectiveCamera& camera, const BakedScene& scene) const -> void;
@@ -129,7 +126,7 @@ protected:
     }
 
     /** @brief Child class may call this to render a skybox image. */
-    [[nodiscard]] auto render_skybox() const -> void;
+    auto render_skybox_into_target(const siren::Image& image) const -> void;
 
 private:
     /** @brief Creates uniform buffers for the scene. This involves global scene data as well as per call data. */

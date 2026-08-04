@@ -21,7 +21,7 @@ auto DepthPeeling::render(
     const BakedScene& scene
 ) const -> const siren::Image& {
     update_buffers(camera, scene);
-    render_skybox();
+    render_skybox_into_target(*m_output);
 
     const auto buffer_alignment = siren::align_up(
         sizeof(MeshUniforms),
@@ -187,7 +187,7 @@ auto DepthPeeling::create_render_targets() -> void {
         .colors = {
             {
                 .image           = m_output->handle(),
-                .begin_operation = siren::BeginOperation::Clear,
+                .begin_operation = siren::BeginOperation::Preserve,
                 .clear_color     = siren::Rgba::zero(),
             },
         },

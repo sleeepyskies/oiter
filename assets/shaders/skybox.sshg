@@ -20,9 +20,10 @@ stages:
       layout(location = 0) out vec3 v_position;
 
       void main() {
-          v_position = a_position;
-          gl_Position = projection_view * vec4(a_position, 1.0);
-          gl_Position = gl_Position.xyww;// make furthest depth, AHHH
+        v_position = a_position;
+        vec3 world_pos = a_position + camera_position;
+        gl_Position = projection_view * vec4(world_pos, 1.0);
+        gl_Position = gl_Position.xyww;
       }
   fragment:
     name: fragment
