@@ -26,10 +26,11 @@ auto DepthPeeling::render(
     );
 
     auto draw_scene = [&](siren::RenderPassRecorder& pass) {
+        pass.bind_uniform_buffer(m_scene_buffer->handle(), 0);
         for (const auto& [index, surface] : std::views::enumerate(scene.transparent)) {
             pass.bind_uniform_buffer_range(
                 m_mesh_buffer->handle(),
-                0,
+                1,
                 buffer_alignment * (scene.opaque.size() + index),
                 sizeof(MeshUniforms)
             );

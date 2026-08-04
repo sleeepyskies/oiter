@@ -92,7 +92,7 @@ auto main(const int argc, const char** argv) -> int {
     camera.set_position(glm::vec3{0.f, 3.f, 2.f});
     camera.look_at(glm::vec3{0.f});
 
-    bool show_debug_menu = true;
+    bool show_debug_menu = false;
 
     window.on_resize(
         [&](const glm::ivec2 size) {
