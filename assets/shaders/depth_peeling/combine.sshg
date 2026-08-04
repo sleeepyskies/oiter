@@ -1,4 +1,4 @@
-name: gather_first
+name: combine
 stages:
   vertex:
     name: vertex
@@ -17,11 +17,12 @@ stages:
       layout(binding = 0) uniform sampler2D layers[LAYER_COUNT];
 
       void main() {
-          vec4 color = vec4(0, 0, 0, 1);
+          vec4 color = vec4(0.f, 0.f, 0.f, 1.f);
           
-          // todo: do we need to go in reverse order?
+          // going in reverse order bc im actually not sure yet
+          // TODO: why reverse order???
+          for (int i = int(LAYER_COUNT) - 1; i >= 0; i--) {
           // for (int i = 0; i < LAYER_COUNT; i++) {
-          for (uint i = LAYER_COUNT - 1; i >= 0; i--) {
               const vec4 frag_color = texture(layers[i], v_texture);
               color.rgb = mix(color.rgb, frag_color.rgb, frag_color.a);
               color.a *= 1.f - frag_color.a;

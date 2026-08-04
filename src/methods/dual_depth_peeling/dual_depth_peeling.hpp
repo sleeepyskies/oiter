@@ -122,6 +122,8 @@ public:
     [[nodiscard]] auto name() const noexcept -> std::string_view override { return "Dual Depth Peeling"; }
 
     auto resize(const glm::uvec2 extent) -> void override;
+    auto reload_shaders() -> void override;
+
 
     auto render_debug_info() -> void override;
 

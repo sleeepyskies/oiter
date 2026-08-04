@@ -10,25 +10,33 @@
 
 namespace oiter {
 class OitMethod;
+}
 
-inline auto init_imgui(const siren::Window& window) -> void {
+namespace gui {
+struct State {
+    bool show                = true;
+    siren::u32 full_frame_ms = 0;
+    siren::u32 oit_render_ms = 0;
+    siren::u64 frame         = 0;
+};
+
+
+inline auto init(const siren::Window& window) -> void {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO();
-
     ImGui_ImplGlfw_InitForOpenGL(window.handle(), true);
     ImGui_ImplOpenGL3_Init("#version 460");
 
     ImGui::StyleColorsDark();
 }
 
-inline auto new_imgui_frame() -> void {
+inline auto new_frame() -> void {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 }
 
-inline auto end_imgui_frame() -> void {
+inline auto end_frame() -> void {
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
@@ -38,23 +46,19 @@ inline auto end_imgui_frame() -> void {
     const siren::Statistics& statistics,
     const siren::PerspectiveCamera& camera,
     siren::PerspectiveCameraController& controller,
-    OitMethod* oit_method,
-    Config& config
+    oiter::OitMethod* oit_method,
+    oiter::Config& config,
+    State& guistate
 ) -> bool {
     bool changed = false;
 
-    new_imgui_frame();
-    static siren::usize interval = 0;
-    static float speed           = controller.speed();
-    static float sensitivity     = controller.sensitivity();
-    static auto fps              = interval;
-    static auto frametime        = interval;
+    new_frame();
+    static float speed       = controller.speed();
+    static float sensitivity = controller.sensitivity();
+    static auto fps          = guistate.frame;
 
-    interval++;
-
-    if (!(interval % 60)) {
-        frametime = siren::time::delta_ms();
-        fps       = 1 / siren::time::delta_s();
+    if (!(guistate.frame % 60)) {
+        fps = 1 / siren::time::delta_s();
     }
 
     const auto& io = ImGui::GetIO();
@@ -77,16 +81,16 @@ inline auto end_imgui_frame() -> void {
         ImGui::RadioButton(
             "Dual Depth Peeling",
             &method,
-            std::to_underlying(MethodKind::DualDepthPeeling)
+            std::to_underlying(oiter::MethodKind::DualDepthPeeling)
         );
 
         ImGui::RadioButton(
             "Depth Peeling",
             &method,
-            std::to_underlying(MethodKind::DepthPeeling)
+            std::to_underlying(oiter::MethodKind::DepthPeeling)
         );
 
-        config.oit_method = static_cast<MethodKind::Value>(method);
+        config.oit_method = static_cast<oiter::MethodKind::Value>(method);
 
         if (method != old) {
             changed = true;
@@ -94,9 +98,13 @@ inline auto end_imgui_frame() -> void {
     }
 
     if (ImGui::CollapsingHeader("Render Statistics", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::Text("Current Frame: %u", interval);
+        ImGui::Text("Current Frame: %u", guistate.frame);
         ImGui::Text("FPS: %u fps", fps);
-        ImGui::Text("Frametime: %u ms", frametime);
+
+        ImGui::Separator();
+
+        ImGui::Text("Frame took %ums", guistate.full_frame_ms);
+        ImGui::Text("Oit Render took %ums", guistate.oit_render_ms);
 
         ImGui::Separator();
 
@@ -135,8 +143,26 @@ inline auto end_imgui_frame() -> void {
 
     ImGui::End();
 
-    end_imgui_frame();
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 150, 0), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(150, 100), ImGuiCond_Always);
+
+    ImGui::Begin(
+        "Debug Controls",
+        nullptr,
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoCollapse |
+        ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoBackground
+    );
+
+    ImGui::Text("F1 - TOGGLE DEBUG  ");
+    ImGui::Text("F2 - RELOAD SHADERS");
+    ImGui::Text("F3 - TOGGLE VSYNC  ");
+    ImGui::End();
+
+    end_frame();
 
     return changed;
 }
-} // namespace oiter
+} // namespace gui

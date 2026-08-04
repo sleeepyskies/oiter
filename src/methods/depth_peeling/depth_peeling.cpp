@@ -82,6 +82,14 @@ auto DepthPeeling::resize(const glm::uvec2 extent) -> void {
     create_render_targets();
 }
 
+auto DepthPeeling::reload_shaders() -> void {
+    m_gather_first_shader = siren::NullHandle;
+    m_gather_shader       = siren::NullHandle;
+    m_combine_shader      = siren::NullHandle;
+
+    create_pipelines();
+}
+
 auto DepthPeeling::render_debug_info() -> void {
     ImGui::Text("TODO");
 }

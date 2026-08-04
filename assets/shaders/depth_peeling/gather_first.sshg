@@ -7,13 +7,28 @@ stages:
     name: fragment
     source: |
       #version 460
+      
+      struct BakedMaterial {
+          vec4 color;
+      };
 
-      layout(location = 0) in vec4 v_color;
+      layout(std140, binding = 0) uniform SceneUniforms {
+          mat4 projection_view;
+          vec3 camera_position;
+          float _pad0;
+      };
+
+      layout(std140, binding = 1) uniform MeshUniforms {
+          BakedMaterial material;
+          mat4 model;
+      };
+
+      layout(location = 2) in vec4 v_color;
       
       layout(location = 0) out vec4 out_color;
 
       void main() {
           // the first 'gather' pass is just required to render the top layer
           // of objects. so we do a simple pass pass (um)
-          out_color = v_color;
+          out_color = material.color;
       }

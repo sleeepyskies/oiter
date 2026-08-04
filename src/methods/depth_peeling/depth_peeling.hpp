@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../oit_method.hpp"
-#include "../util.hpp"
 #include "../../bake.hpp"
 #include "2iren/asset/asset_server.hpp"
 
@@ -19,6 +18,7 @@ public:
     ) const -> const siren::Image& override;
 
     auto resize(const glm::uvec2 extent) -> void override;
+    auto reload_shaders() -> void override;
 
     [[nodiscard]] auto name() const noexcept -> std::string_view override { return "Depth Peeling"; }
 

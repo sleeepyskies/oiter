@@ -110,6 +110,10 @@ auto DualDepthPeeling::resize(const glm::uvec2 extent) -> void {
     create_render_targets();
 }
 
+auto DualDepthPeeling::reload_shaders() -> void {
+    create_pipelines();
+}
+
 void DualDepthPeeling::render_debug_info() {
     ImGui::Text("Peels performed last frame %u", m_last_frame_peels);
     ImGui::SliderInt("Max Peels", &m_config.max_peels, 1, 100);

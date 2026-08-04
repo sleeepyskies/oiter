@@ -3,6 +3,7 @@
 #include "2iren/rhi/resources/image.hpp"
 #include "2iren/util/camera.hpp"
 #include "../bake.hpp"
+#include "2iren/asset/assets/shader.hpp"
 #include "2iren/rhi/device.hpp"
 
 namespace oiter {
@@ -48,6 +49,7 @@ public:
      * @param assets The asset server used to access loaded resources.
      */
     OitMethod(siren::Device& device, siren::AssetServer& assets);
+
     virtual ~OitMethod() = default;
 
     /**
@@ -66,6 +68,12 @@ public:
      * @param extent The new size.
      */
     virtual auto resize(const glm::uvec2 extent) -> void = 0;
+
+    /**
+     * @brief Reloads all shaders.
+     * @todo not possible with 2iREN currently
+     */
+    virtual auto reload_shaders() -> void = 0;
 
     /**
      * @brief Returns the name of this method.
@@ -96,6 +104,18 @@ protected:
     /** @brief Buffer containing per mesh data. */
     std::unique_ptr<siren::Buffer> m_mesh_buffer;
 
+    /** @brief Image for the skybox. */
+    std::unique_ptr<siren::Image> m_cubemap;
+
+    /** @brief Unit cube mesh. */
+    std::unique_ptr<siren::Buffer> m_cube;
+
+    /** @brief GraphicsPipeline for the skybox. */
+    std::unique_ptr<siren::GraphicsPipeline> m_skybox_pipeline;
+
+    /** @brief Shader handle for the skybox. */
+    siren::StrongHandle<siren::ShaderAsset> m_skybox_shader = siren::NullHandle;
+
 protected:
     /** @brief Updates the contents of the methods buffers. */
     auto update_buffers(const siren::PerspectiveCamera& camera, const BakedScene& scene) const -> void;
@@ -105,7 +125,14 @@ protected:
         return m_device.limits().uniform_buffer_offset_alignment * sizeof(MeshUniforms);
     }
 
+    /** @brief Child class may call this to render a skybox image. */
+    [[nodiscard]] auto render_skybox() -> const siren::Image&;
+
 private:
+    /** @brief Creates uniform buffers for the scene. This involves global scene data as well as per call data. */
     auto create_buffers() -> void;
+
+    /** @brief Creates the resources needed for rendering the skybox background. */
+    auto create_background_resources() -> void;
 };
 } // namespace oiter

@@ -1,10 +1,14 @@
 #include "oit_method.hpp"
 
+#include "2iren/asset/asset_server.hpp"
 #include "2iren/rhi/device.hpp"
 
 namespace oiter {
-OitMethod::OitMethod(siren::Device& device, siren::AssetServer& assets) : m_device(device), m_assets(assets) {
+OitMethod::OitMethod(siren::Device& device, siren::AssetServer& assets)
+    : m_device(device),
+      m_assets(assets) {
     create_buffers();
+    create_background_resources();
 }
 
 auto OitMethod::update_buffers(const siren::PerspectiveCamera& camera, const BakedScene& scene) const -> void {
@@ -40,6 +44,8 @@ auto OitMethod::update_buffers(const siren::PerspectiveCamera& camera, const Bak
     m_mesh_buffer->upload(buffer);
 }
 
+auto OitMethod::render_skybox() -> const siren::Image& {}
+
 auto OitMethod::create_buffers() -> void {
     m_scene_buffer = std::make_unique<siren::Buffer>(
         m_device.create_buffer(
@@ -65,5 +71,9 @@ auto OitMethod::create_buffers() -> void {
             }
         )
     );
+}
+
+auto OitMethod::create_background_resources() -> void {
+    auto thing = m_assets.load<siren::Texture>("oiter://assets/textures/skybox/skybox.cubemap");
 }
 } // namespace oiter

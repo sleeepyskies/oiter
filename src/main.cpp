@@ -10,7 +10,7 @@
 #include "bake.hpp"
 #include "config.hpp"
 #include "imgui.hpp"
-#include "log_timer.hpp"
+#include "timer.hpp"
 #include "methods/depth_peeling/depth_peeling.hpp"
 #include "methods/dual_depth_peeling/dual_depth_peeling.hpp"
 
@@ -39,7 +39,7 @@
     return device->create_swapchain(
         {
             .label  = std::nullopt,
-            .vsync  = true,
+            .vsync  = false,
             .extent = {window.width(), window.height()},
             .window = &window,
         }
@@ -72,7 +72,7 @@ auto main(const int argc, const char** argv) -> int {
 
     // todo: maybe not pass window here? kinda sucks lmao, maybe just pass in create_swapchain?
     auto device = ctx.create_device({.window = window});
-    oiter::init_imgui(window); // have to init after device since it loads opengl fn ptrs
+    gui::init(window); // have to init after device since it loads opengl fn ptrs
 
     auto swapchain = create_swapchain(device.get(), window);
     siren::AssetServer server{*device};
@@ -105,19 +105,30 @@ auto main(const int argc, const char** argv) -> int {
         }
     );
 
+    gui::State guistate{};
+
     while (!window.should_close()) {
-        oiter::LogTimer _1{"frame"};
-        {
-            oiter::LogTimer _2{"events"};
-            window.poll_events();
-            controller.update(camera, input);
-            if (input.keyboard().just_pressed(siren::Key::F1)) {
-                show_debug_menu = !show_debug_menu;
-            }
+        guistate.frame++;
+        oiter::SetTimer _1{guistate.full_frame_ms};
+
+        window.poll_events();
+        controller.update(camera, input);
+
+        if (input.keyboard().just_pressed(siren::Key::F1)) {
+            show_debug_menu = !show_debug_menu;
+        }
+
+        if (input.keyboard().just_pressed(siren::Key::F2)) {
+            oit_method->reload_shaders();
+        }
+
+        if (input.keyboard().just_pressed(siren::Key::F3)) {
+            // todo: toggle vsync mode
+            swapchain = create_swapchain(device.get(), window);
         }
 
         {
-            oiter::LogTimer _2{"render"};
+            oiter::SetTimer _2{guistate.oit_render_ms};
             const auto& image = oit_method->render(camera, baked);
             device->blit(image.handle(), swapchain.next_image());
         }
@@ -125,7 +136,14 @@ auto main(const int argc, const char** argv) -> int {
         swapchain.present_overlay(
             [&] {
                 if (show_debug_menu) {
-                    if (oiter::render_debug_info(device->statistics(), camera, controller, oit_method.get(), config)) {
+                    if (gui::render_debug_info(
+                        device->statistics(),
+                        camera,
+                        controller,
+                        oit_method.get(),
+                        config,
+                        guistate
+                    )) {
                         oit_method = create_method(config, *device, {window.width(), window.height()}, server);
                     }
                 }
