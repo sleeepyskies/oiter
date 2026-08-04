@@ -143,8 +143,8 @@ inline auto end_frame() -> void {
 
     ImGui::End();
 
-    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 150, 0), ImGuiCond_Always);
-    ImGui::SetNextWindowSize(ImVec2(150, 100), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 175, 0), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(175, 100), ImGuiCond_Always);
 
     ImGui::Begin(
         "Debug Controls",
@@ -156,9 +156,9 @@ inline auto end_frame() -> void {
         ImGuiWindowFlags_NoBackground
     );
 
-    ImGui::Text("F1 - TOGGLE DEBUG  ");
-    ImGui::Text("F2 - RELOAD SHADERS");
-    ImGui::Text("F3 - TOGGLE VSYNC  ");
+    ImGui::Text("F1 - TOGGLE DEBUG      ");
+    ImGui::Text("F2 - RELOAD SHADERS    ");
+    ImGui::Text("F3 - TOGGLE VSYNC      ");
     ImGui::End();
 
     end_frame();

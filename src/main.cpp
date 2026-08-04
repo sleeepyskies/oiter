@@ -9,7 +9,7 @@
 #include "2iren/window.hpp"
 #include "bake.hpp"
 #include "config.hpp"
-#include "imgui.hpp"
+#include "gui.hpp"
 #include "timer.hpp"
 #include "methods/depth_peeling/depth_peeling.hpp"
 #include "methods/dual_depth_peeling/dual_depth_peeling.hpp"

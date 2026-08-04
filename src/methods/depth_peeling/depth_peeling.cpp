@@ -21,6 +21,7 @@ auto DepthPeeling::render(
     const BakedScene& scene
 ) const -> const siren::Image& {
     update_buffers(camera, scene);
+    render_skybox();
 
     const auto buffer_alignment = siren::align_up(
         sizeof(MeshUniforms),

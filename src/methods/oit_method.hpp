@@ -108,13 +108,16 @@ protected:
     siren::StrongHandle<siren::Texture> m_skybox_texture = siren::NullHandle;
 
     /** @brief Unit cube mesh. */
-    std::unique_ptr<siren::Buffer> m_cube;
+    siren::StrongHandle<siren::Mesh> m_cube = siren::NullHandle;
 
     /** @brief GraphicsPipeline for the skybox. */
     std::unique_ptr<siren::GraphicsPipeline> m_skybox_pipeline;
 
     /** @brief Shader handle for the skybox. */
     siren::StrongHandle<siren::ShaderAsset> m_skybox_shader = siren::NullHandle;
+
+    siren::RenderTarget m_skybox_render_target;
+    std::unique_ptr<siren::Image> m_skybox_target_image;
 
 protected:
     /** @brief Updates the contents of the methods buffers. */
@@ -126,7 +129,7 @@ protected:
     }
 
     /** @brief Child class may call this to render a skybox image. */
-    [[nodiscard]] auto render_skybox() -> const siren::Image&;
+    [[nodiscard]] auto render_skybox() const -> void;
 
 private:
     /** @brief Creates uniform buffers for the scene. This involves global scene data as well as per call data. */
