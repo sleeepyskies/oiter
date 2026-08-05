@@ -109,7 +109,8 @@ auto main(const int argc, const char** argv) -> int {
 
     while (!window.should_close()) {
         guistate.frame++;
-        oiter::SetTimer _1{guistate.full_frame_ms};
+        oiter::SetTimer s1{guistate.full_frame_ms};
+        oiter::LogTimer l1{"frame"};
 
         window.poll_events();
         controller.update(camera, input);
@@ -128,11 +129,13 @@ auto main(const int argc, const char** argv) -> int {
         }
 
         {
-            oiter::SetTimer _2{guistate.oit_render_ms};
+            oiter::SetTimer s2{guistate.oit_render_ms};
+            oiter::LogTimer l2{"oit_render"};
             const auto& image = oit_method->render(camera, baked);
             device->blit(image.handle(), swapchain.next_image());
         }
 
+        oiter::LogTimer l3{"swapchain_present"};
         swapchain.present_overlay(
             [&] {
                 if (show_debug_menu) {

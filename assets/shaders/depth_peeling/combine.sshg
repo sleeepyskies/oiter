@@ -19,7 +19,6 @@ stages:
       void main() {
           vec4 color = vec4(0.f, 0.f, 0.f, 1.f);
           
-          // going in reverse order bc im actually not sure yet
           // TODO: why reverse order???
           for (int i = int(LAYER_COUNT) - 1; i >= 0; i--) {
           // for (int i = 0; i < LAYER_COUNT; i++) {

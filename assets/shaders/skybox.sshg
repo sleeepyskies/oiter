@@ -36,6 +36,5 @@ stages:
       uniform samplerCube skybox;
 
       void main() {
-          vec3 what = vec3(v_position.x, -v_position.y, v_position.z);
-          out_color = texture(skybox, what);
+          out_color = texture(skybox, v_position);
       }
