@@ -20,10 +20,8 @@ add_executable(oiter
         src/methods/oit_method.cpp
         src/timer.hpp
 )
+
 include(dependencies.cmake)
-target_include_directories(oiter PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/external
-)
 
 target_link_libraries(oiter PRIVATE 2iren)
 

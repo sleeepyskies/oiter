@@ -8,18 +8,6 @@
 
 namespace oiter {
 /**
- * @brief A bunch of configuration options that can be tweaked during runtime for
- * the @ref DualDepthPeeling OitMethod. These can be viewed in the F1 debug menu when
- * the DualDepthPeeling method is active.
- */
-struct DdpConfig {
-    /** @brief The maximum number of peels to perform. */
-    siren::i32 max_peels = 5;
-    /** @brief Whether to query in order to stop early. */
-    bool perform_query = false;
-};
-
-/**
  * @section Init Pass
  *
  * The init pass of the Dual Depth Peeling OIT technique. The job of
@@ -107,6 +95,18 @@ struct DdpConfig {
  * - out.a   = 1.f
  */
 class DualDepthPeeling final : public OitMethod {
+    /**
+     * @brief A bunch of configuration options that can be tweaked during runtime for
+     * the @ref DualDepthPeeling OitMethod. These can be viewed in the F1 debug menu when
+     * the DualDepthPeeling method is active.
+     */
+    struct Config {
+        /** @brief The maximum number of peels to perform. */
+        siren::i32 max_peels = 5;
+        /** @brief Whether to query in order to stop early. */
+        bool perform_query = false;
+    } m_config;
+
 public:
     explicit DualDepthPeeling(
         siren::Device& device,
@@ -118,17 +118,12 @@ public:
         const siren::PerspectiveCamera& camera,
         const BakedScene& scene
     ) const -> const siren::Image& override;
-
     [[nodiscard]] auto name() const noexcept -> std::string_view override { return "Dual Depth Peeling"; }
-
     auto resize(const glm::uvec2 extent) -> void override;
     auto reload_shaders() -> void override;
-
-
     auto render_debug_info() -> void override;
 
 private:
-    DdpConfig m_config;
     mutable siren::u32 m_last_frame_peels = 0;
     mutable siren::u32 m_pingpong_index   = 0;
 

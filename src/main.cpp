@@ -54,7 +54,7 @@ auto main(const int argc, const char** argv) -> int {
     const auto ctx = siren::Context::create(
         {
             .debug   = true,
-            .level   = siren::log::Level::Trace,
+            .level   = siren::log::Level::Info,
             .backend = siren::Backend::Auto,
         }
     );
@@ -110,7 +110,6 @@ auto main(const int argc, const char** argv) -> int {
     while (!window.should_close()) {
         guistate.frame++;
         oiter::SetTimer s1{guistate.full_frame_ms};
-        oiter::LogTimer l1{"frame"};
 
         window.poll_events();
         controller.update(camera, input);
@@ -130,12 +129,10 @@ auto main(const int argc, const char** argv) -> int {
 
         {
             oiter::SetTimer s2{guistate.oit_render_ms};
-            oiter::LogTimer l2{"oit_render"};
             const auto& image = oit_method->render(camera, baked);
             device->blit(image.handle(), swapchain.next_image());
         }
 
-        oiter::LogTimer l3{"swapchain_present"};
         swapchain.present_overlay(
             [&] {
                 if (show_debug_menu) {
