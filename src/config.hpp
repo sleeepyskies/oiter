@@ -38,31 +38,43 @@ struct MethodKind {
 
 
 struct Config {
-    std::string scene_path = "oiter://assets/meshes/car.glb";
-    MethodKind oit_method  = MethodKind::DepthPeeling; // todo: make DepthPeeling the default
+    std::string scene_path    = "oiter://assets/meshes/stresstest.glb";
+    MethodKind oit_method     = MethodKind::DualDepthPeeling;
+    glm::vec3 camera_position = glm::vec3(0.0f);
 };
 
 inline auto parse_cli_args(int argc, const char** argv) -> Config {
     bool show_help = false;
     Config config;
+
     std::string method = config.oit_method.to_string();
+    std::string camera_position;
 
-    const auto cli = lyra::help(show_help).description("oiter is a simple showcase of various oit methods.") |
+    const auto cli =
+        lyra::help(show_help).description("oiter is a simple showcase of various oit methods.") |
         lyra::opt(config.scene_path, "scene")["--scene"]["-s"]("Path to scene file.") |
-        lyra::opt(method, "method")["--method"]["-m"]("Choice of OIT method.").choices("ddp", "dp");
+        lyra::opt(method, "method")["--method"]["-m"]("Choice of OIT method.").choices("ddp", "dp") |
+        lyra::opt(camera_position, "position")["--camera-position"]("Camera position (x,y,z).");
 
-    if (const auto parse_result = cli.parse({argc, argv}); !parse_result) {
-        std::cerr << parse_result.message() << "\n\n";
-        std::cout << cli;
-        std::exit(1);
+    const auto result = cli.parse({argc, argv});
+
+    if (!result) {
+        throw std::runtime_error(result.message());
     }
 
-    if (show_help) {
-        std::cout << cli;
-        std::exit(0);
-    }
+    if (!camera_position.empty()) {
+        std::stringstream ss(camera_position);
+        char comma;
 
-    config.oit_method = MethodKind::from_string(method);
+        if (!(ss >> config.camera_position.x >> comma
+                >> config.camera_position.y >> comma
+                >> config.camera_position.z) ||
+            comma != ',') {
+            throw std::runtime_error(
+                "Invalid --camera-position. Expected x,y,z"
+            );
+        }
+    }
 
     return config;
 }
