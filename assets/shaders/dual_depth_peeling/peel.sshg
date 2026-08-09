@@ -24,8 +24,8 @@ stages:
       };
       
       layout(std140, binding = 1) uniform MeshUniforms {
-        BakedMaterial material;
-        mat4 model;
+          BakedMaterial material;
+          mat4 model;
       };
       
       // input textures
@@ -37,65 +37,64 @@ stages:
       layout(location = 1) out vec4 out_front;
       layout(location = 2) out vec4 out_back;
       
-      const float MAX_DEPTH = 1.f;
-      
-      const float FRAGMENT_DEPTH = gl_FragCoord.z;
-      
-      const vec4 INPUT_FRONT = texture(input_front_texture, gl_FragCoord.xy / vec2(textureSize(input_front_texture, 0)));
-      
-      // the depth from previous pass at this uv coords
-      const vec2 INPUT_DEPTH = texture(input_depth_texture, gl_FragCoord.xy / vec2(textureSize(input_depth_texture, 0))).xy;
-      const float NEAREST_LAYER = -INPUT_DEPTH.x; // normalize again since we negated in previous pass
-      const float FARTHEST_LAYER = INPUT_DEPTH.y;
-      
-      const float ALPHA_FACTOR = 1.f - INPUT_FRONT.w;
-      
       vec4 shade() {
           // todo: actual shading pls
           return material.color;
       }
       
-      bool has_fragment_been_peeled() {
-          return FRAGMENT_DEPTH < NEAREST_LAYER || FRAGMENT_DEPTH > FARTHEST_LAYER;
+      bool has_fragment_been_peeled(const float fragment_depth, const float nearest_layer, const float farthest_layer) {
+          return fragment_depth < nearest_layer || fragment_depth > farthest_layer;
       }
       
-      bool is_inside_peel_range() {
-          return FRAGMENT_DEPTH > NEAREST_LAYER && FRAGMENT_DEPTH < FARTHEST_LAYER;
-      }   
-      
-      bool is_fragment_on_nearest_layer() {
-          return FRAGMENT_DEPTH == NEAREST_LAYER;
+      bool is_inside_peel_range(const float fragment_depth, const float nearest_layer, const float farthest_layer) {
+          return fragment_depth > nearest_layer && fragment_depth < farthest_layer;
       }
+      
+      bool is_fragment_on_nearest_layer(const float fragment_depth, const float nearest_layer) {
+          return fragment_depth == nearest_layer;
+      }
+      
+      const float MAX_DEPTH = 1.f;
 
       void main() {
-          out_depth.xy = INPUT_DEPTH;
-          out_front = INPUT_FRONT;
+          const float fragment_depth = gl_FragCoord.z;
+          const vec4 input_front = texture(input_front_texture, gl_FragCoord.xy / vec2(textureSize(input_front_texture, 0)));
+          
+          const float alpha_factor = 1.f - input_front.w;
+          
+          // the depth from previous pass at this uv coords
+          const vec2 input_depth = texture(input_depth_texture, gl_FragCoord.xy / vec2(textureSize(input_depth_texture, 0))).xy;
+          const float nearest_layer = -input_depth.x; // normalize again since we negated in previous pass
+          const float farthest_layer = input_depth.y;
+          
+          out_depth.xy = input_depth;
+          out_front = input_front;
           out_back = vec4(0.f);
-      
+          
           // CASE 1: this fragment is outside of our peel range and thus we can just ignore
-          if (has_fragment_been_peeled()) {
+          if (has_fragment_been_peeled(fragment_depth, nearest_layer, farthest_layer)) {
               // just write dummy value since we cannot discard
-              out_depth.xy = vec2(-MAX_DEPTH); 
+              out_depth.xy = vec2(-MAX_DEPTH);
               return;
           }
-      
+          
           // CASE 2: we are inside the peel range, but not on a layer, so setup next pass
-          if (is_inside_peel_range()) {
+          if (is_inside_peel_range(fragment_depth, nearest_layer, farthest_layer)) {
               // write depth to output depth texture to find the next layer for next pass
               // copying init pass kinda here
-              out_depth.xy = vec2(-FRAGMENT_DEPTH, FRAGMENT_DEPTH);
+              out_depth.xy = vec2(-fragment_depth, fragment_depth);
               return;
           }
-      
+          
           // CSAE 3:
           // we know we are not inside range or outside, so we must be on one of the layers
           // so now we can shade this layer and prevent it from being in following passes
           const vec4 color = shade();
           
-          if (is_fragment_on_nearest_layer()) {
+          if (is_fragment_on_nearest_layer(fragment_depth, nearest_layer)) {
               // todo: are these correct? its same as reference shader, but different from paper
-              out_front.xyz += color.rgb * color.a * ALPHA_FACTOR;
-              out_front.w = 1.f - ALPHA_FACTOR * (1.f - color.a);
+              out_front.xyz += color.rgb * color.a * alpha_factor;
+              out_front.w = 1.f - alpha_factor * (1.f - color.a);
           } else {
               out_back += color;
           }
