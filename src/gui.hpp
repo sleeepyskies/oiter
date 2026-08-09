@@ -98,8 +98,8 @@ inline auto end_frame() -> void {
     }
 
     if (ImGui::CollapsingHeader("Render Statistics", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::Text("Current Frame: %u", guistate.frame);
-        ImGui::Text("FPS: %u fps", fps);
+        ImGui::Text("Current Frame: %lu", guistate.frame);
+        ImGui::Text("FPS: %lu fps", fps);
 
         ImGui::Separator();
 

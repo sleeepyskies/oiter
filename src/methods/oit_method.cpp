@@ -42,7 +42,7 @@ static constexpr siren::u32 cube_indices[] = {
     6, 2, 1,
 };
 
-static const siren::Layout cube_layout = siren::LayoutBuilder::start()
+static const siren::Layout cube_layout = siren::LayoutBuilder::create()
                                          .add(siren::Attribute::Position, 3, siren::DataType::Float32)
                                          .finish();
 

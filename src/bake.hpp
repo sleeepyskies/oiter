@@ -5,7 +5,6 @@
 #include "2iren/rhi/resources/fwd.hpp"
 
 namespace oiter {
-
 struct BakedSurface {
     siren::VertexBuffer& vertex;
     siren::IndexBuffer& index;
@@ -23,8 +22,8 @@ struct BakedScene {
     std::vector<BakedMaterial> materials{};
 };
 
-auto bake_scene(const siren::StrongHandle<siren::Gltf>& gltf_handle,
-                siren::AssetServer& server,
-                std::optional<siren::f32> forced_alpha = std::nullopt) -> BakedScene;
-
-}  // namespace oiter
+auto bake_scene(
+    const siren::StrongHandle<siren::Gltf>& gltf_handle,
+    siren::AssetServer& server
+) -> BakedScene;
+} // namespace oiter

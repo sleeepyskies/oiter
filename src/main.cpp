@@ -39,7 +39,7 @@
     return device->create_swapchain(
         {
             .label  = std::nullopt,
-            .vsync  = false,
+            .vsync  = true,
             .extent = {window.width(), window.height()},
             .window = &window,
         }
@@ -54,7 +54,7 @@ auto main(const int argc, const char** argv) -> int {
     const auto ctx = siren::Context::create(
         {
             .debug   = true,
-            .level   = siren::log::Level::Info,
+            .level   = siren::log::Level::Debug,
             .backend = siren::Backend::Auto,
         }
     );
@@ -83,14 +83,14 @@ auto main(const int argc, const char** argv) -> int {
         /** wait until loaded */ // todo: this eats cpu lol
     }
 
-    auto baked = oiter::bake_scene(sceneh, server, 0.5f);
+    auto baked = oiter::bake_scene(sceneh, server);
 
     auto oit_method = create_method(config, *device, {window.width(), window.height()}, server);
 
     siren::PerspectiveCamera camera{};
     siren::PerspectiveCameraController controller;
-    camera.set_position(glm::vec3{0.f, 3.f, 2.f});
-    camera.look_at(glm::vec3{0.f});
+    camera.set_position(config.camera_position);
+    camera.look_at(glm::vec3{1, 0, 0});
 
     bool show_debug_menu = true;
 
@@ -112,7 +112,13 @@ auto main(const int argc, const char** argv) -> int {
         oiter::SetTimer s1{guistate.full_frame_ms};
 
         window.poll_events();
-        controller.update(camera, input);
+        if (!ImGui::GetIO().WantCaptureMouse) {
+            controller.update_look(camera, input);
+        }
+
+        if (!ImGui::GetIO().WantCaptureKeyboard) {
+            controller.update_position(camera, input);
+        }
 
         if (input.keyboard().just_pressed(siren::Key::F1)) {
             show_debug_menu = !show_debug_menu;

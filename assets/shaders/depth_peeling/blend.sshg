@@ -1,0 +1,20 @@
+name: blend
+stages:
+  vertex:
+    name: vertex
+    path: ../fullscreen.vert
+  fragment:
+    name: fragment
+    source: |
+      #version 460
+
+      layout(location = 0) in vec2 v_texture;
+      layout(location = 0) out vec4 out_color;
+      layout(binding = 0) uniform sampler2D layer;
+
+      void main() {
+          // pre multiplying here
+          const vec4 layer_color = texture(layer, v_texture);
+          out_color.rgb = layer_color.rgb * layer_color.a;
+          out_color.a = layer_color.a;
+      }

@@ -12,7 +12,6 @@ DepthPeeling::DepthPeeling(
 ) : OitMethod(device, assets) {
     create_images(extent);
     create_sampler();
-    create_render_targets();
     create_pipelines();
 }
 
@@ -21,7 +20,6 @@ auto DepthPeeling::render(
     const BakedScene& scene
 ) const -> const siren::Image& {
     update_buffers(camera, scene);
-    render_skybox_into_target(*m_output);
 
     const auto buffer_alignment = siren::align_up(
         sizeof(MeshUniforms),
@@ -43,101 +41,111 @@ auto DepthPeeling::render(
         }
     };
 
-    // one render pass per layer we peel
-    for (const auto& [index, target] : std::views::enumerate(m_targets)) {
+    // we always use same color attachments, so we just create once
+    const auto write_color = siren::ColorAttachment{
+        .image           = m_write_color->handle(),
+        .begin_operation = siren::BeginOperation::Clear,
+        .clear_color     = siren::Rgba::zero(),
+    };
+
+    const auto accumulation_color = siren::ColorAttachment{
+        .image           = m_accumulation_color->handle(),
+        .begin_operation = siren::BeginOperation::Preserve,
+    };
+
+    // set up image to back to front blending
+    m_accumulation_color->clear(siren::Rgba::zero());
+
+    for (const auto layer : siren::range(m_config.layers)) {
+        // we need to ping pong between our 2 depth buffers
+        const auto write_buffer_index = layer % 2;
+        const auto read_buffer_index  = 1 - write_buffer_index;
+
+        // perform the peeling pass
         m_device.render_pass(
-            {.target = target},
-            [&](siren::RenderPassRecorder& pass) {
-                const auto first_pass = index == 0;
-
-                const auto pipeline_handle =
-                    first_pass ? m_gather_first_pipeline->handle() : m_gather_pipeline->handle();
-
-                if (!first_pass) {
-                    const auto previous = m_depths[(index + DEPTH_COUNT - 1) % DEPTH_COUNT]->handle();
-                    pass.bind_sampled_image(previous, m_sampler->handle(), 0);
+            siren::RenderPassDescriptor{
+                .target = {
+                    .colors        = {write_color},
+                    .depth_stencil = siren::DepthStencilAttachment{
+                        .image           = m_depths[write_buffer_index]->handle(),
+                        .begin_operation = siren::BeginOperation::Clear,
+                        .clear_depth     = 1,
+                        .clear_stencil   = 0,
+                    }
                 }
-                pass.bind_graphics_pipeline(pipeline_handle);
+            },
+            [&](siren::RenderPassRecorder& pass) {
+                // use different peel shader on the first pass
+                const auto first_pass    = layer == 0;
+                const auto peel_pipeline = first_pass ? m_gather_first_pipeline->handle() : m_gather_pipeline->handle();
+                if (!first_pass) {
+                    pass.bind_sampled_image(m_depths[read_buffer_index]->handle(), m_sampler->handle(), 0);
+                }
+                pass.bind_graphics_pipeline(peel_pipeline);
                 draw_scene(pass);
+            }
+        );
+
+        // perform on the fly blending
+        m_device.render_pass(
+            siren::RenderPassDescriptor{
+                .target = {
+                    .colors        = {accumulation_color},
+                    .depth_stencil = std::nullopt,
+                }
+            },
+            [&](siren::RenderPassRecorder& pass) {
+                pass.bind_graphics_pipeline(m_blend_pipeline->handle());
+                pass.bind_sampled_image(m_write_color->handle(), m_sampler->handle(), 0);
+                pass.draw_arrays(0, 3);
             }
         );
     }
 
-    // combine pass, blends all layers into final image
-    m_device.render_pass(
-        {.target = m_combine_target},
-        [&](siren::RenderPassRecorder& pass) {
-            pass.bind_graphics_pipeline(m_combine_pipeline->handle());
-            for (const auto [index, color] : std::views::enumerate(m_colors)) {
-                pass.bind_sampled_image(color->handle(), m_sampler->handle(), index);
-            }
-            pass.draw_arrays(0, 3);
-        }
-    );
-
-    return *m_output;
+    return *m_accumulation_color;
 }
 
 auto DepthPeeling::resize(const glm::uvec2 extent) -> void {
     create_images(extent);
-    create_render_targets();
 }
 
 auto DepthPeeling::reload_shaders() -> void {
+    UNIMPLEMENTED();
+
     m_gather_first_shader = siren::NullHandle;
     m_gather_shader       = siren::NullHandle;
-    m_combine_shader      = siren::NullHandle;
+    m_blend_shader        = siren::NullHandle;
 
     create_pipelines();
 }
 
 auto DepthPeeling::render_debug_info() -> void {
-    ImGui::Text("TODO");
+    ImGui::SliderInt("Layers", (int*)&m_config.layers, 1, 25);
 }
 
 auto DepthPeeling::create_images(const glm::uvec2 extent) -> void {
-    // create color images
-    for (const auto i : siren::range(LAYER_COUNT)) {
-        m_colors[i] = std::make_unique<siren::Image>(
+    const auto create_image = [&](
+        const std::string& label,
+        const siren::ImageFormat format
+    ) -> std::unique_ptr<siren::Image> {
+        return std::make_unique<siren::Image>(
             m_device.create_image(
                 {
-                    .label         = std::format("Depth Peeling Color {}", i),
-                    .format        = siren::ImageFormat::RGBA8,
+                    .label         = label,
+                    .format        = format,
                     .extent        = {.width = extent.x, .height = extent.y},
                     .dimension     = siren::ImageDimension::D2,
                     .mipmap_levels = 1,
                 }
             )
         );
-    }
+    };
 
-    // create depth images
-    for (const auto i : siren::range(DEPTH_COUNT)) {
-        m_depths[i] = std::make_unique<siren::Image>(
-            m_device.create_image(
-                {
-                    .label         = std::format("Depth Peeling Depth {}", i),
-                    .format        = siren::ImageFormat::Depth32f,
-                    .extent        = {.width = extent.x, .height = extent.y},
-                    .dimension     = siren::ImageDimension::D2,
-                    .mipmap_levels = 1,
-                }
-            )
-        );
-    }
+    m_accumulation_color = create_image("Depth Peeling Accumulation Color", siren::ImageFormat::RGBA8);
+    m_write_color        = create_image("Depth Peeling Write Color", siren::ImageFormat::RGBA8);
 
-    // create output
-    m_output = std::make_unique<siren::Image>(
-        m_device.create_image(
-            {
-                .label         = "output image",
-                .format        = siren::ImageFormat::RGBA8,
-                .extent        = {.width = extent.x, .height = extent.y},
-                .dimension     = siren::ImageDimension::D2,
-                .mipmap_levels = 1,
-            }
-        )
-    );
+    m_depths[0] = create_image("Depth Peeling Depth0", siren::ImageFormat::Depth32f);
+    m_depths[1] = create_image("Depth Peeling Depth1", siren::ImageFormat::Depth32f);
 }
 
 auto DepthPeeling::create_sampler() -> void {
@@ -158,41 +166,6 @@ auto DepthPeeling::create_sampler() -> void {
             }
         )
     );
-}
-
-auto DepthPeeling::create_render_targets() -> void {
-    // create render targets
-    // we create DepthPeeling::LAYER_COUNT targets. each target has a unique color attachment,
-    // but the depth attachments are cycled between only DepthPeeling::DEPTH_COUNT
-    for (const auto i : siren::range(LAYER_COUNT)) {
-        const auto color = siren::ColorAttachment{
-            .image           = m_colors[i]->handle(),
-            .begin_operation = siren::BeginOperation::Clear,
-            .clear_color     = siren::Rgba::zero(),
-        };
-        const auto depth = siren::DepthStencilAttachment{
-            .image           = m_depths[i % DEPTH_COUNT]->handle(),
-            .begin_operation = siren::BeginOperation::Clear,
-            .clear_depth     = 1,
-            .clear_stencil   = 0,
-        };
-        m_targets[i] = siren::RenderTarget{
-            .colors        = {color},
-            .depth_stencil = depth,
-        };
-    }
-
-    // combine target
-    m_combine_target = siren::RenderTarget{
-        .colors = {
-            {
-                .image           = m_output->handle(),
-                .begin_operation = siren::BeginOperation::Preserve,
-                .clear_color     = siren::Rgba::zero(),
-            },
-        },
-        .depth_stencil = std::nullopt,
-    };
 }
 
 auto DepthPeeling::create_pipelines() -> void {
@@ -242,26 +215,26 @@ auto DepthPeeling::create_pipelines() -> void {
     }
 
     {
-        m_combine_shader  = m_assets.load<siren::ShaderAsset>("oiter://assets/shaders/depth_peeling/combine.sshg");
-        const auto shader = m_assets.get_unsafe(m_combine_shader).shader.handle();
+        m_blend_shader    = m_assets.load<siren::ShaderAsset>("oiter://assets/shaders/depth_peeling/blend.sshg");
+        const auto shader = m_assets.get_unsafe(m_blend_shader).shader.handle();
 
-        m_combine_pipeline = std::make_unique<siren::GraphicsPipeline>(
+        m_blend_pipeline = std::make_unique<siren::GraphicsPipeline>(
             m_device.create_graphics_pipeline(
                 {
-                    .label       = "Depth Peeling Combine",
-                    .layout      = siren::DEFAULT_VERTEX_LAYOUT,
+                    .label       = "Depth Peeling Blend",
+                    .layout      = siren::FULLSCREEN_VERTEX_LAYOUT,
                     .shader      = shader,
                     .topology    = siren::PrimitiveTopology::Triangles,
                     .alpha_mode  = siren::AlphaMode::Blend,
                     .color_blend = {
                         .function      = siren::BlendFunction::Add,
-                        .source_factor = siren::BlendFactor::SourceAlpha,
-                        .dest_factor   = siren::BlendFactor::OneMinusSourceAlpha
+                        .source_factor = siren::BlendFactor::OneMinusDestinationAlpha,
+                        .dest_factor   = siren::BlendFactor::One,
                     },
                     .alpha_blend = {
                         .function      = siren::BlendFunction::Add,
-                        .source_factor = siren::BlendFactor::One,
-                        .dest_factor   = siren::BlendFactor::Zero,
+                        .source_factor = siren::BlendFactor::OneMinusDestinationAlpha,
+                        .dest_factor   = siren::BlendFactor::One,
                     },
                     .back_face_culling = false,
                     .depth_test        = false,

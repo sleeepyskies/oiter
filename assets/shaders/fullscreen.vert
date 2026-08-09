@@ -1,20 +1,5 @@
 #version 460
 
-struct BakedMaterial {
-    vec4 color;
-};
-
-layout(std140, binding = 0) uniform SceneUniforms {
-    mat4 projection_view;
-    vec3 camera_position;
-    float _pad0;
-};
-
-layout(std140, binding = 1) uniform MeshUniforms {
-    BakedMaterial material;
-    mat4 model;
-};
-
 layout(location = 0) out vec2 v_texture;
 
 void main() {

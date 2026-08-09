@@ -8,8 +8,7 @@ static auto bake_node(
     BakedScene& scene,
     siren::AssetServer& server,
     const siren::GltfNode& node,
-    const glm::mat4& ptransform,
-    const std::optional<siren::f32> forced_alpha
+    const glm::mat4& ptransform
 ) -> void {
     // bake this node
     const auto world_transform = ptransform * node.transform;
@@ -19,9 +18,6 @@ static auto bake_node(
             const siren::MaterialAsset& material = server.get_unsafe(surface.material);
 
             siren::Rgba color = material.base_color();
-            if (forced_alpha.has_value()) {
-                color.a = forced_alpha.value();
-            }
             scene.materials.emplace_back(color);
 
             BakedSurface baked_surface{
@@ -31,9 +27,6 @@ static auto bake_node(
                 (siren::u32)scene.materials.size() - 1,
             };
 
-            if (forced_alpha.has_value()) {
-                scene.transparent.emplace_back(std::move(baked_surface));
-            } else {
                 switch (material.alpha_mode()) {
                     case siren::AlphaMode::Blend: scene.transparent.emplace_back(std::move(baked_surface));
                         break;
@@ -41,7 +34,6 @@ static auto bake_node(
                     case siren::AlphaMode::Opaque:
                     case siren::AlphaMode::Mask: scene.opaque.emplace_back(std::move(baked_surface));
                         break;
-                }
             }
         }
     }
@@ -49,14 +41,13 @@ static auto bake_node(
     // recurse on children
     for (const auto& childh : node.children) {
         const siren::GltfNode& child = server.get_unsafe(childh);
-        bake_node(scene, server, child, world_transform, forced_alpha);
+        bake_node(scene, server, child, world_transform);
     }
 }
 
 auto bake_scene(
     const siren::StrongHandle<siren::Gltf>& gltf_handle,
-    siren::AssetServer& server,
-    const std::optional<siren::f32> forced_alpha
+    siren::AssetServer& server
 ) -> BakedScene {
     BakedScene baked{};
 
@@ -67,7 +58,7 @@ auto bake_scene(
 
     for (const auto& nodeh : scene.root_nodes) {
         auto& node = server.get_unsafe(nodeh);
-        bake_node(baked, server, node, glm::mat4{1}, forced_alpha);
+        bake_node(baked, server, node, glm::mat4{1});
     }
 
     siren::log::debug(
