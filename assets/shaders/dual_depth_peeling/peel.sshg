@@ -67,7 +67,7 @@ stages:
           const float nearest_layer = -input_depth.x; // normalize again since we negated in previous pass
           const float farthest_layer = input_depth.y;
           
-          out_depth.xy = input_depth;
+          out_depth = input_depth;
           out_front = input_front;
           out_back = vec4(0.f);
           

@@ -8,7 +8,7 @@
 #include "2iren/util/time.hpp"
 #include "2iren/window.hpp"
 #include "bake.hpp"
-#include "config.hpp"
+#include "cli.hpp"
 #include "gui.hpp"
 #include "timer.hpp"
 #include "methods/depth_peeling/depth_peeling.hpp"
@@ -17,23 +17,6 @@
 #ifndef OITER_VFS
 #define OITER_VFS "."
 #endif
-
-[[nodiscard]] auto create_method(
-    const oiter::Config& config,
-    siren::Device& device,
-    glm::uvec2 extent,
-    siren::AssetServer& server
-) -> std::unique_ptr<oiter::OitMethod> {
-    if (config.oit_method == oiter::MethodKind::DualDepthPeeling) {
-        return std::make_unique<oiter::DualDepthPeeling>(device, extent, server);
-    }
-
-    if (config.oit_method == oiter::MethodKind::DepthPeeling) {
-        return std::make_unique<oiter::DepthPeeling>(device, extent, server);
-    }
-
-    throw std::runtime_error("oit method (" + config.oit_method.to_string() + ") is not supported.");
-}
 
 [[nodiscard]] auto create_swapchain(siren::Device* device, siren::Window& window) -> siren::Swapchain {
     return device->create_swapchain(
@@ -46,8 +29,25 @@
     );
 }
 
+[[nodiscard]] inline auto create_method(
+    const oiter::Cli& cli,
+    siren::Device& device,
+    glm::uvec2 extent,
+    siren::AssetServer& server
+) -> std::unique_ptr<oiter::OitMethod> {
+    if (cli.oit_method == oiter::MethodKind::DualDepthPeeling) {
+        return std::make_unique<oiter::DualDepthPeeling>(device, extent, server);
+    }
+
+    if (cli.oit_method == oiter::MethodKind::DepthPeeling) {
+        return std::make_unique<oiter::DepthPeeling>(device, extent, server);
+    }
+
+    throw std::runtime_error("oit method (" + cli.oit_method.to_string() + ") is not supported.");
+}
+
 auto main(const int argc, const char** argv) -> int {
-    auto config = oiter::parse_cli_args(argc, argv);
+    auto cli = oiter::parse_cli_args(argc, argv);
 
     siren::FileSystem::mount("oiter", siren::Path{OITER_VFS});
 
@@ -78,19 +78,19 @@ auto main(const int argc, const char** argv) -> int {
     siren::AssetServer server{*device};
     siren::Input input{window};
 
-    const auto sceneh = server.load<siren::Gltf>(config.scene_path);
+    const auto sceneh = server.load<siren::Gltf>(cli.scene_path);
     while (!server.is_loaded_with_dependencies(sceneh)) {
         /** wait until loaded */ // todo: this eats cpu lol
     }
 
     auto baked = oiter::bake_scene(sceneh, server);
 
-    auto oit_method = create_method(config, *device, {window.width(), window.height()}, server);
+    auto oit_method = create_method(cli, *device, {window.width(), window.height()}, server);
 
     siren::PerspectiveCamera camera{};
     siren::PerspectiveCameraController controller;
-    camera.set_position(config.camera_position);
-    camera.look_at(glm::vec3{1, 0, 0});
+    camera.set_position(cli.camera_position);
+    camera.look_at(glm::vec3{-1, 0, 0});
 
     bool show_debug_menu = true;
 
@@ -125,6 +125,7 @@ auto main(const int argc, const char** argv) -> int {
         }
 
         if (input.keyboard().just_pressed(siren::Key::F2)) {
+            // todo: this doesnt work bc of asset server unloading bugs!
             oit_method->reload_shaders();
         }
 
@@ -147,10 +148,10 @@ auto main(const int argc, const char** argv) -> int {
                         camera,
                         controller,
                         oit_method.get(),
-                        config,
+                        cli,
                         guistate
                     )) {
-                        oit_method = create_method(config, *device, {window.width(), window.height()}, server);
+                        oit_method = create_method(cli, *device, {window.width(), window.height()}, server);
                     }
                 }
             }

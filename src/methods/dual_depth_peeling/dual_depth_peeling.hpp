@@ -43,9 +43,9 @@ namespace oiter {
  * Conceptually, the peeling pass will loop over all transparent fragments of
  * the scene and do:
  * - Init the write textures to:
- *      - Init out_depth = in_depth (pass through read)
- *      - out_front = in_front      (pass through read)
- *      - out_back = ZERO
+ *      - Init out_depth = in_depth      (pass through read)
+ *      - out_front      = in_front      (pass through read)
+ *      - out_back       = ZERO
  * - If the fragments depth is outside the to be peeled range, ignore.
  * - If the fragments depth is inside the range, but *not* on the layer,
  *   write depth to output. Essentially mimics @ref InitPass logic for
@@ -102,7 +102,7 @@ class DualDepthPeeling final : public OitMethod {
      */
     struct Config {
         /** @brief The maximum number of peels to perform. */
-        siren::i32 max_peels = 5;
+        siren::i32 max_peels = 8;
         /** @brief Whether to query in order to stop early. */
         bool perform_query = false;
     } m_config;
@@ -160,5 +160,6 @@ private:
     auto read_target() const -> const siren::RenderTarget&;
     auto write_target() const -> const siren::RenderTarget&;
     auto swap_targets() const -> void;
+    auto reset_targets() const -> void;
 };
 } // namespace oiter

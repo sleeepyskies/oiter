@@ -21,18 +21,13 @@ auto DepthPeeling::render(
 ) const -> const siren::Image& {
     update_buffers(camera, scene);
 
-    const auto buffer_alignment = siren::align_up(
-        sizeof(MeshUniforms),
-        m_device.limits().uniform_buffer_offset_alignment
-    );
-
     auto draw_scene = [&](siren::RenderPassRecorder& pass) {
         pass.bind_uniform_buffer(m_scene_buffer->handle(), 0);
         for (const auto& [index, surface] : std::views::enumerate(scene.transparent)) {
             pass.bind_uniform_buffer_range(
                 m_mesh_buffer->handle(),
                 1,
-                buffer_alignment * (scene.opaque.size() + index),
+                mesh_uniforms_alignment() * (scene.opaque.size() + index),
                 sizeof(MeshUniforms)
             );
             pass.bind_vertex_buffer(surface.vertex.buffer.handle(), 0, 0);

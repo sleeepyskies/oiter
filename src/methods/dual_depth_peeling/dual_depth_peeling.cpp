@@ -22,7 +22,7 @@ auto DualDepthPeeling::render(
     const siren::PerspectiveCamera& camera,
     const BakedScene& scene
 ) const -> const siren::Image& {
-    // todo: could we cache and reuse the command buffers across frames?
+    // todo: could we cache and reuse the command buffers across frames? ig wont help 2 much for opengl
     update_buffers(camera, scene);
 
     const auto draw_scene = [&](siren::RenderPassRecorder& pass) {
@@ -49,6 +49,8 @@ auto DualDepthPeeling::render(
             draw_scene(pass);
         }
     );
+
+    m_blend_image->clear(siren::Rgba::zero());
 
     for (const auto _ : siren::range(m_config.max_peels)) {
         m_last_frame_peels++;
@@ -82,25 +84,27 @@ auto DualDepthPeeling::render(
             }
         );
 
+        swap_targets();
+
         if (m_config.perform_query) {
             const auto samples_passed = m_device.query(m_occlusion_query->handle());
             siren::log::trace("Samples passed: {}", samples_passed);
             if (samples_passed == 0) { break; } // early end, nothing was drawn
         }
-
-        swap_targets();
     }
 
     // final pass
     m_device.render_pass(
-        siren::RenderPassDescriptor{.target = read_target()},
+        siren::RenderPassDescriptor{.target = m_final_target},
         [this](siren::RenderPassRecorder& pass) {
             pass.bind_graphics_pipeline(m_final_pipeline->handle());
             pass.bind_sampled_image(read_target().colors[1].image, m_sampler->handle(), 0);
-            pass.bind_sampled_image(read_target().colors[2].image, m_sampler->handle(), 1);
+            pass.bind_sampled_image(m_blend_image->handle(), m_sampler->handle(), 1); // accumulated back
             pass.draw_arrays(0, 3);
         }
     );
+
+    reset_targets();
 
     return *m_final_image;
 }
@@ -116,7 +120,7 @@ auto DualDepthPeeling::reload_shaders() -> void {
 
 void DualDepthPeeling::render_debug_info() {
     ImGui::Text("Peels performed last frame %u", m_last_frame_peels);
-    ImGui::SliderInt("Max Peels", &m_config.max_peels, 1, 100);
+    ImGui::SliderInt("Max Peels", &m_config.max_peels, 1, 16);
     ImGui::Checkbox("Occlusion Query", &m_config.perform_query);
 
     m_last_frame_peels = 0;
@@ -126,7 +130,7 @@ auto DualDepthPeeling::create_sampler() -> void {
     m_sampler = std::make_unique<siren::Sampler>(
         m_device.create_sampler(
             {
-                .min_filter    = siren::ImageFilterMode::Linear,
+                .min_filter    = siren::ImageFilterMode::Nearest,
                 .max_filter    = siren::ImageFilterMode::Nearest,
                 .mipmap_filter = siren::ImageFilterMode::Nearest,
                 .s_wrap        = siren::ImageWrapMode::ClampEdge,
@@ -163,7 +167,7 @@ auto DualDepthPeeling::create_images(const glm::uvec2 extent) -> void {
             m_device.create_image(
                 {
                     .label         = std::format("ping pong {} color {}", j < 3 ? 0 : 1, 1 + i % 2),
-                    .format        = siren::ImageFormat::RGBA8,
+                    .format        = siren::ImageFormat::RGBA16f,
                     .extent        = ext,
                     .dimension     = siren::ImageDimension::D2,
                     .mipmap_levels = 1,
@@ -178,7 +182,7 @@ auto DualDepthPeeling::create_images(const glm::uvec2 extent) -> void {
         m_device.create_image(
             {
                 .label         = "blend image",
-                .format        = siren::ImageFormat::RGB8,
+                .format        = siren::ImageFormat::RGB16f,
                 .extent        = ext,
                 .dimension     = siren::ImageDimension::D2,
                 .mipmap_levels = 1,
@@ -273,13 +277,21 @@ auto DualDepthPeeling::create_pipelines() -> void {
         m_init_pipeline   = std::make_unique<siren::GraphicsPipeline>(
             m_device.create_graphics_pipeline(
                 {
-                    .label             = "init pipeline",
-                    .layout            = siren::DEFAULT_VERTEX_LAYOUT,
-                    .shader            = shader,
-                    .topology          = siren::PrimitiveTopology::Triangles,
-                    .alpha_mode        = siren::AlphaMode::Blend,
-                    .color_blend       = {.function = siren::BlendFunction::Max},
-                    .alpha_blend       = {.function = siren::BlendFunction::Max},
+                    .label       = "init pipeline",
+                    .layout      = siren::DEFAULT_VERTEX_LAYOUT,
+                    .shader      = shader,
+                    .topology    = siren::PrimitiveTopology::Triangles,
+                    .alpha_mode  = siren::AlphaMode::Blend,
+                    .color_blend = {
+                        .function      = siren::BlendFunction::Max,
+                        .source_factor = siren::BlendFactor::One,
+                        .dest_factor   = siren::BlendFactor::Zero,
+                    },
+                    .alpha_blend = {
+                        .function      = siren::BlendFunction::Max,
+                        .source_factor = siren::BlendFactor::One,
+                        .dest_factor   = siren::BlendFactor::Zero,
+                    },
                     .back_face_culling = false,
                     .depth_test        = false,
                     .depth_write       = false,
@@ -294,13 +306,21 @@ auto DualDepthPeeling::create_pipelines() -> void {
         m_peel_pipeline   = std::make_unique<siren::GraphicsPipeline>(
             m_device.create_graphics_pipeline(
                 {
-                    .label             = "peel pipeline",
-                    .layout            = siren::DEFAULT_VERTEX_LAYOUT,
-                    .shader            = shader,
-                    .topology          = siren::PrimitiveTopology::Triangles,
-                    .alpha_mode        = siren::AlphaMode::Blend,
-                    .color_blend       = {.function = siren::BlendFunction::Max},
-                    .alpha_blend       = {.function = siren::BlendFunction::Max},
+                    .label       = "peel pipeline",
+                    .layout      = siren::DEFAULT_VERTEX_LAYOUT,
+                    .shader      = shader,
+                    .topology    = siren::PrimitiveTopology::Triangles,
+                    .alpha_mode  = siren::AlphaMode::Blend,
+                    .color_blend = {
+                        .function      = siren::BlendFunction::Max,
+                        .source_factor = siren::BlendFactor::One,
+                        .dest_factor   = siren::BlendFactor::Zero,
+                    },
+                    .alpha_blend = {
+                        .function      = siren::BlendFunction::Max,
+                        .source_factor = siren::BlendFactor::One,
+                        .dest_factor   = siren::BlendFactor::Zero,
+                    },
                     .back_face_culling = false,
                     .depth_test        = false,
                     .depth_write       = false,
@@ -315,13 +335,12 @@ auto DualDepthPeeling::create_pipelines() -> void {
         m_blend_pipeline  = std::make_unique<siren::GraphicsPipeline>(
             m_device.create_graphics_pipeline(
                 {
-                    .label          = "blend pipeline",
-                    .layout         = siren::DEFAULT_VERTEX_LAYOUT,
-                    .shader         = shader,
-                    .topology       = siren::PrimitiveTopology::Triangles,
-                    .alpha_mode     = siren::AlphaMode::Blend,
-                    .depth_function = siren::DepthFunction::Less,
-                    .color_blend    = {
+                    .label       = "blend pipeline",
+                    .layout      = siren::DEFAULT_VERTEX_LAYOUT,
+                    .shader      = shader,
+                    .topology    = siren::PrimitiveTopology::Triangles,
+                    .alpha_mode  = siren::AlphaMode::Blend,
+                    .color_blend = {
                         .function      = siren::BlendFunction::Add,
                         .source_factor = siren::BlendFactor::SourceAlpha,
                         .dest_factor   = siren::BlendFactor::OneMinusSourceAlpha,
@@ -360,6 +379,11 @@ auto DualDepthPeeling::create_pipelines() -> void {
     }
 }
 
+auto DualDepthPeeling::create_query() -> void {
+    m_occlusion_query = std::make_unique<siren::Query>(
+        m_device.create_query({.kind = siren::QueryKind::SamplesPassed})
+    );
+}
 
 auto DualDepthPeeling::read_target() const -> const siren::RenderTarget& {
     return m_pingpong_targets[m_pingpong_index];
@@ -371,9 +395,5 @@ auto DualDepthPeeling::write_target() const -> const siren::RenderTarget& {
 
 auto DualDepthPeeling::swap_targets() const -> void { m_pingpong_index = 1 - m_pingpong_index; }
 
-auto DualDepthPeeling::create_query() -> void {
-    m_occlusion_query = std::make_unique<siren::Query>(
-        m_device.create_query({.kind = siren::QueryKind::SamplesPassed})
-    );
-}
+auto DualDepthPeeling::reset_targets() const -> void { m_pingpong_index = 0; }
 } // namespace oiter

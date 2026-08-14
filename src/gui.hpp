@@ -4,7 +4,7 @@
 #include <imgui/backends/imgui_impl_glfw.h>
 #include <imgui/backends/imgui_impl_opengl3.h>
 
-#include "config.hpp"
+#include "cli.hpp"
 #include "2iren/window.hpp"
 #include "methods/oit_method.hpp"
 
@@ -47,7 +47,7 @@ inline auto end_frame() -> void {
     const siren::PerspectiveCamera& camera,
     siren::PerspectiveCameraController& controller,
     oiter::OitMethod* oit_method,
-    oiter::Config& config,
+    oiter::Cli& config,
     State& guistate
 ) -> bool {
     bool changed = false;

@@ -9,10 +9,8 @@ stages:
       #version 460
       
       layout(location = 0) out vec2 out_depth; // RG32F min max depth buffer
-      
-      // todo: dont do this, we should rely on the clear but this is just a quick fix until i know whats wrong
-      layout(location = 1) out vec4 out2;
-      layout(location = 2) out vec4 out3;
+      layout(location = 1) out vec4 out_front;
+      layout(location = 2) out vec4 out_back;
       
       void main() {
           float depth = gl_FragCoord.z;
@@ -20,8 +18,6 @@ stages:
           // R channel encodes closest, G channel encodes farthest.
           // We have Blending::Max enabled
           out_depth = vec2(-depth, depth);
-          
-          // todo: remove
-          out2 = vec4(0);
-          out3 = vec4(0);
+          out_front = vec4(0.0);
+          out_back  = vec4(0.0);
       }

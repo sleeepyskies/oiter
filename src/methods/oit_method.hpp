@@ -122,7 +122,7 @@ protected:
 
     /** @brief Returns the alignment size of the MeshUniforms buffer. */
     [[nodiscard]] auto mesh_uniforms_alignment() const -> siren::usize {
-        return m_device.limits().uniform_buffer_offset_alignment * sizeof(MeshUniforms);
+        return siren::align_up(sizeof(MeshUniforms), m_device.limits().uniform_buffer_offset_alignment);
     }
 
     /** @brief Child class may call this to render a skybox image. */

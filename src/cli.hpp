@@ -36,16 +36,15 @@ struct MethodKind {
     }
 };
 
-
-struct Config {
+struct Cli {
     std::string scene_path    = "oiter://assets/meshes/stresstest.glb";
     MethodKind oit_method     = MethodKind::DualDepthPeeling;
     glm::vec3 camera_position = glm::vec3(0.0f);
 };
 
-inline auto parse_cli_args(int argc, const char** argv) -> Config {
+inline auto parse_cli_args(int argc, const char** argv) -> Cli {
     bool show_help = false;
-    Config config;
+    Cli config;
 
     std::string method = config.oit_method.to_string();
     std::string camera_position;
@@ -70,9 +69,7 @@ inline auto parse_cli_args(int argc, const char** argv) -> Config {
                 >> config.camera_position.y >> comma
                 >> config.camera_position.z) ||
             comma != ',') {
-            throw std::runtime_error(
-                "Invalid --camera-position. Expected x,y,z"
-            );
+            throw std::runtime_error("Invalid --camera-position. Expected x,y,z");
         }
     }
 

@@ -11,10 +11,29 @@ stages:
       layout(location = 0) in vec2 v_texture;
       layout(location = 0) out vec4 out_color;
       layout(binding = 0) uniform sampler2D layer;
+      
+      struct BakedMaterial {
+          vec4 color;
+      };
+      
+      layout(std140, binding = 0) uniform SceneUniforms {
+          mat4 projection_view;
+          vec3 camera_position;
+          float _pad0;
+      };
+      
+      layout(std140, binding = 1) uniform MeshUniforms {
+          BakedMaterial material;
+          mat4 model;
+      };
+      
+      vec4 shade() {
+          return material.color;
+      }
 
       void main() {
-          // pre multiplying here
-          const vec4 layer_color = texture(layer, v_texture);
-          out_color.rgb = layer_color.rgb * layer_color.a;
-          out_color.a = layer_color.a;
+        const vec4 layer_color = texture(layer, v_texture);
+
+        out_color.rgb = layer_color.rgb * layer_color.a;
+        out_color.a   = layer_color.a;
       }
