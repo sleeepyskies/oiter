@@ -79,9 +79,7 @@ auto main(const int argc, const char** argv) -> int {
     siren::Input input{window};
 
     const auto sceneh = server.load<siren::Gltf>(cli.scene_path);
-    while (!server.is_loaded_with_dependencies(sceneh)) {
-        /** wait until loaded */ // todo: this eats cpu lol
-    }
+    server.wait_until_loaded(sceneh);
 
     auto baked = oiter::bake_scene(sceneh, server);
 
