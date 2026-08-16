@@ -88,7 +88,6 @@ auto DualDepthPeeling::render(
 
         if (m_config.perform_query) {
             const auto samples_passed = m_device.query(m_occlusion_query->handle());
-            siren::log::trace("Samples passed: {}", samples_passed);
             if (samples_passed == 0) { break; } // early end, nothing was drawn
         }
     }
@@ -262,7 +261,7 @@ auto DualDepthPeeling::create_render_targets() -> void {
         .colors = {
             {
                 .image           = m_final_image->handle(),
-                .begin_operation = siren::BeginOperation::Clear,
+                .begin_operation = siren::BeginOperation::Preserve,
                 .clear_color     = siren::Rgba::zero(),
             },
         },

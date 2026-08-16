@@ -47,9 +47,9 @@
 }
 
 auto main(const int argc, const char** argv) -> int {
-    auto cli = oiter::parse_cli_args(argc, argv);
-
     siren::FileSystem::mount("oiter", siren::Path{OITER_VFS});
+
+    auto cli = oiter::parse_cli_args(argc, argv);
 
     const auto ctx = siren::Context::create(
         {
@@ -106,6 +106,16 @@ auto main(const int argc, const char** argv) -> int {
     );
 
     gui::State guistate{};
+    bool render_skybox = true;
+    auto skybox_image  = device->create_image(
+        {
+            .label         = "SkyBox Image",
+            .format        = siren::ImageFormat::RGBA8,
+            .extent        = {.width = window.width(), .height = window.height(), .depth_or_layers = 1},
+            .dimension     = siren::ImageDimension::D2,
+            .mipmap_levels = 1,
+        }
+    );
 
     while (!window.should_close()) {
         guistate.frame++;
@@ -137,6 +147,10 @@ auto main(const int argc, const char** argv) -> int {
         {
             oiter::SetTimer s2{guistate.oit_render_ms};
             const auto& image = oit_method->render(camera, baked);
+            if (render_skybox) {
+                oit_method->render_skybox_into_target(skybox_image);
+                device->blit(skybox_image.handle(), swapchain.next_image());
+            }
             device->blit(image.handle(), swapchain.next_image());
         }
 

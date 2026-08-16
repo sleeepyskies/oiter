@@ -18,7 +18,6 @@ add_executable(oiter
         src/methods/dual_depth_peeling/dual_depth_peeling.cpp
         src/methods/depth_peeling/depth_peeling.cpp
         src/methods/oit_method.cpp
-        src/timer.hpp
 )
 
 include(dependencies.cmake)

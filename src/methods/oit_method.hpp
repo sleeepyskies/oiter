@@ -88,6 +88,10 @@ public:
      */
     virtual auto render_debug_info() -> void {}
 
+
+    /** @brief Child class may call this to render a skybox image. */
+    auto render_skybox_into_target(const siren::Image& image) const -> void;
+
 protected:
     /** @brief Cached reference to the @ref Device. */
     siren::Device& m_device;
@@ -124,9 +128,6 @@ protected:
     [[nodiscard]] auto mesh_uniforms_alignment() const -> siren::usize {
         return siren::align_up(sizeof(MeshUniforms), m_device.limits().uniform_buffer_offset_alignment);
     }
-
-    /** @brief Child class may call this to render a skybox image. */
-    auto render_skybox_into_target(const siren::Image& image) const -> void;
 
 private:
     /** @brief Creates uniform buffers for the scene. This involves global scene data as well as per call data. */
