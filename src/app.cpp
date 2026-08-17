@@ -95,7 +95,7 @@ auto App::run_interactive() -> void {
     );
 
     auto device = ctx.create_device({.window = window});
-    gui::init(window);
+    device->render_thread().spawn([&] { gui::init(window); });
 
     auto swapchain = create_swapchain(device.get(), window);
     siren::AssetServer server{*device};
