@@ -272,6 +272,7 @@ auto DualDepthPeeling::create_render_targets() -> void {
 auto DualDepthPeeling::create_pipelines() -> void {
     {
         m_init_shader     = m_assets.load<siren::ShaderAsset>("oiter://assets/shaders/dual_depth_peeling/init.sshg");
+        m_assets.wait_until_loaded(m_init_shader);
         const auto shader = m_assets.get(m_init_shader)->shader.handle();
         m_init_pipeline   = std::make_unique<siren::GraphicsPipeline>(
             m_device.create_graphics_pipeline(
@@ -301,6 +302,7 @@ auto DualDepthPeeling::create_pipelines() -> void {
 
     {
         m_peel_shader     = m_assets.load<siren::ShaderAsset>("oiter://assets/shaders/dual_depth_peeling/peel.sshg");
+        m_assets.wait_until_loaded(m_peel_shader);
         const auto shader = m_assets.get(m_peel_shader)->shader.handle();
         m_peel_pipeline   = std::make_unique<siren::GraphicsPipeline>(
             m_device.create_graphics_pipeline(
@@ -330,6 +332,7 @@ auto DualDepthPeeling::create_pipelines() -> void {
 
     {
         m_blend_shader    = m_assets.load<siren::ShaderAsset>("oiter://assets/shaders/dual_depth_peeling/blend.sshg");
+        m_assets.wait_until_loaded(m_blend_shader);
         const auto shader = m_assets.get(m_blend_shader)->shader.handle();
         m_blend_pipeline  = std::make_unique<siren::GraphicsPipeline>(
             m_device.create_graphics_pipeline(
@@ -359,6 +362,7 @@ auto DualDepthPeeling::create_pipelines() -> void {
 
     {
         m_final_shader    = m_assets.load<siren::ShaderAsset>("oiter://assets/shaders/dual_depth_peeling/final.sshg");
+        m_assets.wait_until_loaded(m_final_shader);
         const auto shader = m_assets.get(m_final_shader)->shader.handle();
         m_final_pipeline  = std::make_unique<siren::GraphicsPipeline>(
             m_device.create_graphics_pipeline(
