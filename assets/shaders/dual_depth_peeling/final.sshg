@@ -21,5 +21,5 @@ stages:
           
           // blend front over back, alpha is how much of the background is blocked by the front
           out_color.rgb = input_front.rgb + input_back * alpha;
-          out_color.a = 1.f;
+          out_color.a = input_front.a;
       }

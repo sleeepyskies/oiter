@@ -4,7 +4,7 @@
 #include <imgui/backends/imgui_impl_glfw.h>
 #include <imgui/backends/imgui_impl_opengl3.h>
 
-#include "cli.hpp"
+#include "cli_args.hpp"
 #include "2iren/window.hpp"
 #include "methods/oit_method.hpp"
 
@@ -47,7 +47,7 @@ inline auto end_frame() -> void {
     const siren::PerspectiveCamera& camera,
     siren::PerspectiveCameraController& controller,
     oiter::OitMethod* oit_method,
-    oiter::Cli& config,
+    oiter::CliArgs& config,
     State& guistate
 ) -> bool {
     bool changed = false;
@@ -159,6 +159,7 @@ inline auto end_frame() -> void {
     ImGui::Text("F1 - TOGGLE DEBUG      ");
     ImGui::Text("F2 - RELOAD SHADERS    ");
     ImGui::Text("F3 - TOGGLE VSYNC      ");
+    ImGui::Text("F4 - RENDER SKYBOX     ");
     ImGui::End();
 
     end_frame();

@@ -6,10 +6,6 @@ stages:
       #version 460
       
       layout(location = 0) in vec3 a_position;
-
-      struct BakedMaterial {
-          vec4 color;
-      };
       
       layout(std140, binding = 0) uniform SceneUniforms {
           mat4 projection_view;
@@ -20,10 +16,10 @@ stages:
       layout(location = 0) out vec3 v_position;
 
       void main() {
-        v_position = a_position;
-        vec3 world_pos = a_position + camera_position;
-        gl_Position = projection_view * vec4(world_pos, 1.0);
-        gl_Position = gl_Position.xyww;
+          v_position = a_position;
+          vec3 world_pos = a_position + camera_position;
+          gl_Position = projection_view * vec4(world_pos, 1.0);
+          gl_Position = gl_Position.xyww;
       }
   fragment:
     name: fragment
@@ -33,8 +29,9 @@ stages:
       layout(location = 0) in vec3 v_position;
       layout(location = 0) out vec4 out_color;
       
-      uniform samplerCube skybox;
+      uniform samplerCube skybox_texture;
 
       void main() {
-          out_color = texture(skybox, v_position);
+        const vec3 color = texture(skybox_texture, normalize(v_position)).rgb;
+        out_color = vec4(color, 1.0);
       }

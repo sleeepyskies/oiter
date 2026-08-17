@@ -8,8 +8,9 @@
 #include "2iren/util/time.hpp"
 #include "2iren/window.hpp"
 #include "bake.hpp"
-#include "cli.hpp"
+#include "cli_args.hpp"
 #include "gui.hpp"
+#include "skybox.hpp"
 #include "timer.hpp"
 #include "methods/depth_peeling/depth_peeling.hpp"
 #include "methods/dual_depth_peeling/dual_depth_peeling.hpp"
@@ -30,7 +31,7 @@
 }
 
 [[nodiscard]] inline auto create_method(
-    const oiter::Cli& cli,
+    const oiter::CliArgs& cli,
     siren::Device& device,
     glm::uvec2 extent,
     siren::AssetServer& server
@@ -105,15 +106,7 @@ auto main(const int argc, const char** argv) -> int {
 
     gui::State guistate{};
     bool render_skybox = true;
-    auto skybox_image  = device->create_image(
-        {
-            .label         = "SkyBox Image",
-            .format        = siren::ImageFormat::RGBA8,
-            .extent        = {.width = window.width(), .height = window.height(), .depth_or_layers = 1},
-            .dimension     = siren::ImageDimension::D2,
-            .mipmap_levels = 1,
-        }
-    );
+    const auto skybox = oiter::Skybox{"oiter://assets/textures/skybox/skybox.cubemap", *device, server};
 
     while (!window.should_close()) {
         guistate.frame++;
@@ -142,12 +135,15 @@ auto main(const int argc, const char** argv) -> int {
             swapchain = create_swapchain(device.get(), window);
         }
 
+        if (input.keyboard().just_pressed(siren::Key::F4)) {
+            render_skybox = !render_skybox;
+        }
+
         {
             oiter::SetTimer s2{guistate.oit_render_ms};
             const auto& image = oit_method->render(camera, baked);
             if (render_skybox) {
-                oit_method->render_skybox_into_target(skybox_image);
-                device->blit(skybox_image.handle(), swapchain.next_image());
+                skybox.render_behind(image, camera);
             }
             device->blit(image.handle(), swapchain.next_image());
         }
@@ -172,7 +168,4 @@ auto main(const int argc, const char** argv) -> int {
         siren::time::tick();
         input.update();
     }
-
-    device->wait_until_idle();
-    return 0;
 }

@@ -88,10 +88,6 @@ public:
      */
     virtual auto render_debug_info() -> void {}
 
-
-    /** @brief Child class may call this to render a skybox image. */
-    auto render_skybox_into_target(const siren::Image& image) const -> void;
-
 protected:
     /** @brief Cached reference to the @ref Device. */
     siren::Device& m_device;
@@ -108,18 +104,6 @@ protected:
     /** @brief Buffer containing per mesh data. */
     std::unique_ptr<siren::Buffer> m_mesh_buffer;
 
-    /** @brief Image for the skybox. */
-    siren::StrongHandle<siren::Texture> m_skybox_texture = siren::NullHandle;
-
-    /** @brief Unit cube mesh. */
-    siren::StrongHandle<siren::Mesh> m_cube = siren::NullHandle;
-
-    /** @brief GraphicsPipeline for the skybox. */
-    std::unique_ptr<siren::GraphicsPipeline> m_skybox_pipeline;
-
-    /** @brief Shader handle for the skybox. */
-    siren::StrongHandle<siren::ShaderAsset> m_skybox_shader = siren::NullHandle;
-
 protected:
     /** @brief Updates the contents of the methods buffers. */
     auto update_buffers(const siren::PerspectiveCamera& camera, const BakedScene& scene) const -> void;
@@ -132,8 +116,5 @@ protected:
 private:
     /** @brief Creates uniform buffers for the scene. This involves global scene data as well as per call data. */
     auto create_buffers() -> void;
-
-    /** @brief Creates the resources needed for rendering the skybox background. */
-    auto create_background_resources() -> void;
 };
 } // namespace oiter

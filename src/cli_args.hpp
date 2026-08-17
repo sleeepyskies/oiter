@@ -36,15 +36,15 @@ struct MethodKind {
     }
 };
 
-struct Cli {
-    std::string scene_path    = "oiter://assets/meshes/stresstest.glb";
+struct CliArgs {
+    std::string scene_path    = "oiter://assets/meshes/oit-car.glb";
     MethodKind oit_method     = MethodKind::DualDepthPeeling;
     glm::vec3 camera_position = glm::vec3(0.0f);
 };
 
-inline auto parse_cli_args(int argc, const char** argv) -> Cli {
+inline auto parse_cli_args(int argc, const char** argv) -> CliArgs {
     bool show_help = false;
-    Cli config;
+    CliArgs config;
 
     std::string method = config.oit_method.to_string();
     std::string camera_position;
