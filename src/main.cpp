@@ -126,7 +126,6 @@ auto main(const int argc, const char** argv) -> int {
         }
 
         if (input.keyboard().just_pressed(siren::Key::F2)) {
-            // todo: this doesnt work bc of asset server unloading bugs!
             oit_method->reload_shaders();
         }
 
