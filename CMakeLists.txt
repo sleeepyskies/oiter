@@ -12,6 +12,7 @@ add_subdirectory(2iREN)
 
 add_executable(oiter
         src/main.cpp
+        src/app.cpp
 
         src/bake.cpp
 

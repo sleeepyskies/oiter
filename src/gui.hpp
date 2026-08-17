@@ -4,8 +4,8 @@
 #include <imgui/backends/imgui_impl_glfw.h>
 #include <imgui/backends/imgui_impl_opengl3.h>
 
-#include "cli_args.hpp"
 #include "2iren/window.hpp"
+#include "methods/method_kind.hpp"
 #include "methods/oit_method.hpp"
 
 namespace oiter {
@@ -47,7 +47,7 @@ inline auto end_frame() -> void {
     const siren::PerspectiveCamera& camera,
     siren::PerspectiveCameraController& controller,
     oiter::OitMethod* oit_method,
-    oiter::CliArgs& config,
+    oiter::MethodKind& method_kind,
     State& guistate
 ) -> bool {
     bool changed = false;
@@ -75,7 +75,7 @@ inline auto end_frame() -> void {
     );
 
     if (ImGui::CollapsingHeader("OIT Method", ImGuiTreeNodeFlags_DefaultOpen)) {
-        static auto method = static_cast<int>(config.oit_method.value);
+        static auto method = static_cast<int>(method_kind.value);
         const auto old     = method;
 
         ImGui::RadioButton(
@@ -90,7 +90,7 @@ inline auto end_frame() -> void {
             std::to_underlying(oiter::MethodKind::DepthPeeling)
         );
 
-        config.oit_method = static_cast<oiter::MethodKind::Value>(method);
+        method_kind = static_cast<oiter::MethodKind::Value>(method);
 
         if (method != old) {
             changed = true;
