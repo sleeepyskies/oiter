@@ -5,19 +5,21 @@
 #include <imgui/backends/imgui_impl_opengl3.h>
 
 #include "2iren/window.hpp"
+#include "interactive_state.hpp"
 #include "methods/method_kind.hpp"
 #include "methods/oit_method.hpp"
+
+#include <format>
+#include <optional>
+#include <utility>
 
 namespace oiter {
 class OitMethod;
 }
 
 namespace gui {
-struct State {
-    bool show                = true;
-    siren::u32 full_frame_ms = 0;
-    siren::u32 oit_render_ms = 0;
-    siren::u64 frame         = 0;
+struct DebugPanelActions {
+    std::optional<oiter::MethodKind> oit_method;
 };
 
 
@@ -41,25 +43,20 @@ inline auto end_frame() -> void {
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-/** @brief Returns true if method should be updated. */
-[[nodiscard]] inline auto render_debug_info(
+/** @brief Draws the debug overlay and returns requested state changes. */
+[[nodiscard]] inline auto render_debug(
     const siren::Statistics& statistics,
     const siren::PerspectiveCamera& camera,
     siren::PerspectiveCameraController& controller,
-    oiter::OitMethod* oit_method,
-    oiter::MethodKind& method_kind,
-    State& guistate
-) -> bool {
-    bool changed = false;
+    oiter::OitMethod& oit_method,
+    const oiter::MethodKind method_kind,
+    const oiter::FrameStats& frame_stats
+) -> DebugPanelActions {
+    DebugPanelActions actions;
 
     new_frame();
-    static float speed       = controller.speed();
-    static float sensitivity = controller.sensitivity();
-    static auto fps          = guistate.frame;
-
-    if (!(guistate.frame % 60)) {
-        fps = 1 / siren::time::delta_s();
-    }
+    auto speed       = static_cast<float>(controller.speed());
+    auto sensitivity = static_cast<float>(controller.sensitivity());
 
     const auto& io = ImGui::GetIO();
 
@@ -75,8 +72,7 @@ inline auto end_frame() -> void {
     );
 
     if (ImGui::CollapsingHeader("OIT Method", ImGuiTreeNodeFlags_DefaultOpen)) {
-        static auto method = static_cast<int>(method_kind.value);
-        const auto old     = method;
+        auto method = static_cast<int>(method_kind.value);
 
         ImGui::RadioButton(
             "Dual Depth Peeling",
@@ -90,21 +86,19 @@ inline auto end_frame() -> void {
             std::to_underlying(oiter::MethodKind::DepthPeeling)
         );
 
-        method_kind = static_cast<oiter::MethodKind::Value>(method);
-
-        if (method != old) {
-            changed = true;
+        if (method != std::to_underlying(method_kind.value)) {
+            actions.oit_method = static_cast<oiter::MethodKind::Value>(method);
         }
     }
 
     if (ImGui::CollapsingHeader("Render Statistics", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::Text("Current Frame: %lu", guistate.frame);
-        ImGui::Text("FPS: %lu fps", fps);
+        ImGui::Text("Current Frame: %lu", frame_stats.frame);
+        ImGui::Text("FPS: %.1f fps", frame_stats.fps);
 
         ImGui::Separator();
 
-        ImGui::Text("Frame took %ums", guistate.full_frame_ms);
-        ImGui::Text("Oit Render took %ums", guistate.oit_render_ms);
+        ImGui::Text("Frame took %ums", frame_stats.full_frame_ms);
+        ImGui::Text("Oit Render took %ums", frame_stats.oit_render_ms);
 
         ImGui::Separator();
 
@@ -136,9 +130,9 @@ inline auto end_frame() -> void {
         if (sensitivity != controller.sensitivity()) { controller.set_sensitivity(sensitivity); }
     }
 
-    const auto title = std::format("{} Controls", oit_method->name().data());
+    const auto title = std::format("{} Controls", oit_method.name().data());
     if (ImGui::CollapsingHeader(title.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
-        oit_method->render_debug_info();
+        oit_method.render_debug_info();
     }
 
     ImGui::End();
@@ -164,6 +158,6 @@ inline auto end_frame() -> void {
 
     end_frame();
 
-    return changed;
+    return actions;
 }
 } // namespace gui

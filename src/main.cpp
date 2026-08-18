@@ -13,11 +13,11 @@ auto main(const int argc, const char** argv) -> siren::i32 {
 
     std::visit(
         []<typename Command>(const Command& options) {
-            oiter::App app{options.app};
+            oiter::App app{options.app_options};
             if constexpr (std::is_same_v<Command, oiter::InteractiveOptions>) {
                 app.run_interactive();
             } else if constexpr (std::is_same_v<Command, oiter::RenderOptions>) {
-                app.run_render();
+                app.run_render(/* todo: pass in render options here! */);
             }
         },
         *command

@@ -1,24 +1,21 @@
 #pragma once
 
 #include "2iren/base.hpp"
+#include "interactive_state.hpp"
 #include "methods/method_kind.hpp"
 
 #include <glm/vec3.hpp>
 
-#include <memory>
 #include <string>
 
 namespace oiter {
 /**
  * @brief Owns an OIT application invocation.
- *
- * This type owns runtime state. It deliberately does not retain the parsed CLI
- * command that initialized it.
  */
-struct AppConfig {
+struct AppOptions {
     std::string scene_path    = "oiter://assets/meshes/stresstest.glb";
-    MethodKind oit_method     = MethodKind::DualDepthPeeling;
-    glm::vec3 camera_position = glm::vec3{siren::f32{0}};
+    MethodKind initial_method = MethodKind::DualDepthPeeling;
+    glm::vec3 camera_position = glm::vec3{0.f, 0.f, 0.f};
 };
 
 /**
@@ -26,8 +23,7 @@ struct AppConfig {
  */
 class App {
 public:
-    explicit App(AppConfig config);
-    ~App();
+    explicit App(AppOptions options);
 
     /** @brief Launches the oiter interactive mode. */
     auto run_interactive() -> void;
@@ -36,7 +32,8 @@ public:
     auto run_render() -> void;
 
 private:
-    struct State;
-    std::unique_ptr<State> m_state;
+    std::string m_scene_path;
+    InteractiveState m_interactive_state;
+    FrameStats m_frame_stats;
 };
 } // namespace oiter

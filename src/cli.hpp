@@ -18,7 +18,7 @@ namespace oiter {
  */
 struct InteractiveOptions {
     /** @brief Core application configuration. */
-    AppConfig app;
+    AppOptions app_options;
 };
 
 /**
@@ -27,7 +27,7 @@ struct InteractiveOptions {
  */
 struct RenderOptions {
     /** @brief Core application configuration. */
-    AppConfig app;
+    AppOptions app_options;
     /** @brief Output path of the image. */
     std::string output_path;
     /** @brief Size of the image to render. */
@@ -92,7 +92,7 @@ using CommandOptions = std::variant<InteractiveOptions, RenderOptions>;
         [&](const lyra::group&) { selected_command = SelectedCommand::Interactive; }
     ).help("Opens the interactive demo.");
     interactive_command.add_argument(
-        lyra::opt(interactive.app.scene_path, "scene")["--scene"]["-s"]("Path to scene file.")
+        lyra::opt(interactive.app_options.scene_path, "scene")["--scene"]["-s"]("Path to scene file.")
     );
     interactive_command.add_argument(
         lyra::opt(interactive_method, "method")["--method"]["-m"]("OIT method.").choices("ddp", "dp")
@@ -106,7 +106,7 @@ using CommandOptions = std::variant<InteractiveOptions, RenderOptions>;
         [&](const lyra::group&) { selected_command = SelectedCommand::Render; }
     ).help("Renders a single image.");
     render_command.add_argument(
-        lyra::opt(render.app.scene_path, "scene")["--scene"]["-s"]("Path to scene file to render")
+        lyra::opt(render.app_options.scene_path, "scene")["--scene"]["-s"]("Path to scene file to render")
     );
     render_command.add_argument(
         lyra::opt(render_method, "method")["--method"]["-m"]("OIT method.").choices("ddp", "dp", "ab", "kb")
@@ -143,17 +143,17 @@ using CommandOptions = std::variant<InteractiveOptions, RenderOptions>;
     }
 
     if (selected_command == SelectedCommand::Interactive) {
-        interactive.app.oit_method = MethodKind::from_string(interactive_method);
+        interactive.app_options.initial_method = MethodKind::from_string(interactive_method);
         if (!interactive_camera_position.empty()) {
-            interactive.app.camera_position = parse_camera_position(interactive_camera_position);
+            interactive.app_options.camera_position = parse_camera_position(interactive_camera_position);
         }
         return std::move(interactive);
     }
 
     if (selected_command == SelectedCommand::Render) {
-        render.app.oit_method = MethodKind::from_string(render_method);
+        render.app_options.initial_method = MethodKind::from_string(render_method);
         if (!render_camera_position.empty()) {
-            render.app.camera_position = parse_camera_position(render_camera_position);
+            render.app_options.camera_position = parse_camera_position(render_camera_position);
         }
         return std::move(render);
     }
