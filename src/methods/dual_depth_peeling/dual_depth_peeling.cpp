@@ -114,6 +114,14 @@ auto DualDepthPeeling::resize(const glm::uvec2 extent) -> void {
 }
 
 auto DualDepthPeeling::reload_shaders() -> void {
+    m_init_pipeline  = nullptr;
+    m_peel_pipeline  = nullptr;
+    m_blend_pipeline = nullptr;
+    m_final_pipeline = nullptr;
+    m_init_shader    = siren::NullHandle;
+    m_peel_shader    = siren::NullHandle;
+    m_blend_shader   = siren::NullHandle;
+    m_final_shader   = siren::NullHandle;
     create_pipelines();
 }
 

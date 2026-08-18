@@ -105,6 +105,12 @@ auto DepthPeeling::resize(const glm::uvec2 extent) -> void {
 }
 
 auto DepthPeeling::reload_shaders() -> void {
+    m_gather_first_shader   = siren::NullHandle;
+    m_gather_shader         = siren::NullHandle;
+    m_blend_shader          = siren::NullHandle;
+    m_gather_first_pipeline = nullptr;
+    m_gather_pipeline       = nullptr;
+    m_blend_pipeline        = nullptr;
     create_pipelines();
 }
 
