@@ -15,21 +15,6 @@ stages:
       struct BakedMaterial {
           vec4 color;
       };
-      
-      layout(std140, binding = 0) uniform SceneUniforms {
-          mat4 projection_view;
-          vec3 camera_position;
-          float _pad0;
-      };
-      
-      layout(std140, binding = 1) uniform MeshUniforms {
-          BakedMaterial material;
-          mat4 model;
-      };
-      
-      vec4 shade() {
-          return material.color;
-      }
 
       void main() {
         const vec4 layer_color = texture(layer, v_texture);
