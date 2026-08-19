@@ -148,67 +148,37 @@ auto DualDepthPeeling::create_sampler() -> void {
 }
 
 auto DualDepthPeeling::create_images(const glm::uvec2 extent) -> void {
-    const siren::ImageExtent ext = {.width = extent.x, .height = extent.y, .depth_or_layers = 1};
-
-    // create ping pong dual depth images
-    for (const auto i : siren::range(2)) {
-        m_pingpong_colors[i * 3] = std::make_unique<siren::Image>(
+    const auto create_image = [&](const std::string& label, const siren::ImageFormat format) {
+        return std::make_unique<siren::Image>(
             m_device.create_image(
                 {
-                    .label         = std::format("ping pong {} color 0", i),
-                    .format        = siren::ImageFormat::RG32f,
-                    .extent        = ext,
+                    .label         = label,
+                    .format        = format,
+                    .extent        = {.width = extent.x, .height = extent.y, .depth_or_layers = 1},
                     .dimension     = siren::ImageDimension::D2,
                     .mipmap_levels = 1,
                 }
             )
         );
-        ASSERT(m_pingpong_colors[i * 3] != nullptr);
+    };
+
+    // create ping pong dual depth images
+    for (const auto i : siren::range(2)) {
+        m_pingpong_colors[i * 3] = create_image(std::format("Ping Pong {} Depth 0", i), siren::ImageFormat::RG32f);
     }
 
     // create ping pong color images
     for (const auto i : siren::range(4)) {
         // maps (0, 1, 2, 3) to  (1, 2, 4, 5)
         const auto j         = i + 1 + (i >= 2);
-        m_pingpong_colors[j] = std::make_unique<siren::Image>(
-            m_device.create_image(
-                {
-                    .label         = std::format("ping pong {} color {}", j < 3 ? 0 : 1, 1 + i % 2),
-                    .format        = siren::ImageFormat::RGBA16f,
-                    .extent        = ext,
-                    .dimension     = siren::ImageDimension::D2,
-                    .mipmap_levels = 1,
-                }
-            )
+        m_pingpong_colors[j] = create_image(
+            std::format("Ping Pong {} Color {}", j < 3 ? 0 : 1, 1 + i % 2),
+            siren::ImageFormat::RGBA16f
         );
-        ASSERT(m_pingpong_colors[j] != nullptr);
     }
 
-    // blend images
-    m_blend_image = std::make_unique<siren::Image>(
-        m_device.create_image(
-            {
-                .label         = "blend image",
-                .format        = siren::ImageFormat::RGB16f,
-                .extent        = ext,
-                .dimension     = siren::ImageDimension::D2,
-                .mipmap_levels = 1,
-            }
-        )
-    );
-
-    // images for final pass
-    m_final_image = std::make_unique<siren::Image>(
-        m_device.create_image(
-            {
-                .label         = "final image",
-                .format        = siren::ImageFormat::RGBA8,
-                .extent        = ext,
-                .dimension     = siren::ImageDimension::D2,
-                .mipmap_levels = 1,
-            }
-        )
-    );
+    m_blend_image = create_image("Blend Image", siren::ImageFormat::RGBA16f);
+    m_final_image = create_image("Final Image", siren::ImageFormat::RGBA8);
 }
 
 auto DualDepthPeeling::create_render_targets() -> void {
@@ -259,7 +229,7 @@ auto DualDepthPeeling::create_render_targets() -> void {
             {
                 .image           = m_blend_image->handle(),
                 .begin_operation = siren::BeginOperation::Preserve,
-                .clear_color     = siren::Rgba::white(),
+                .clear_color     = siren::Rgba{0, 1},
             },
         },
         .depth_stencil = std::nullopt,
@@ -279,27 +249,19 @@ auto DualDepthPeeling::create_render_targets() -> void {
 
 auto DualDepthPeeling::create_pipelines() -> void {
     {
-        m_init_shader     = m_assets.load<siren::ShaderAsset>("oiter://assets/shaders/dual_depth_peeling/init.sshg");
+        m_init_shader = m_assets.load<siren::ShaderAsset>("oiter://assets/shaders/dual_depth_peeling/init.sshg");
         m_assets.wait_until_loaded(m_init_shader);
         const auto shader = m_assets.get(m_init_shader)->shader.handle();
         m_init_pipeline   = std::make_unique<siren::GraphicsPipeline>(
             m_device.create_graphics_pipeline(
                 {
-                    .label       = "init pipeline",
-                    .layout      = siren::DEFAULT_VERTEX_LAYOUT,
-                    .shader      = shader,
-                    .topology    = siren::PrimitiveTopology::Triangles,
-                    .alpha_mode  = siren::AlphaMode::Blend,
-                    .color_blend = {
-                        .function      = siren::BlendFunction::Max,
-                        .source_factor = siren::BlendFactor::One,
-                        .dest_factor   = siren::BlendFactor::Zero,
-                    },
-                    .alpha_blend = {
-                        .function      = siren::BlendFunction::Max,
-                        .source_factor = siren::BlendFactor::One,
-                        .dest_factor   = siren::BlendFactor::Zero,
-                    },
+                    .label             = "Init Pipeline",
+                    .layout            = siren::DEFAULT_VERTEX_LAYOUT,
+                    .shader            = shader,
+                    .topology          = siren::PrimitiveTopology::Triangles,
+                    .alpha_mode        = siren::AlphaMode::Blend,
+                    .color_blend       = {.function = siren::BlendFunction::Max}, // MAX(C_src, C_dst)
+                    .alpha_blend       = {.function = siren::BlendFunction::Max},
                     .back_face_culling = false,
                     .depth_test        = false,
                     .depth_write       = false,
@@ -309,27 +271,19 @@ auto DualDepthPeeling::create_pipelines() -> void {
     }
 
     {
-        m_peel_shader     = m_assets.load<siren::ShaderAsset>("oiter://assets/shaders/dual_depth_peeling/peel.sshg");
+        m_peel_shader = m_assets.load<siren::ShaderAsset>("oiter://assets/shaders/dual_depth_peeling/peel.sshg");
         m_assets.wait_until_loaded(m_peel_shader);
         const auto shader = m_assets.get(m_peel_shader)->shader.handle();
         m_peel_pipeline   = std::make_unique<siren::GraphicsPipeline>(
             m_device.create_graphics_pipeline(
                 {
-                    .label       = "peel pipeline",
-                    .layout      = siren::DEFAULT_VERTEX_LAYOUT,
-                    .shader      = shader,
-                    .topology    = siren::PrimitiveTopology::Triangles,
-                    .alpha_mode  = siren::AlphaMode::Blend,
-                    .color_blend = {
-                        .function      = siren::BlendFunction::Max,
-                        .source_factor = siren::BlendFactor::One,
-                        .dest_factor   = siren::BlendFactor::Zero,
-                    },
-                    .alpha_blend = {
-                        .function      = siren::BlendFunction::Max,
-                        .source_factor = siren::BlendFactor::One,
-                        .dest_factor   = siren::BlendFactor::Zero,
-                    },
+                    .label             = "Peel Pipeline",
+                    .layout            = siren::DEFAULT_VERTEX_LAYOUT,
+                    .shader            = shader,
+                    .topology          = siren::PrimitiveTopology::Triangles,
+                    .alpha_mode        = siren::AlphaMode::Blend,
+                    .color_blend       = {.function = siren::BlendFunction::Max}, // MAX(C_src, C_dst)
+                    .alpha_blend       = {.function = siren::BlendFunction::Max},
                     .back_face_culling = false,
                     .depth_test        = false,
                     .depth_write       = false,
@@ -339,13 +293,14 @@ auto DualDepthPeeling::create_pipelines() -> void {
     }
 
     {
-        m_blend_shader    = m_assets.load<siren::ShaderAsset>("oiter://assets/shaders/dual_depth_peeling/blend.sshg");
+        m_blend_shader = m_assets.load<siren::ShaderAsset>("oiter://assets/shaders/dual_depth_peeling/blend.sshg");
         m_assets.wait_until_loaded(m_blend_shader);
         const auto shader = m_assets.get(m_blend_shader)->shader.handle();
-        m_blend_pipeline  = std::make_unique<siren::GraphicsPipeline>(
+
+        m_blend_pipeline = std::make_unique<siren::GraphicsPipeline>(
             m_device.create_graphics_pipeline(
                 {
-                    .label       = "blend pipeline",
+                    .label       = "Blend Pipeline",
                     .layout      = siren::DEFAULT_VERTEX_LAYOUT,
                     .shader      = shader,
                     .topology    = siren::PrimitiveTopology::Triangles,
@@ -357,7 +312,7 @@ auto DualDepthPeeling::create_pipelines() -> void {
                     },
                     .alpha_blend = {
                         .function      = siren::BlendFunction::Add,
-                        .source_factor = siren::BlendFactor::SourceAlpha,
+                        .source_factor = siren::BlendFactor::One,
                         .dest_factor   = siren::BlendFactor::OneMinusSourceAlpha,
                     },
                     .back_face_culling = false,
@@ -369,18 +324,17 @@ auto DualDepthPeeling::create_pipelines() -> void {
     }
 
     {
-        m_final_shader    = m_assets.load<siren::ShaderAsset>("oiter://assets/shaders/dual_depth_peeling/final.sshg");
+        m_final_shader = m_assets.load<siren::ShaderAsset>("oiter://assets/shaders/dual_depth_peeling/final.sshg");
         m_assets.wait_until_loaded(m_final_shader);
         const auto shader = m_assets.get(m_final_shader)->shader.handle();
         m_final_pipeline  = std::make_unique<siren::GraphicsPipeline>(
             m_device.create_graphics_pipeline(
                 {
-                    .label             = "final pipeline",
+                    .label             = "Final Pipeline",
                     .layout            = siren::DEFAULT_VERTEX_LAYOUT,
                     .shader            = shader,
                     .topology          = siren::PrimitiveTopology::Triangles,
                     .alpha_mode        = siren::AlphaMode::Opaque,
-                    .depth_function    = siren::DepthFunction::Less,
                     .back_face_culling = false,
                     .depth_test        = false,
                     .depth_write       = false,
