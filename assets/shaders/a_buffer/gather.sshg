@@ -2,22 +2,13 @@ name: gather
 stages:
   vertex:
     name: vertex
-    source: |
+    source: !glsl |
       #version 460
-
-      struct BakedMaterial {
-          vec4 color;
-      };
 
       layout(std140, binding = 0) uniform SceneUniforms {
           mat4 projection_view;
           vec3 camera_position;
           float _pad0;
-      };
-
-      layout(std140, binding = 1) uniform MeshUniforms {
-          BakedMaterial material;
-          mat4 model;
       };
 
       layout(location = 0) in vec4 a_position;
@@ -26,23 +17,12 @@ stages:
       layout(location = 3) in vec2 a_texture;
       layout(location = 4) in vec4 a_tangent;
 
-      layout(location = 0) out vec4 v_position;
-      layout(location = 1) out vec4 v_normal;
-      layout(location = 2) out vec4 v_color;
-      layout(location = 3) out vec2 v_texture;
-      layout(location = 4) out vec4 v_tangent;
-
       void main() {
-          v_position = model * a_position;
-          v_normal = vec4(normalize(mat3(transpose(inverse(model))) * a_normal.xyz), 0.0);
-          v_color = a_color;
-          v_texture = a_texture;
-          v_tangent = a_tangent;
           gl_Position = projection_view * model * a_position;
       }
   fragment:
     name: fragment
-    source: |
+    source: !glsl |
       #version 460
       
       struct BakedMaterial {
@@ -59,18 +39,35 @@ stages:
           BakedMaterial material;
           mat4 model;
       };
-
-      layout(location = 0) in vec4 v_position;
-      layout(location = 1) in vec4 v_normal;
-      layout(location = 2) in vec4 v_color;
-      layout(location = 3) in vec2 v_texture;
-      layout(location = 4) in vec4 v_tangent;
       
-      layout(location = 0) out vec4 out_color;
+      struct Node {
+          vec4 color;
+          float depth;
+          uint next;
+      };
       
-      /// the depth texture we use here us the depth buffer from the *previous* pass
-      // basically this texture encodes the last peeled layer
-      layout(binding = 0) uniform sampler2D depth_texture;
+      // todo: pass this via ubo? or as compile def?
+      const uint MAX_NODES = ;
+      
+      layout(std430, binding = 0) coherent buffer linked_list {
+          uint counter;
+          Node[] nodes;
+      };
+      
+      layout(binding = 0) uniform sampler2D heads;
 
+      uint next_index() { return atomicAdd(counter, 1u); }
+      
       void main() {
+          const ivec2 pixel = ivec2(gl_FragCoord.xy);
+          const uint index = next_index();
+          if (index >= MAX_NODES) {
+              discard;
+          }
+          
+          nodes[index].color = material.color;
+          nodes[index].depth = gl_FragDepth;
+          
+          const uint old = imageAtomicExchange(heads, pixel, index);
+          nodes[index].next = old;
       }

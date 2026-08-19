@@ -21,6 +21,10 @@ auto ABuffer::render(
 ) const -> const siren::Image& {
     update_buffers(camera, scene);
 
+    // we have to reset the counter each frame
+    m_ssbo->upload(siren::ByteBuffer{siren::u32{0}}.data());
+    m_list_head->clear(siren::Rgba::white()); // this corresponds to 0xFFFFFFFF
+
     UNIMPLEMENTED();
 
     return *m_output;
@@ -44,9 +48,10 @@ auto ABuffer::create_buffers(const glm::uvec2 extent) -> void {
         m_device.create_buffer(
             {
                 .label = "A Buffer SSBO",
-                .data  = std::nullopt,
-                // we need to be able to store k_list_length * image_size * node_size elements
-                .size  = k_list_length * extent.x * extent.y * sizeof(ABufferNode),
+                // just 0 init the counter
+                .data = siren::ByteBuffer{siren::u32{0}}.data(),
+                // we need to be able to store k_list_length * image_size * node_size elements PLUS a u32 for the counter
+                .size  = sizeof(siren::u32) + (k_list_length * extent.x * extent.y * sizeof(ABufferNode)),
                 .usage = siren::BufferUsage::Dynamic,
             }
         )
