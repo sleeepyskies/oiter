@@ -86,6 +86,18 @@ inline auto end_frame() -> void {
             std::to_underlying(oiter::MethodKind::DepthPeeling)
         );
 
+        ImGui::RadioButton(
+            "K-Buffer",
+            &method,
+            std::to_underlying(oiter::MethodKind::KBuffer)
+        );
+
+        ImGui::RadioButton(
+            "A-Buffer",
+            &method,
+            std::to_underlying(oiter::MethodKind::ABuffer)
+        );
+
         if (method != std::to_underlying(method_kind.value)) {
             actions.oit_method = static_cast<oiter::MethodKind::Value>(method);
         }
@@ -150,10 +162,9 @@ inline auto end_frame() -> void {
         ImGuiWindowFlags_NoBackground
     );
 
-    ImGui::Text("F1 - TOGGLE DEBUG      ");
-    ImGui::Text("F2 - RELOAD SHADERS    ");
-    ImGui::Text("F3 - TOGGLE VSYNC      ");
-    ImGui::Text("F4 - RENDER SKYBOX     ");
+    ImGui::Text("F1 - TOGGLE DEBUG   ");
+    ImGui::Text("F2 - RELOAD SHADERS ");
+    ImGui::Text("F3 - RENDER SKYBOX  ");
     ImGui::End();
 
     end_frame();

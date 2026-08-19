@@ -21,6 +21,8 @@ add_executable(oiter
         src/methods/oit_method.cpp
         src/skybox.hpp
         src/skybox.cpp
+        src/methods/k_buffer/k_buffer.cpp
+        src/methods/a_buffer/a_buffer.cpp
 )
 
 include(dependencies.cmake)

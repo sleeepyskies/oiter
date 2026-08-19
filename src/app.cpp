@@ -18,6 +18,8 @@
 
 #include <utility>
 
+#include "methods/k_buffer/k_buffer.hpp"
+
 #ifndef OITER_VFS
 #define OITER_VFS "."
 #endif
@@ -46,6 +48,15 @@
     if (method_kind == oiter::MethodKind::DepthPeeling) {
         return std::make_unique<oiter::DepthPeeling>(device, extent, server);
     }
+
+    if (method_kind == oiter::MethodKind::KBuffer) {
+        return std::make_unique<oiter::KBuffer>(device, extent, server);
+    }
+
+    if (method_kind == oiter::MethodKind::ABuffer) {
+        // return std::make_unique<oiter::ABuffer>(device, extent, server);
+    }
+
 
     throw std::runtime_error("oit method (" + method_kind.to_string() + ") is not supported.");
 }
@@ -136,10 +147,6 @@ auto App::run_interactive() -> void {
         }
 
         if (input.keyboard().just_pressed(siren::Key::F3)) {
-            swapchain = create_swapchain(device.get(), window);
-        }
-
-        if (input.keyboard().just_pressed(siren::Key::F4)) {
             m_interactive_state.skybox_visible = !m_interactive_state.skybox_visible;
         }
 

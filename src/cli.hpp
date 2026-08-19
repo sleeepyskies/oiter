@@ -32,6 +32,8 @@ struct RenderOptions {
     std::string output_path;
     /** @brief Size of the image to render. */
     glm::uvec2 image_size = {1920, 1080};
+    /** @brief The skybox image to render, if any. */
+    std::optional<std::string> skybox_path = std::nullopt;
 };
 
 /**
@@ -121,6 +123,7 @@ using CommandOptions = std::variant<InteractiveOptions, RenderOptions>;
     render_command.add_argument(
         lyra::opt(render.image_size.y, "height")["--height"]("Height in pixels of output image.")
     );
+    // todo: add optional skybox path
 
     lyra::group commands;
     commands.require(1, 1); // at least and at most one command is required
@@ -141,6 +144,8 @@ using CommandOptions = std::variant<InteractiveOptions, RenderOptions>;
         std::cout << cli << '\n';
         return std::nullopt;
     }
+
+    // todo: add camera lookat here
 
     if (selected_command == SelectedCommand::Interactive) {
         interactive.app_options.initial_method = MethodKind::from_string(interactive_method);

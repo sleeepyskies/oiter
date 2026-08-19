@@ -4,8 +4,6 @@
 #include "../../bake.hpp"
 #include "2iren/asset/asset_server.hpp"
 
-/// @todo: docs for this in general. GUI for config params, maybe some debug visualizations?
-
 namespace oiter {
 class DepthPeeling final : public OitMethod {
     struct Config {

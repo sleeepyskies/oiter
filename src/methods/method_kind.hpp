@@ -7,11 +7,12 @@
 #include <stdexcept>
 
 namespace oiter {
-
 struct MethodKind {
     enum Value {
         DualDepthPeeling,
         DepthPeeling,
+        KBuffer,
+        ABuffer,
     } value;
 
     constexpr MethodKind(const Value value) : value(value) {}
@@ -32,8 +33,13 @@ struct MethodKind {
         if (value == "dp" || value == "DepthPeeling") {
             return DepthPeeling;
         }
+        if (value == "kb" || value == "KBuffer") {
+            return KBuffer;
+        }
+        if (value == "ab" || value == "ABuffer") {
+            return ABuffer;
+        }
         throw std::invalid_argument("Invalid OIT method");
     }
 };
-
 } // namespace oiter
