@@ -113,6 +113,13 @@ protected:
         return siren::align_up(sizeof(MeshUniforms), m_device.limits().uniform_buffer_offset_alignment);
     }
 
+    /** @brief Simple helper function to reduce code duplication for creating images. Creates a basic 2D Image. */
+    [[nodiscard]] auto create_standard_image(
+        const glm::uvec2 extent,
+        const std::string& label,
+        const siren::ImageFormat image_format
+    ) const -> std::unique_ptr<siren::Image>;
+
 private:
     /** @brief Creates uniform buffers for the scene. This involves global scene data as well as per call data. */
     auto create_buffers() -> void;

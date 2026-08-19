@@ -44,6 +44,24 @@ auto OitMethod::update_buffers(const siren::PerspectiveCamera& camera, const Bak
 }
 
 
+auto OitMethod::create_standard_image(
+    const glm::uvec2 extent,
+    const std::string& label,
+    const siren::ImageFormat image_format
+) const -> std::unique_ptr<siren::Image> {
+    return std::make_unique<siren::Image>(
+        m_device.create_image(
+            {
+                .label         = label,
+                .format        = image_format,
+                .extent        = {.width = extent.x, .height = extent.y, .depth_or_layers = 1},
+                .dimension     = siren::ImageDimension::D2,
+                .mipmap_levels = 1,
+            }
+        )
+    );
+}
+
 auto OitMethod::create_buffers() -> void {
     m_scene_buffer = std::make_unique<siren::Buffer>(
         m_device.create_buffer(

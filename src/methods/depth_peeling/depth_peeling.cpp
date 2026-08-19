@@ -106,7 +106,6 @@ auto DepthPeeling::render(
             const auto samples_passed = m_device.query(m_occlusion_query->handle());
             if (samples_passed == 0) { break; } // early end, nothing was drawn
         }
-
     }
 
     return *m_accumulation_color;
@@ -135,28 +134,10 @@ auto DepthPeeling::render_debug_info() -> void {
 }
 
 auto DepthPeeling::create_images(const glm::uvec2 extent) -> void {
-    const auto create_image = [&](
-        const std::string& label,
-        const siren::ImageFormat format
-    ) -> std::unique_ptr<siren::Image> {
-        return std::make_unique<siren::Image>(
-            m_device.create_image(
-                {
-                    .label         = label,
-                    .format        = format,
-                    .extent        = {.width = extent.x, .height = extent.y},
-                    .dimension     = siren::ImageDimension::D2,
-                    .mipmap_levels = 1,
-                }
-            )
-        );
-    };
-
-    m_accumulation_color = create_image("Depth Peeling Accumulation Color", siren::ImageFormat::RGBA8);
-    m_write_color        = create_image("Depth Peeling Write Color", siren::ImageFormat::RGBA8);
-
-    m_depths[0] = create_image("Depth Peeling Depth0", siren::ImageFormat::Depth32f);
-    m_depths[1] = create_image("Depth Peeling Depth1", siren::ImageFormat::Depth32f);
+    m_accumulation_color = create_standard_image(extent, "Depth Peeling Accumulation Color", siren::ImageFormat::RGBA8);
+    m_write_color        = create_standard_image(extent, "Depth Peeling Write Color", siren::ImageFormat::RGBA8);
+    m_depths[0]          = create_standard_image(extent, "Depth Peeling Depth0", siren::ImageFormat::Depth32f);
+    m_depths[1]          = create_standard_image(extent, "Depth Peeling Depth1", siren::ImageFormat::Depth32f);
 }
 
 auto DepthPeeling::create_sampler() -> void {

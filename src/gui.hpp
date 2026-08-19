@@ -119,6 +119,7 @@ inline auto end_frame() -> void {
         ImGui::Text("Bind Vertex Buffer: %u", statistics.count_bind_vertex_buffer);
         ImGui::Text("Bind Index Buffer: %u", statistics.count_bind_index_buffer);
         ImGui::Text("Bind Uniform Buffer: %u", statistics.count_bind_uniform_buffer);
+        ImGui::Text("Bind Uniform Buffer: %u", statistics.count_bind_shader_storage_buffer);
         ImGui::Text("Bind Sampled Image: %u", statistics.count_bind_sampled_image);
         ImGui::Text("Bind Storage Image: %u", statistics.count_bind_storage_image);
         ImGui::Text("Draw Arrays: %u", statistics.count_draw_arrays);

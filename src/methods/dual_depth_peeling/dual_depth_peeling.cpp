@@ -148,37 +148,28 @@ auto DualDepthPeeling::create_sampler() -> void {
 }
 
 auto DualDepthPeeling::create_images(const glm::uvec2 extent) -> void {
-    const auto create_image = [&](const std::string& label, const siren::ImageFormat format) {
-        return std::make_unique<siren::Image>(
-            m_device.create_image(
-                {
-                    .label         = label,
-                    .format        = format,
-                    .extent        = {.width = extent.x, .height = extent.y, .depth_or_layers = 1},
-                    .dimension     = siren::ImageDimension::D2,
-                    .mipmap_levels = 1,
-                }
-            )
-        );
-    };
-
     // create ping pong dual depth images
     for (const auto i : siren::range(2)) {
-        m_pingpong_colors[i * 3] = create_image(std::format("Ping Pong {} Depth 0", i), siren::ImageFormat::RG32f);
+        m_pingpong_colors[i * 3] = create_standard_image(
+            extent,
+            std::format("Ping Pong {} Depth 0", i),
+            siren::ImageFormat::RG32f
+        );
     }
 
     // create ping pong color images
     for (const auto i : siren::range(4)) {
         // maps (0, 1, 2, 3) to  (1, 2, 4, 5)
         const auto j         = i + 1 + (i >= 2);
-        m_pingpong_colors[j] = create_image(
+        m_pingpong_colors[j] = create_standard_image(
+            extent,
             std::format("Ping Pong {} Color {}", j < 3 ? 0 : 1, 1 + i % 2),
             siren::ImageFormat::RGBA16f
         );
     }
 
-    m_blend_image = create_image("Blend Image", siren::ImageFormat::RGBA16f);
-    m_final_image = create_image("Final Image", siren::ImageFormat::RGBA8);
+    m_blend_image = create_standard_image(extent, "Blend Image", siren::ImageFormat::RGBA16f);
+    m_final_image = create_standard_image(extent, "Final Image", siren::ImageFormat::RGBA8);
 }
 
 auto DualDepthPeeling::create_render_targets() -> void {
