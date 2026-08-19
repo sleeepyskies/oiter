@@ -229,7 +229,7 @@ auto DualDepthPeeling::create_render_targets() -> void {
             {
                 .image           = m_blend_image->handle(),
                 .begin_operation = siren::BeginOperation::Preserve,
-                .clear_color     = siren::Rgba{0, 1},
+                .clear_color     = siren::Rgba::zero(),
             },
         },
         .depth_stencil = std::nullopt,

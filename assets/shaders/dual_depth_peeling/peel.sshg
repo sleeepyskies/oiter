@@ -90,7 +90,6 @@ stages:
           // so now we can shade this layer and prevent it from being in following passes
           const vec4 color = shade();
           
-          
           if (is_fragment_on_nearest_layer(fragment_depth, nearest_layer)) {
               const float remaining_alpha = 1 - input_front.a;
               // we have to fo front to back blending here for the front layers using:
@@ -99,7 +98,7 @@ stages:
               // out_front.rgb = (color.rgb * color.a) + (input_front.rgb * (1 - color.a));
               // out_front.a = color.a + (input_front.a * (1 - color.a));
           } else {
-              out_back += color;
+              out_back = color;
           }
           
           out_depth.xy = vec2(-MAX_DEPTH); // just write dummy value
