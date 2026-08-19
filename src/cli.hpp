@@ -13,6 +13,11 @@
 #include <glm/vec2.hpp>
 
 namespace oiter {
+
+enum class OutputFormat {
+    // todo: list output formats, what is best for pixel wise comparisons?
+};
+
 /**
  * @brief Command line arguments used for running in interactive mode.
  */
@@ -34,6 +39,8 @@ struct RenderOptions {
     glm::uvec2 image_size = {1920, 1080};
     /** @brief The skybox image to render, if any. */
     std::optional<std::string> skybox_path = std::nullopt;
+    /** @brief The output file type to render. */
+    OutputFormat output_format;
 };
 
 /**
