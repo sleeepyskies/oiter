@@ -9,15 +9,16 @@ stages:
       #version 460
       
       layout(location = 0) out vec2 out_depth; // RG32F min max depth buffer
-      layout(location = 1) out vec4 out_front;
-      layout(location = 2) out vec4 out_back;
+      layout(location = 1) out vec4 out_front; // RGBA16F front buffer
+      layout(location = 2) out vec4 out_back;  // RGBA16F back buffer
       
       void main() {
-          float depth = gl_FragCoord.z;
-          
+          const float depth = gl_FragCoord.z;
+      
           // R channel encodes closest, G channel encodes farthest.
           // We have Blending::Max enabled
           out_depth = vec2(-depth, depth);
+      
           out_front = vec4(0.0);
           out_back  = vec4(0.0);
       }

@@ -16,10 +16,10 @@ stages:
       void main() {
           const vec2 uv = gl_FragCoord.xy / vec2(textureSize(front_texture, 0));
           const vec4 input_front = texture(front_texture, uv);
-          const vec3 input_back = texture(back_texture, uv).rgb;
+          const vec4 input_back = texture(back_texture, uv);
           const float alpha = 1.f - input_front.a;
           
           // blend front over back, alpha is how much of the background is blocked by the front
-          out_color.rgb = input_front.rgb + input_back * alpha;
-          out_color.a = input_front.a;
+          out_color.rgb = input_front.rgb + input_back.rgb * (1.0 - input_front.a);
+          out_color.a = input_front.a + input_back.a * (1.0 - input_front.a);
       }
