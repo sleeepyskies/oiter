@@ -17,5 +17,7 @@ stages:
       };
 
       void main() {
-          out_color = texture(layer, v_texture);
+          const vec4 rgba = texture(layer, v_texture);
+          out_color.rgb = rgba.rgb * rgba.a;
+          out_color.a = rgba.a;
       }

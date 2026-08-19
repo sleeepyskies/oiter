@@ -223,13 +223,13 @@ auto DepthPeeling::create_pipelines() -> void {
                     .alpha_mode  = siren::AlphaMode::Blend,
                     .color_blend = {
                         .function      = siren::BlendFunction::Add,
-                        .source_factor = siren::BlendFactor::SourceAlpha,
-                        .dest_factor   = siren::BlendFactor::OneMinusSourceAlpha,
+                        .source_factor = siren::BlendFactor::OneMinusDestinationAlpha,
+                        .dest_factor   = siren::BlendFactor::One,
                     },
                     .alpha_blend = {
                         .function      = siren::BlendFunction::Add,
-                        .source_factor = siren::BlendFactor::One,
-                        .dest_factor   = siren::BlendFactor::OneMinusSourceAlpha,
+                        .source_factor = siren::BlendFactor::OneMinusDestinationAlpha,
+                        .dest_factor   = siren::BlendFactor::One,
                     },
                     .back_face_culling = false,
                     .depth_test        = false,
