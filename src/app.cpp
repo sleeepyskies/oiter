@@ -18,6 +18,7 @@
 
 #include <utility>
 
+#include "methods/a_buffer/a_buffer.hpp"
 #include "methods/k_buffer/k_buffer.hpp"
 
 #ifndef OITER_VFS
@@ -41,12 +42,12 @@
     glm::uvec2 extent,
     siren::AssetServer& server
 ) -> std::unique_ptr<oiter::OitMethod> {
-    if (method_kind == oiter::MethodKind::DualDepthPeeling) {
-        return std::make_unique<oiter::DualDepthPeeling>(device, extent, server);
-    }
-
     if (method_kind == oiter::MethodKind::DepthPeeling) {
         return std::make_unique<oiter::DepthPeeling>(device, extent, server);
+    }
+
+    if (method_kind == oiter::MethodKind::DualDepthPeeling) {
+        return std::make_unique<oiter::DualDepthPeeling>(device, extent, server);
     }
 
     if (method_kind == oiter::MethodKind::KBuffer) {
@@ -54,9 +55,8 @@
     }
 
     if (method_kind == oiter::MethodKind::ABuffer) {
-        // return std::make_unique<oiter::ABuffer>(device, extent, server);
+        return std::make_unique<oiter::ABuffer>(device, extent, server);
     }
-
 
     throw std::runtime_error("oit method (" + method_kind.to_string() + ") is not supported.");
 }

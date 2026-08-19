@@ -13,6 +13,7 @@ DepthPeeling::DepthPeeling(
     create_images(extent);
     create_sampler();
     create_pipelines();
+    create_query();
 }
 
 auto DepthPeeling::render(
@@ -52,6 +53,8 @@ auto DepthPeeling::render(
     m_accumulation_color->clear(siren::Rgba::zero());
 
     for (const auto layer : siren::range(m_config.layers)) {
+        m_last_frame_peels++;
+
         // we need to ping pong between our 2 depth buffers
         const auto write_buffer_index = layer % 2;
         const auto read_buffer_index  = 1 - write_buffer_index;
@@ -82,6 +85,7 @@ auto DepthPeeling::render(
         );
 
         // perform on the fly blending
+
         m_device.render_pass(
             siren::RenderPassDescriptor{
                 .target = {
@@ -90,11 +94,19 @@ auto DepthPeeling::render(
                 }
             },
             [&](siren::RenderPassRecorder& pass) {
+                if (m_config.perform_query) { pass.begin_query(m_occlusion_query->handle()); }
                 pass.bind_graphics_pipeline(m_blend_pipeline->handle());
                 pass.bind_sampled_image(m_write_color->handle(), m_sampler->handle(), 0);
                 pass.draw_arrays(0, 3);
+                if (m_config.perform_query) { pass.end_query(m_occlusion_query->handle()); }
             }
         );
+
+        if (m_config.perform_query) {
+            const auto samples_passed = m_device.query(m_occlusion_query->handle());
+            if (samples_passed == 0) { break; } // early end, nothing was drawn
+        }
+
     }
 
     return *m_accumulation_color;
@@ -115,7 +127,11 @@ auto DepthPeeling::reload_shaders() -> void {
 }
 
 auto DepthPeeling::render_debug_info() -> void {
+    ImGui::Text("Peels performed last frame %u", m_last_frame_peels);
     ImGui::SliderInt("Layers", (int*)&m_config.layers, 1, 25);
+    ImGui::Checkbox("Perform Occlusion Query", &m_config.perform_query);
+
+    m_last_frame_peels = 0;
 }
 
 auto DepthPeeling::create_images(const glm::uvec2 extent) -> void {
@@ -238,5 +254,11 @@ auto DepthPeeling::create_pipelines() -> void {
             )
         );
     }
+}
+
+auto DepthPeeling::create_query() -> void {
+    m_occlusion_query = std::make_unique<siren::Query>(
+        m_device.create_query({.kind = siren::QueryKind::SamplesPassed})
+    );
 }
 } // namespace oiter

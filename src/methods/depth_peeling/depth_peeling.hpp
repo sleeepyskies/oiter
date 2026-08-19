@@ -7,7 +7,8 @@
 namespace oiter {
 class DepthPeeling final : public OitMethod {
     struct Config {
-        siren::u32 layers = 8;
+        siren::u32 layers    = 8;
+        bool perform_query = true;
     } m_config;
 
 public:
@@ -26,6 +27,9 @@ public:
     auto render_debug_info() -> void override;
 
 private:
+    mutable siren::u32 m_last_frame_peels = 0;
+    std::unique_ptr<siren::Query> m_occlusion_query;
+
     std::unique_ptr<siren::Image> m_accumulation_color;
     std::unique_ptr<siren::Image> m_write_color;
     std::array<std::unique_ptr<siren::Image>, 2> m_depths;
@@ -43,5 +47,6 @@ private:
     auto create_images(const glm::uvec2 extent) -> void;
     auto create_sampler() -> void;
     auto create_pipelines() -> void;
+    auto create_query() -> void;
 };
 } // namespace oiter

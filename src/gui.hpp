@@ -75,27 +75,27 @@ inline auto end_frame() -> void {
         auto method = static_cast<int>(method_kind.value);
 
         ImGui::RadioButton(
-            "Dual Depth Peeling",
-            &method,
-            std::to_underlying(oiter::MethodKind::DualDepthPeeling)
-        );
-
-        ImGui::RadioButton(
             "Depth Peeling",
             &method,
             std::to_underlying(oiter::MethodKind::DepthPeeling)
         );
 
         ImGui::RadioButton(
-            "K-Buffer",
+            "Dual Depth Peeling",
             &method,
-            std::to_underlying(oiter::MethodKind::KBuffer)
+            std::to_underlying(oiter::MethodKind::DualDepthPeeling)
         );
 
         ImGui::RadioButton(
             "A-Buffer",
             &method,
             std::to_underlying(oiter::MethodKind::ABuffer)
+        );
+
+        ImGui::RadioButton(
+            "K-Buffer",
+            &method,
+            std::to_underlying(oiter::MethodKind::KBuffer)
         );
 
         if (method != std::to_underlying(method_kind.value)) {

@@ -83,10 +83,10 @@ using CommandOptions = std::variant<InteractiveOptions, RenderOptions>;
     InteractiveOptions interactive;
     RenderOptions render;
 
-    std::string interactive_method = "ddp";
+    std::string interactive_method = "dp";
     std::string interactive_camera_position;
 
-    std::string render_method = "ddp";
+    std::string render_method = "dp";
     std::string render_camera_position;
 
     auto interactive_command = lyra::command(

@@ -20,4 +20,6 @@ stages:
           const vec4 rgba = texture(layer, v_texture);
           out_color.rgb = rgba.rgb * rgba.a;
           out_color.a = rgba.a;
+          
+          if (rgba.a == 0) { discard; }
       }
