@@ -17,8 +17,5 @@ stages:
       };
 
       void main() {
-        const vec4 layer_color = texture(layer, v_texture);
-
-        out_color.rgb = layer_color.rgb * layer_color.a;
-        out_color.a   = layer_color.a;
+          out_color = texture(layer, v_texture);
       }
