@@ -22,6 +22,8 @@ struct MethodKind {
         switch (value) {
             case DualDepthPeeling: return "DualDepthPeeling";
             case DepthPeeling: return "DepthPeeling";
+            case ABuffer: return "ABuffer";
+            case KBuffer: return "KBuffer";
             default: UNREACHABLE();
         }
     }

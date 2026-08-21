@@ -14,7 +14,7 @@ namespace oiter {
  */
 struct AppOptions {
     std::string scene_path    = "oiter://assets/meshes/stresstest.glb";
-    MethodKind initial_method = MethodKind::DepthPeeling;
+    MethodKind initial_method = MethodKind::ABuffer;
     glm::vec3 camera_position = glm::vec3{0.f, 0.f, 0.f};
     // glm::vec3 camera_lookat   = glm::vec3{0.f, 0.f, 0.f};
 };
