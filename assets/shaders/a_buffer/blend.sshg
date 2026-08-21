@@ -1,0 +1,80 @@
+name: blend
+stages:
+  vertex:
+    name: vertex
+    path: ../fullscreen.vert
+  fragment:
+    name: fragment
+    source: !glsl |
+      #version 460
+      
+      struct Node {
+          vec4 color;
+          float depth;
+          uint next;
+      };
+      
+      layout(std430, binding = 0) coherent buffer linked_list {
+          uint counter;
+          Node[] nodes;
+      };
+      
+      layout(r32ui, binding = 0) uniform uimage2D heads; // of format R32UI
+      
+      layout(location = 0) out vec4 out_color;
+      
+      const uint INVALIID = 0xFFFFFF; // identifies the final node
+      const uint MAX_NODES = 8;
+      
+      /**
+       * This fetch all colors in this pixels linked list, then sort them via their depth,
+       * then merge them based on this order, and then return the final color.
+       */
+      vec4 sorted_color(const uint first_index) {
+          uint index = first_index;
+          uint node_count = 0;
+          Node sorted[MAX_NODES];
+          
+          // gather all nodes
+          for (uint i = 0; i < MAX_NODES; i++) {
+              if (index == INVALIID) {
+                  break;
+              }
+              sorted[i] = nodes[index];
+              index = sorted[i].next;
+              node_count++;
+          }
+          
+          // sort the arr in place
+          for (uint i = 0; i < node_count; i++) {
+              Node key = sorted[i];
+              uint j = i - 1;
+              
+              while (j >= 0 && sorted[j].depth > key.depth) {
+                  sorted[j + 1] = sorted[j];
+                  j--;
+              }
+              
+              sorted[j + 1] = key;
+          }
+          
+          vec4 color = vec4(1);
+          // calculate final color
+          for (uint i = node_count; i >= 0; i--) {
+              Node node = nodes[i];
+              color.rgb = (node.color.rgb * node.color.a) + (color.rgb * (1 - node.color.a));
+              color.a = node.color.a + (color.a * (1.0 - node.color.a));
+          }
+          
+          return color;
+      }
+      
+      void main() {
+          const ivec2 uv = ivec2(gl_FragCoord.xy);
+          const uint first_index = imageLoad(heads, uv).r;
+          
+          // todo: could we actually reset everything here? then we dont need 
+          // the explicit clears at the start of each frame in a_buffer.cpp
+          
+          out_color = sorted_color(first_index);
+      }

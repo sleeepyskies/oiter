@@ -21,11 +21,57 @@ auto ABuffer::render(
 ) const -> const siren::Image& {
     update_buffers(camera, scene);
 
-    // we have to reset the counter each frame
-    m_ssbo->upload(siren::ByteBuffer{siren::u32{0}}.data());
-    m_list_head->clear(siren::Rgba::white()); // this corresponds to 0xFFFFFFFF
+    auto draw_scene = [&](siren::RenderPassRecorder& pass) {
+        pass.bind_uniform_buffer(m_scene_buffer->handle(), 0);
+        for (const auto& [index, surface] : std::views::enumerate(scene.transparent)) {
+            pass.bind_uniform_buffer_range(
+                m_mesh_buffer->handle(),
+                1,
+                mesh_uniforms_alignment() * (scene.opaque.size() + index),
+                sizeof(MeshUniforms)
+            );
+            pass.bind_vertex_buffer(surface.vertex.buffer.handle(), 0, 0);
+            pass.bind_index_buffer(surface.index.buffer.handle(), surface.index.format);
+            pass.draw_indexed(surface.index.count, 0);
+        }
+    };
 
-    UNIMPLEMENTED();
+    // reset the counter each frame
+    m_ssbo->upload(siren::ByteBuffer{siren::u32{0}}.data());
+    // reset the list heads each frame
+    m_list_head->clear(siren::Rgba::white());
+
+    m_device.render_pass(
+        // we don't actually write to any output directly, we just manipulate the list_head and the ssbo
+        {.target = {}},
+        [&](siren::RenderPassRecorder& pass) {
+            pass.bind_graphics_pipeline(m_gather_pipeline->handle());
+            pass.bind_storage_image(m_list_head->handle(), 0);
+            pass.bind_shader_storage_buffer(m_ssbo->handle(), 0);
+            draw_scene(pass);
+        }
+    );
+
+    m_device.render_pass(
+        {
+            .target = siren::RenderTarget{
+                .colors = {
+                    siren::ColorAttachment{
+                        .image           = m_output->handle(),
+                        .begin_operation = siren::BeginOperation::Clear,
+                        .clear_color     = siren::Rgba::black()
+                    },
+                },
+                .depth_stencil = std::nullopt,
+            },
+        },
+        [this](siren::RenderPassRecorder& pass) {
+            pass.bind_graphics_pipeline(m_gather_pipeline->handle());
+            pass.bind_storage_image(m_list_head->handle(), 0);
+            pass.bind_shader_storage_buffer(m_ssbo->handle(), 0);
+            pass.draw_fullscreen();
+        }
+    );
 
     return *m_output;
 }
@@ -40,18 +86,23 @@ auto ABuffer::reload_shaders() -> void {
 }
 
 auto ABuffer::render_debug_info() -> void {
-    UNIMPLEMENTED();
+    // UNIMPLEMENTED();
 }
 
 auto ABuffer::create_buffers(const glm::uvec2 extent) -> void {
+    const auto max_ssbo_size = m_device.limits().max_shader_storage_block_size;
+    const auto desired_size  = sizeof(siren::u32) + (k_list_length * extent.x * extent.y * sizeof(ABufferNode));
+
+    ASSERT(max_ssbo_size > desired_size);
+
     m_ssbo = std::make_unique<siren::Buffer>(
         m_device.create_buffer(
             {
                 .label = "A Buffer SSBO",
                 // just 0 init the counter
-                .data = siren::ByteBuffer{siren::u32{0}}.data(),
+                .data = std::nullopt,
                 // we need to be able to store k_list_length * image_size * node_size elements PLUS a u32 for the counter
-                .size  = sizeof(siren::u32) + (k_list_length * extent.x * extent.y * sizeof(ABufferNode)),
+                .size  = desired_size,
                 .usage = siren::BufferUsage::Dynamic,
             }
         )
@@ -86,14 +137,14 @@ auto ABuffer::create_pipelines() -> void {
 
     // combine pipeline
     {
-        m_combine_shader = m_assets.load<siren::ShaderAsset>("oiter://assets/shaders/a_buffer/combine.sshg");
-        m_assets.wait_until_loaded(m_combine_shader);
-        m_combine_pipeline = std::make_unique<siren::GraphicsPipeline>(
+        m_blend_shader = m_assets.load<siren::ShaderAsset>("oiter://assets/shaders/a_buffer/blend.sshg");
+        m_assets.wait_until_loaded(m_blend_shader);
+        m_blend_pipeline = std::make_unique<siren::GraphicsPipeline>(
             m_device.create_graphics_pipeline(
                 {
-                    .label             = "A-Buffer Combine Pipeline",
+                    .label             = "A-Buffer Blend Pipeline",
                     .layout            = siren::FULLSCREEN_VERTEX_LAYOUT,
-                    .shader            = m_assets.get_unsafe(m_combine_shader).shader.handle(),
+                    .shader            = m_assets.get_unsafe(m_blend_shader).shader.handle(),
                     .topology          = siren::PrimitiveTopology::Triangles,
                     .alpha_mode        = siren::AlphaMode::Opaque,
                     .back_face_culling = false,

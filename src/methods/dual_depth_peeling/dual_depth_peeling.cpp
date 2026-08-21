@@ -78,7 +78,7 @@ auto DualDepthPeeling::render(
 
                 pass.bind_graphics_pipeline(m_blend_pipeline->handle());
                 pass.bind_sampled_image(write_target().colors[2].image, m_sampler->handle(), 0);
-                pass.draw_arrays(0, 3);
+                pass.draw_fullscreen();
 
                 if (m_config.perform_query) { pass.end_query(m_occlusion_query->handle()); }
             }
@@ -99,7 +99,7 @@ auto DualDepthPeeling::render(
             pass.bind_graphics_pipeline(m_final_pipeline->handle());
             pass.bind_sampled_image(read_target().colors[1].image, m_sampler->handle(), 0);
             pass.bind_sampled_image(m_blend_image->handle(), m_sampler->handle(), 1); // accumulated back
-            pass.draw_arrays(0, 3);
+            pass.draw_fullscreen();
         }
     );
 

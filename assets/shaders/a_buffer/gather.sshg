@@ -10,12 +10,17 @@ stages:
           vec3 camera_position;
           float _pad0;
       };
+      
+      struct BakedMaterial {
+          vec4 color;
+      };
+      
+      layout(std140, binding = 1) uniform MeshUniforms {
+          BakedMaterial material;
+          mat4 model;
+      };
 
       layout(location = 0) in vec4 a_position;
-      layout(location = 1) in vec4 a_normal;
-      layout(location = 2) in vec4 a_color;
-      layout(location = 3) in vec2 a_texture;
-      layout(location = 4) in vec4 a_tangent;
 
       void main() {
           gl_Position = projection_view * model * a_position;
@@ -47,23 +52,26 @@ stages:
       };
       
       // todo: pass this via ubo? or as compile def?
-      const uint MAX_NODES = ;
+      // const uint MAX_NODES = ;
       
       layout(std430, binding = 0) coherent buffer linked_list {
           uint counter;
           Node[] nodes;
       };
       
-      layout(binding = 0) uniform sampler2D heads;
+      layout(r32ui, binding = 0) uniform uimage2D heads;
 
       uint next_index() { return atomicAdd(counter, 1u); }
       
       void main() {
           const ivec2 pixel = ivec2(gl_FragCoord.xy);
           const uint index = next_index();
+          
+          /* todo: add this back?
           if (index >= MAX_NODES) {
               discard;
           }
+          */
           
           nodes[index].color = material.color;
           nodes[index].depth = gl_FragDepth;

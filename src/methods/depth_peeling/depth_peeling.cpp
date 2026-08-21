@@ -97,7 +97,7 @@ auto DepthPeeling::render(
                 if (m_config.perform_query) { pass.begin_query(m_occlusion_query->handle()); }
                 pass.bind_graphics_pipeline(m_blend_pipeline->handle());
                 pass.bind_sampled_image(m_write_color->handle(), m_sampler->handle(), 0);
-                pass.draw_arrays(0, 3);
+                pass.draw_fullscreen();
                 if (m_config.perform_query) { pass.end_query(m_occlusion_query->handle()); }
             }
         );

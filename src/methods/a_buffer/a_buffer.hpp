@@ -5,7 +5,7 @@
 namespace oiter {
 /**
  * @brief A node of the linked list.
- * @note This isn't used CPU side, we just have this here for niceness.
+ * @note This isn't used CPU side, we just have this here for reference.
  *
  * The actual SSBO object we use looks something like:
  * struct List {
@@ -53,10 +53,10 @@ private:
     std::unique_ptr<siren::Buffer> m_ssbo = nullptr;
 
     siren::StrongHandle<siren::ShaderAsset> m_gather_shader  = siren::NullHandle;
-    siren::StrongHandle<siren::ShaderAsset> m_combine_shader = siren::NullHandle;
+    siren::StrongHandle<siren::ShaderAsset> m_blend_shader = siren::NullHandle;
 
     std::unique_ptr<siren::GraphicsPipeline> m_gather_pipeline  = nullptr;
-    std::unique_ptr<siren::GraphicsPipeline> m_combine_pipeline = nullptr;
+    std::unique_ptr<siren::GraphicsPipeline> m_blend_pipeline = nullptr;
 
     auto create_buffers(const glm::uvec2 extent) -> void;
     auto create_images(const glm::uvec2 extent) -> void;
