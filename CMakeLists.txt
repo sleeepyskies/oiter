@@ -23,6 +23,7 @@ add_executable(oiter
         src/skybox.cpp
         src/methods/k_buffer/k_buffer.cpp
         src/methods/a_buffer/a_buffer.cpp
+        src/cli.cpp
 )
 
 include(dependencies.cmake)

@@ -1,175 +1,93 @@
 #pragma once
 
 #include <lyra/lyra.hpp>
+#include <glm/vec2.hpp>
+#include <memory>
+#include <string>
 
 #include "app.hpp"
-#include "2iren/base.hpp"
-
-#include <iostream>
-#include <optional>
-#include <sstream>
-#include <string>
-#include <variant>
-#include <glm/vec2.hpp>
 
 namespace oiter {
+/**
+ * @brief Base class for commands.
+ */
+class Command {
+public:
+    /** @brief Ensures commands can be destroyed through the base interface. */
+    virtual ~Command() = default;
 
-enum class OutputFormat {
-    // todo: list output formats, what is best for pixel wise comparisons?
+    /** @brief Creates the lyra parser for this command. */
+    [[nodiscard]] virtual auto create_parser() -> lyra::command = 0;
+
+    /** @brief Executes the command using its parsed options. */
+    virtual auto run() -> void = 0;
+
+    /** @brief Checks whether this command was selected during parsing. */
+    [[nodiscard]] auto selected() const noexcept -> bool;
+
+protected:
+    /**
+     * @brief Constructs the shared state of a CLI command.
+     * @param name Name used to select the command.
+     * @param description Description displayed in the CLI help.
+     */
+    Command(std::string name, std::string description);
+
+    /** @brief Creates a parser containing the common command configuration. */
+    [[nodiscard]] auto create_base_parser() -> lyra::command;
+
+private:
+    std::string m_name;
+    std::string m_description;
+    bool m_selected = false;
 };
 
 /**
- * @brief Command line arguments used for running in interactive mode.
+ * @brief Runs Oiter in interactive mode.
  */
-struct InteractiveOptions {
-    /** @brief Core application configuration. */
-    AppOptions app_options;
+class InteractiveCommand final : public Command {
+public:
+    InteractiveCommand();
+    [[nodiscard]] auto create_parser() -> lyra::command override;
+    auto run() -> void override;
+
+private:
+    struct Options {
+        AppOptions app_options;
+    } m_options;
 };
 
 /**
- * @brief Command line arguments used rendering an image.
- * @todo This isn't actually supported yet.
+ * @brief Renders a single image.
  */
-struct RenderOptions {
-    /** @brief Core application configuration. */
-    AppOptions app_options;
-    /** @brief Output path of the image. */
-    std::string output_path;
-    /** @brief Size of the image to render. */
-    glm::uvec2 image_size = {1920, 1080};
-    /** @brief The skybox image to render, if any. */
-    std::optional<std::string> skybox_path = std::nullopt;
-    /** @brief The output file type to render. */
-    OutputFormat output_format;
+class RenderCommand final : public Command {
+public:
+    RenderCommand();
+    [[nodiscard]] auto create_parser() -> lyra::command override;
+    auto run() -> void override;
+
+private:
+    struct Options {
+        AppOptions app_options;
+        std::string output_path;
+        glm::uvec2 image_size = {1920, 1080};
+    } m_options;
 };
 
 /**
- * @brief All possible cli options for different launch modes.
+ * @brief Creates and parses oiter's cli.
  */
-using CommandOptions = std::variant<InteractiveOptions, RenderOptions>;
-
-/**
- * @brief Parses a string of format "x,y,z" into a glm::vec3. Will throw on failure D:
- */
-[[nodiscard]] inline auto parse_camera_position(const std::string& text) -> glm::vec3 {
-    // some weirdness sometimes using siren::f32 over float
-    auto stream = std::stringstream{text};
-    float x, y, z;
-    char comma;
-
-    if (!(stream >> x >> comma) || comma != ',' ||
-        !(stream >> y >> comma) || comma != ',' ||
-        !(stream >> z)) {
-        throw std::runtime_error("Invalid --camera-position. Expected format x,y,z");
-    }
-
-    stream >> std::ws;
-    if (!stream.eof()) {
-        throw std::runtime_error("Invalid --camera-position. Expected format x,y,z");
-    }
-
-    return glm::vec3{x, y, z};
-}
-
-/**
- * @brief Parses the cli arguments. Currently there can be 2 launch modes, either interactive or render image mode.
- * @param argc The number of arguments.
- * @param argv The actual cli arguments.
- * @return The parse cli arguments.
- */
-[[nodiscard]] inline auto parse_cli(
-    const siren::i32 argc,
-    const char** argv
-) -> std::optional<CommandOptions> {
-    enum class SelectedCommand {
-        Interactive,
-        Render,
-    } selected_command = SelectedCommand::Interactive;
-
-    bool show_help = false;
-    InteractiveOptions interactive;
-    RenderOptions render;
-
-    std::string interactive_method = interactive.app_options.initial_method.to_string();
-    std::string interactive_camera_position;
-
-    std::string render_method = render.app_options.initial_method.to_string();
-    std::string render_camera_position;
-
-    auto interactive_command = lyra::command(
-        "interactive",
-        [&](const lyra::group&) { selected_command = SelectedCommand::Interactive; }
-    ).help("Opens the interactive demo.");
-    interactive_command.add_argument(
-        lyra::opt(interactive.app_options.scene_path, "scene")["--scene"]["-s"]("Path to scene file.")
-    );
-    interactive_command.add_argument(
-        lyra::opt(interactive_method, "method")["--method"]["-m"]("OIT method.").choices("ddp", "dp")
-    );
-    interactive_command.add_argument(
-        lyra::opt(interactive_camera_position, "position")["--camera-position"]("Camera position (x,y,z).")
-    );
-
-    auto render_command = lyra::command(
-        "render",
-        [&](const lyra::group&) { selected_command = SelectedCommand::Render; }
-    ).help("Renders a single image.");
-    render_command.add_argument(
-        lyra::opt(render.app_options.scene_path, "scene")["--scene"]["-s"]("Path to scene file to render")
-    );
-    render_command.add_argument(
-        lyra::opt(render_method, "method")["--method"]["-m"]("OIT method.").choices("ddp", "dp", "ab", "kb")
-    );
-    render_command.add_argument(
-        lyra::opt(render_camera_position, "position")["--camera-position"]("Camera position in format (x,y,z).")
-    );
-    render_command.add_argument(
-        lyra::opt(render.output_path, "path")["--output"]["-o"]("Output image path.")
-    );
-    render_command.add_argument(lyra::opt(render.image_size.x, "width")["--width"]("Width in pixels of output image."));
-    render_command.add_argument(
-        lyra::opt(render.image_size.y, "height")["--height"]("Height in pixels of output image.")
-    );
-    // todo: add optional skybox path
-
-    lyra::group commands;
-    commands.require(1, 1); // at least and at most one command is required
-    commands.add_argument(interactive_command);
-    commands.add_argument(render_command);
-
-    auto cli = lyra::cli();
-    cli.add_argument(lyra::help(show_help).description("OIT method renderer."));
-    cli.add_argument(commands);
-
-    const auto result = cli.parse({argc, argv});
-
-    if (!result) {
-        throw std::runtime_error(result.message());
-    }
-
-    if (show_help) {
-        std::cout << cli << '\n';
-        return std::nullopt;
-    }
-
-    // todo: add camera lookat here
-
-    if (selected_command == SelectedCommand::Interactive) {
-        interactive.app_options.initial_method = MethodKind::from_string(interactive_method);
-        if (!interactive_camera_position.empty()) {
-            interactive.app_options.camera_position = parse_camera_position(interactive_camera_position);
-        }
-        return std::move(interactive);
-    }
-
-    if (selected_command == SelectedCommand::Render) {
-        render.app_options.initial_method = MethodKind::from_string(render_method);
-        if (!render_camera_position.empty()) {
-            render.app_options.camera_position = parse_camera_position(render_camera_position);
-        }
-        return std::move(render);
-    }
-
-    return std::nullopt;
-}
+struct Cli {
+    /**
+     * @brief Parses the cil arguments.
+     * @param argc Number of cli arguments.
+     * @param argv Cli argument values.
+     * @return The selected command, or nullptr when help was requested.
+     * @throws std::runtime_error If the cli args are invalid.
+     */
+    [[nodiscard]] static auto parse(
+        int argc,
+        const char** argv
+    ) -> std::unique_ptr<Command>;
+};
 } // namespace oiter

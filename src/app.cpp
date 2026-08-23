@@ -62,16 +62,16 @@
 }
 
 namespace oiter {
-App::App(AppOptions options)
-    : m_scene_path{std::move(options.scene_path)},
+App::App(const AppOptions& options)
+    : m_options(options),
       m_interactive_state{
           .oit_method      = options.initial_method,
           .camera_position = options.camera_position,
-      } {}
+      } {
+    siren::FileSystem::mount("oiter", siren::Path{OITER_VFS});
+}
 
 auto App::run_interactive() -> void {
-    siren::FileSystem::mount("oiter", siren::Path{OITER_VFS});
-
     const auto ctx = siren::Context::create(
         {
             .debug   = true,
@@ -98,7 +98,7 @@ auto App::run_interactive() -> void {
     siren::AssetServer server{*device};
     siren::Input input{window};
 
-    const auto sceneh = server.load<siren::Gltf>(m_scene_path);
+    const auto sceneh = server.load<siren::Gltf>(m_options.scene_path);
     server.wait_until_loaded(sceneh);
     auto baked = bake_scene(sceneh, server);
 
@@ -193,6 +193,123 @@ auto App::run_interactive() -> void {
 }
 
 auto App::run_render() -> void {
-    UNIMPLEMENTED();
+    const auto ctx = siren::Context::create(
+        {
+            .debug   = true,
+            .level   = siren::log::Level::Debug,
+            .backend = siren::Backend::Auto,
+        }
+    );
+    auto window = ctx.create_window(
+        {
+            .title        = "Oiter",
+            .width        = 1280,
+            .height       = 720,
+            .decorated    = true,
+            .resizable    = true,
+            .transparent  = false,
+            .initial_mode = siren::WindowMode::Normal,
+        }
+    );
+
+    auto device = ctx.create_device({.window = window});
+    device->render_thread().spawn([&] { gui::init(window); });
+
+    auto swapchain = create_swapchain(device.get(), window);
+    siren::AssetServer server{*device};
+    siren::Input input{window};
+
+    const auto sceneh = server.load<siren::Gltf>(m_options.scene_path);
+    server.wait_until_loaded(sceneh);
+    auto baked = bake_scene(sceneh, server);
+
+    auto oit_method = create_method(m_interactive_state.oit_method, *device, {window.width(), window.height()}, server);
+
+    siren::PerspectiveCamera camera{};
+    siren::PerspectiveCameraController controller;
+    camera.set_position(m_interactive_state.camera_position);
+    camera.look_at(glm::vec3{-1, 0, 0});
+
+    const auto skybox = Skybox{"oiter://assets/textures/skybox/skybox.cubemap", *device, server};
+
+    window.on_resize(
+        [&](const glm::ivec2 size) {
+            if (size.x == 0 || size.y == 0) {
+                return;
+            }
+            camera.set_aspect(static_cast<siren::f32>(size.x) / static_cast<siren::f32>(size.y));
+            swapchain = create_swapchain(device.get(), window);
+            oit_method->resize({size.x, size.y});
+        }
+    );
+
+    while (!window.should_close()) {
+        m_frame_stats.frame++;
+        if (!(m_frame_stats.frame % 60)) {
+            m_frame_stats.fps = 1 / siren::time::delta_s();
+        }
+        SetTimer full_frame_timer{m_frame_stats.full_frame_ms};
+
+        window.poll_events();
+        if (!ImGui::GetIO().WantCaptureMouse) {
+            controller.update_look(camera, input);
+        }
+
+        if (!ImGui::GetIO().WantCaptureKeyboard) {
+            controller.update_position(camera, input);
+        }
+
+        if (input.keyboard().just_pressed(siren::Key::F1)) {
+            m_interactive_state.debug_menu_visible = !m_interactive_state.debug_menu_visible;
+        }
+
+        if (input.keyboard().just_pressed(siren::Key::F2)) {
+            oit_method->reload_shaders();
+        }
+
+        if (input.keyboard().just_pressed(siren::Key::F3)) {
+            m_interactive_state.skybox_visible = !m_interactive_state.skybox_visible;
+        }
+
+        {
+            SetTimer oit_render_timer{m_frame_stats.oit_render_ms};
+            const auto& image = oit_method->render(camera, baked);
+            if (m_interactive_state.skybox_visible) {
+                skybox.render_behind(image, camera);
+            }
+            device->blit(image.handle(), swapchain.next_image());
+        }
+
+        swapchain.present_overlay(
+            [&] {
+                if (!m_interactive_state.debug_menu_visible) {
+                    return;
+                }
+
+                const auto actions = gui::render_debug(
+                    device->statistics(),
+                    camera,
+                    controller,
+                    *oit_method,
+                    m_interactive_state.oit_method,
+                    m_frame_stats
+                );
+
+                if (actions.oit_method) {
+                    m_interactive_state.oit_method = *actions.oit_method;
+                    oit_method                     = create_method(
+                        m_interactive_state.oit_method,
+                        *device,
+                        {window.width(), window.height()},
+                        server
+                    );
+                }
+            }
+        );
+        device->flush_delete_queue();
+        siren::time::tick();
+        input.update();
+        m_interactive_state.camera_position = camera.position();
+    }
 }
 } // namespace oiter

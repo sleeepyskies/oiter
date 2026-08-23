@@ -14,9 +14,9 @@ namespace oiter {
  */
 struct AppOptions {
     std::string scene_path    = "oiter://assets/meshes/stresstest.glb";
-    MethodKind initial_method = MethodKind::ABuffer;
+    MethodKind initial_method = MethodKind::DepthPeeling;
     glm::vec3 camera_position = glm::vec3{0.f, 0.f, 0.f};
-    // glm::vec3 camera_lookat   = glm::vec3{0.f, 0.f, 0.f};
+    glm::vec3 camera_lookat   = glm::vec3{0.f, 0.f, 0.f};
 };
 
 /**
@@ -24,7 +24,7 @@ struct AppOptions {
  */
 class App {
 public:
-    explicit App(AppOptions options);
+    explicit App(const AppOptions& options);
 
     /** @brief Launches the oiter interactive mode. */
     auto run_interactive() -> void;
@@ -33,7 +33,7 @@ public:
     auto run_render() -> void;
 
 private:
-    std::string m_scene_path;
+    AppOptions m_options;
     InteractiveState m_interactive_state;
     FrameStats m_frame_stats;
 };
