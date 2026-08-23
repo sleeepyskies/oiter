@@ -57,7 +57,7 @@ stages:
               node_count++;
           }
           
-          vec4 color = vec4(1);
+          vec4 color = vec4(0);
           
           for (uint i = node_count; i > 0; i--) {
               const Node node = sorted[i - 1];
