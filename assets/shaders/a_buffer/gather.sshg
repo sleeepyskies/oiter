@@ -67,15 +67,13 @@ stages:
           const ivec2 pixel = ivec2(gl_FragCoord.xy);
           const uint index = next_index();
           
-          /* todo: add this back?
-          if (index >= MAX_NODES) {
+          if (index >= uint(nodes.length())) {
               discard;
           }
-          */
-          
-          nodes[index].color = material.color;
-          nodes[index].depth = gl_FragDepth;
           
           const uint old = imageAtomicExchange(heads, pixel, index);
+          
+          nodes[index].color = material.color;
+          nodes[index].depth = gl_FragCoord.z;
           nodes[index].next = old;
       }
