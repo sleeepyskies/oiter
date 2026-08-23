@@ -70,14 +70,7 @@ stages:
       }
       
       void main() {
-          const ivec2 uv = ivec2(gl_FragCoord.xy);
-          const uint first_index = imageLoad(heads, uv).r;
-          
-          counter = 0;
-          imageStore(heads, uv, uvec4(INVALIID, 0, 0, 0));
-          
-          // todo: could we actually reset everything here? then we dont need 
-          // the explicit clears at the start of each frame in a_buffer.cpp
-          
+          const ivec2 pixel = ivec2(gl_FragCoord.xy);
+          const uint first_index = imageLoad(heads, pixel).r;
           out_color = sorted_color(first_index);
       }

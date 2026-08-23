@@ -37,16 +37,16 @@ auto ABuffer::render(
     };
 
     // reset the counter each frame
-    // m_ssbo->upload(siren::ByteBuffer{siren::u32{0}}.data());
-    // reset the list heads each frame
-    // m_list_head->clear(std::numeric_limits<siren::u32>::max());
+    m_ssbo->upload(siren::ByteBuffer{siren::u32{0}}.data());
+    // reset the list heads each frame using 0xFFFFFFFF
+    m_list_head->clear(std::numeric_limits<siren::u32>::max());
 
     m_device.render_pass(
         // we don't actually write to any output directly, we just manipulate the list_head and the ssbo
         {.target = {}},
         [&](siren::RenderPassRecorder& pass) {
             pass.bind_graphics_pipeline(m_gather_pipeline->handle());
-            pass.bind_storage_image(m_list_head->handle(), 0);
+            pass.bind_storage_image(m_list_head->handle(), siren::AccessKind::ReadWrite, 0);
             pass.bind_shader_storage_buffer(m_ssbo->handle(), 0);
             draw_scene(pass);
         }
@@ -67,7 +67,7 @@ auto ABuffer::render(
         },
         [this](siren::RenderPassRecorder& pass) {
             pass.bind_graphics_pipeline(m_blend_pipeline->handle());
-            pass.bind_storage_image(m_list_head->handle(), 0);
+            pass.bind_storage_image(m_list_head->handle(), siren::AccessKind::ReadWrite, 0);
             pass.bind_shader_storage_buffer(m_ssbo->handle(), 0);
             pass.draw_fullscreen();
         }
