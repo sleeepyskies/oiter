@@ -233,7 +233,7 @@ auto RenderApp::run() -> void {
 
     stbi_flip_vertically_on_write(true);
     const auto result = stbi_write_png(
-        m_options.output_path.c_str(),
+        siren::FileSystem::to_physical(m_options.output_path)->c_str(),
         desc.extent.width,
         desc.extent.height,
         4,
