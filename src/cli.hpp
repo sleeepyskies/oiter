@@ -1,7 +1,6 @@
 #pragma once
 
 #include <lyra/lyra.hpp>
-#include <glm/vec2.hpp>
 #include <memory>
 #include <string>
 
@@ -52,9 +51,7 @@ public:
     auto run() -> void override;
 
 private:
-    struct Options {
-        AppOptions app_options;
-    } m_options;
+    InteractiveAppOptions m_options;
 };
 
 /**
@@ -67,11 +64,7 @@ public:
     auto run() -> void override;
 
 private:
-    struct Options {
-        AppOptions app_options;
-        std::string output_path;
-        glm::uvec2 image_size = {1920, 1080};
-    } m_options;
+    RenderAppOptions m_options;
 };
 
 /**

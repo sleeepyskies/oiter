@@ -10,7 +10,7 @@ namespace oiter {
  * @brief Mutable state for running in interactive mode.
  */
 struct InteractiveState {
-    MethodKind oit_method;
+    MethodKind oit_method = MethodKind::default_kind();
     glm::vec3 camera_position;
     bool debug_menu_visible       = true;
     bool skybox_visible           = true;

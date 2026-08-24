@@ -9,10 +9,10 @@
 namespace oiter {
 struct MethodKind {
     enum Value {
-        DualDepthPeeling,
         DepthPeeling,
-        KBuffer,
+        DualDepthPeeling,
         ABuffer,
+        KBuffer,
     } value;
 
     constexpr MethodKind(const Value value) : value(value) {}
@@ -20,10 +20,10 @@ struct MethodKind {
 
     [[nodiscard]] constexpr auto to_string() const -> std::string {
         switch (value) {
-            case DualDepthPeeling: return "DualDepthPeeling";
             case DepthPeeling: return "DepthPeeling";
-            case ABuffer: return "ABuffer";
+            case DualDepthPeeling: return "DualDepthPeeling";
             case KBuffer: return "KBuffer";
+            case ABuffer: return "ABuffer";
             default: UNREACHABLE();
         }
     }
@@ -42,6 +42,10 @@ struct MethodKind {
             return ABuffer;
         }
         throw std::invalid_argument("Invalid OIT method");
+    }
+
+    [[nodiscard]] static auto default_kind() -> MethodKind {
+        return DepthPeeling;
     }
 };
 } // namespace oiter

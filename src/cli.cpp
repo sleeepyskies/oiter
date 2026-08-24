@@ -76,45 +76,6 @@
     };
 }
 
-static auto add_app_options(
-    lyra::command& command,
-    oiter::AppOptions& options
-) -> void {
-    command.add_argument(
-        lyra::opt(options.scene_path, "path")
-        ["-s"]["--scene"]
-        .help("Path to the scene file.")
-    );
-
-    command.add_argument(
-        lyra::opt(
-            bind_method(options.initial_method),
-            "method"
-        )
-        ["-m"]["--method"]
-        .choices("ddp", "dp", "ab", "kb")
-        .help("OIT method: ddp, dp, ab, kb.")
-    );
-
-    command.add_argument(
-        lyra::opt(
-            bind_vec3(options.camera_position),
-            "x,y,z"
-        )
-        ["--camera-position"]
-        .help("Camera position in x,y,z format.")
-    );
-
-    command.add_argument(
-        lyra::opt(
-            bind_vec3(options.camera_lookat),
-            "x,y,z"
-        )
-        ["--camera-lookat"]
-        .help("Camera lookat in x,y,z format.")
-    );
-}
-
 namespace oiter {
 Command::Command(
     std::string name,
@@ -145,14 +106,46 @@ InteractiveCommand::InteractiveCommand()
 auto InteractiveCommand::create_parser() -> lyra::command {
     auto command = create_base_parser();
 
-    add_app_options(command, m_options.app_options);
+    command.add_argument(
+        lyra::opt(m_options.scene_path, "path")
+        ["-s"]["--scene"]
+        .help("Path to the scene file.")
+    );
+
+    command.add_argument(
+        lyra::opt(
+            bind_method(m_options.method),
+            "method"
+        )
+        ["-m"]["--method"]
+        .choices("ddp", "dp", "ab", "kb")
+        .help("OIT method: ddp, dp, ab, kb.")
+    );
+
+    command.add_argument(
+        lyra::opt(
+            bind_vec3(m_options.camera_position),
+            "x,y,z"
+        )
+        ["--camera-position"]
+        .help("Camera position in x,y,z format.")
+    );
+
+    command.add_argument(
+        lyra::opt(
+            bind_vec3(m_options.camera_lookat),
+            "x,y,z"
+        )
+        ["--camera-lookat"]
+        .help("Camera lookat in x,y,z format.")
+    );
 
     return command;
 }
 
 auto InteractiveCommand::run() -> void {
-    App app{m_options.app_options};
-    app.run_interactive();
+    InteractiveApp app{m_options};
+    app.run();
 }
 
 RenderCommand::RenderCommand()
@@ -164,23 +157,58 @@ RenderCommand::RenderCommand()
 auto RenderCommand::create_parser() -> lyra::command {
     auto command = create_base_parser();
 
-    add_app_options(command, m_options.app_options);
+    command.add_argument(
+        lyra::opt(m_options.scene_path, "path")
+        ["-s"]["--scene"]
+        .help("Path to the scene file.")
+    );
+
+    command.add_argument(
+        lyra::opt(
+            bind_method(m_options.method),
+            "method"
+        )
+        ["-m"]["--method"]
+        .choices("ddp", "dp", "ab", "kb")
+        .help("OIT method: ddp, dp, ab, kb.")
+        .required()
+    );
+
+    command.add_argument(
+        lyra::opt(
+            bind_vec3(m_options.camera_position),
+            "x,y,z"
+        )
+        ["--camera-position"]
+        .help("Camera position in x,y,z format.")
+        .required()
+    );
+
+    command.add_argument(
+        lyra::opt(
+            bind_vec3(m_options.camera_lookat),
+            "x,y,z"
+        )
+        ["--camera-lookat"]
+        .help("Camera lookat in x,y,z format.")
+        .required()
+    );
 
     command.add_argument(
         lyra::opt(m_options.output_path, "path")
         ["-o"]["--output"]
-        .required()
         .help("Output image path.")
+        .required()
     );
 
     command.add_argument(
-        lyra::opt(m_options.image_size.x, "pixels")
+        lyra::opt(m_options.dimensions.x, "pixels")
         ["--width"]
         .help("Output image width.")
     );
 
     command.add_argument(
-        lyra::opt(m_options.image_size.y, "pixels")
+        lyra::opt(m_options.dimensions.y, "pixels")
         ["--height"]
         .help("Output image height.")
     );
@@ -189,8 +217,9 @@ auto RenderCommand::create_parser() -> lyra::command {
 }
 
 auto RenderCommand::run() -> void {
-    App app{m_options.app_options};
-    app.run_render();
+    // pass for now
+    RenderApp app{m_options};
+    app.run();
 }
 
 auto Cli::parse(
