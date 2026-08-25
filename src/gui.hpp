@@ -46,7 +46,7 @@ inline auto end_frame() -> void {
 /** @brief Draws the debug overlay and returns requested state changes. */
 [[nodiscard]] inline auto render_debug(
     const siren::Statistics& statistics,
-    const siren::PerspectiveCamera& camera,
+    siren::PerspectiveCamera& camera,
     siren::PerspectiveCameraController& controller,
     oiter::OitMethod& oit_method,
     const oiter::MethodKind method_kind,
@@ -55,8 +55,6 @@ inline auto end_frame() -> void {
     DebugPanelActions actions;
 
     new_frame();
-    auto speed       = static_cast<float>(controller.speed());
-    auto sensitivity = static_cast<float>(controller.sensitivity());
 
     const auto& io = ImGui::GetIO();
 
@@ -132,15 +130,20 @@ inline auto end_frame() -> void {
 
     if (ImGui::CollapsingHeader("Scene", ImGuiTreeNodeFlags_DefaultOpen)) {
         const auto position = camera.position();
+        auto speed          = (float)controller.speed();
+        auto sensitivity    = (float)controller.sensitivity();
+        auto fov            = (float)camera.fov();
 
         ImGui::Text("Camera Position: (%f, %f, %f)", position.x, position.y, position.z);
         ImGui::Text("Camera Yaw: %f", camera.yaw());
         ImGui::Text("Camera Pitch: %f", camera.pitch());
+        ImGui::SliderFloat("Camera Fov", &fov, 30.f, 120.f);
         ImGui::SliderFloat("Camera Speed", &speed, 0.f, 20.f);
         ImGui::SliderFloat("Camera Sensitivity", &sensitivity, 0.f, 1.f);
 
         if (speed != controller.speed()) { controller.set_speed(speed); }
         if (sensitivity != controller.sensitivity()) { controller.set_sensitivity(sensitivity); }
+        if (fov != camera.fov()) { camera.set_fov(fov); }
     }
 
     const auto title = std::format("{} Controls", oit_method.name().data());

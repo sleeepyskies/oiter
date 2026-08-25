@@ -181,7 +181,6 @@ auto RenderCommand::create_parser() -> lyra::command {
         )
         ["--camera-position"]
         .help("Camera position in x,y,z format.")
-        .required()
     );
 
     command.add_argument(
@@ -191,7 +190,6 @@ auto RenderCommand::create_parser() -> lyra::command {
         )
         ["--camera-lookat"]
         .help("Camera lookat in x,y,z format.")
-        .required()
     );
 
     command.add_argument(

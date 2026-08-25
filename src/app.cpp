@@ -100,7 +100,7 @@ auto InteractiveApp::run() -> void {
     siren::PerspectiveCamera camera{};
     siren::PerspectiveCameraController controller;
     camera.set_position(m_interactive_state.camera_position);
-    camera.look_at(glm::vec3{-1, 0, 0});
+    camera.look_at(m_options.camera_lookat);
 
     const auto skybox = Skybox{"oiter://assets/textures/skybox/skybox.cubemap", *device, server};
 
@@ -220,11 +220,11 @@ auto RenderApp::run() -> void {
 
     siren::PerspectiveCamera camera{};
     camera.set_position(m_options.camera_position);
-    camera.look_at(glm::vec3{-1, 0, 0});
+    camera.look_at(m_options.camera_lookat);
 
     const auto& image = oit_method->render(camera, baked);
-    const auto& desc  = image.descriptor();
 
+    const auto& desc  = image.descriptor();
     if (desc.format != siren::ImageFormat::RGBA8 && desc.format != siren::ImageFormat::sRGBA8) {
         throw std::runtime_error{"Rendered image must be RGBA8"};
     }

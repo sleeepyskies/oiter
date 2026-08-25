@@ -47,9 +47,9 @@ for method in methods:
             "--method",
             method,
             "--camera-position",
-            "0,0,5",
+            "0,0,2",
             "--camera-lookat",
-            "0,0,4",
+            "-1,0,2",
             "--output",
             path,
             "--width",
@@ -58,3 +58,12 @@ for method in methods:
             "1080",
         ]
     )
+
+reference_image = Path(output_dir / "reference0000.png")
+assert reference_image.exists()
+
+# then, run flip on the images
+for method in methods:
+    path = Path(output_dir / f"{method}.png")
+    assert path
+    subprocess.run(["flip", "-r", reference_image, "-t", path, "-d", output_dir])

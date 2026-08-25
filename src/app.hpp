@@ -18,9 +18,9 @@ struct InteractiveAppOptions {
     /** @brief The method to use. Note that this can be changed on the fly when running interactive mode. */
     MethodKind method = MethodKind::default_kind();
     /** @brief The initial position of the camera. */
-    glm::vec3 camera_position = glm::vec3{0.f, 0.f, 0.f};
+    glm::vec3 camera_position = glm::vec3{0.f, 0.f, 2.f};
     /** @brief The initial lookat of the camera. */
-    glm::vec3 camera_lookat = glm::vec3{1.f, 0.f, 0.f};
+    glm::vec3 camera_lookat = glm::vec3{-1.f, 0.f, 2.f};
 };
 
 /**
