@@ -8,8 +8,6 @@ ABuffer::ABuffer(
     const glm::uvec2 extent,
     siren::AssetServer& assets
 ) : OitMethod(device, assets) {
-    // todo: do we need to check gpu requirements?
-
     create_buffers(extent);
     create_images(extent);
     create_pipelines();
@@ -82,7 +80,11 @@ auto ABuffer::resize(const glm::uvec2 extent) -> void {
 }
 
 auto ABuffer::reload_shaders() -> void {
-    UNIMPLEMENTED();
+    m_gather_shader   = siren::NullHandle;
+    m_gather_pipeline = nullptr;
+    m_blend_shader    = siren::NullHandle;
+    m_blend_pipeline  = nullptr;
+    create_pipelines();
 }
 
 auto ABuffer::render_debug_info() -> void {

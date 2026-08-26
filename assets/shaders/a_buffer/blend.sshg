@@ -28,20 +28,16 @@ stages:
       
       /**
        * This fetch all colors in this pixels linked list, then sort them via their depth,
-       * then merge them based on this order, and then return the final color.
+       * blend using over blending and then return the final color.
        */
       vec4 sorted_color(const uint first_index) {
           Node sorted[MAX_NODES];
           uint index = first_index;
           uint node_count = 0;
           
-          while (
-              index != INVALID &&
-              index < uint(nodes.length()) &&
-              node_count < MAX_NODES
-          ) {
+          // insertion sort using node depth as sorting key
+          while (index < uint(nodes.length())) {
               const Node node = nodes[index];
-              index = node.next;
 
               uint insertion = node_count;
 
@@ -55,6 +51,7 @@ stages:
 
               sorted[insertion] = node;
               node_count++;
+              index = node.next;
           }
           
           vec4 color = vec4(0);
@@ -64,7 +61,6 @@ stages:
               const float remaining = 1. - node.color.a;
 
               color.rgb = node.color.rgb * node.color.a + color.rgb * remaining;
-
               color.a = node.color.a + color.a * remaining;
           }
           
