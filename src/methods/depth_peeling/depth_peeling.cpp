@@ -41,7 +41,7 @@ auto DepthPeeling::render(
     const auto write_color = siren::ColorAttachment{
         .image           = m_write_color->handle(),
         .begin_operation = siren::BeginOperation::Clear,
-        .clear_color     = siren::Rgba::zero(),
+        .clear_color     = siren::Rgba::ZERO,
     };
 
     const auto accumulation_color = siren::ColorAttachment{
@@ -50,7 +50,7 @@ auto DepthPeeling::render(
     };
 
     // set up image to back to front blending
-    m_accumulation_color->clear(siren::Rgba::zero());
+    m_accumulation_color->clear(siren::Rgba::ZERO);
 
     for (const auto layer : siren::range(m_config.layers)) {
         m_last_frame_peels++;

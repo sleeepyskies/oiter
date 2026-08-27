@@ -57,7 +57,7 @@ auto ABuffer::render(
                     siren::ColorAttachment{
                         .image           = m_output->handle(),
                         .begin_operation = siren::BeginOperation::Clear,
-                        .clear_color     = siren::Rgba::zero()
+                        .clear_color     = siren::Rgba::ZERO,
                     },
                 },
                 .depth_stencil = std::nullopt,
