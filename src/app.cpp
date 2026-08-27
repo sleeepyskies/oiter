@@ -224,12 +224,50 @@ auto RenderApp::run() -> void {
 
     const auto& image = oit_method->render(camera, baked);
 
-    const auto& desc  = image.descriptor();
-    if (desc.format != siren::ImageFormat::RGBA8 && desc.format != siren::ImageFormat::sRGBA8) {
-        throw std::runtime_error{"Rendered image must be RGBA8"};
-    }
+    const auto& desc = image.descriptor();
+    ASSERT(desc.format == siren::ImageFormat::RGBA8, "Must be using RGBA8 Color space.");
 
-    const auto buffer = device->read_image(image.handle());
+    // convert linear to srgb color space
+    const auto sampler      = device->create_sampler({});
+    const auto output_image = device->create_image(
+        {
+            .format        = siren::ImageFormat::sRGBA8,
+            .extent        = siren::ImageExtent{window.width(), window.height()},
+            .dimension     = siren::ImageDimension::D2,
+            .mipmap_levels = 1,
+        }
+    );
+    const auto linear_to_srgb_shaderh = server.load<siren::ShaderAsset>("oiter://assets/shaders/color_space.sshg");
+    server.wait_until_loaded(linear_to_srgb_shaderh);
+    const auto& shader        = server.get_unsafe(linear_to_srgb_shaderh);
+    const auto linear_to_srgb = device->create_graphics_pipeline(
+        {
+            .layout = siren::FULLSCREEN_VERTEX_LAYOUT,
+            .shader = shader.shader.handle(),
+        }
+    );
+    device->render_pass(
+        siren::RenderPassDescriptor{
+            .label  = "Linear to sRGB",
+            .target = siren::RenderTarget{
+                .colors = {
+                    siren::ColorAttachment{
+                        .image           = output_image.handle(),
+                        .begin_operation = siren::BeginOperation::Clear,
+                        .clear_color     = siren::Rgba::ZERO,
+                    }
+                },
+                .depth_stencil = std::nullopt,
+                .is_srgb       = true,
+            },
+        },
+        [&](siren::RenderPassRecorder& pass) {
+            pass.bind_graphics_pipeline(linear_to_srgb.handle());
+            pass.bind_sampled_image(image.handle(), sampler.handle(), 0);
+        }
+    );
+
+    const auto buffer = device->read_image(output_image.handle());
 
     stbi_flip_vertically_on_write(true);
     const auto result = stbi_write_png(
@@ -241,8 +279,8 @@ auto RenderApp::run() -> void {
         desc.extent.width * 4
     );
 
-    if (result == 0) {
-        throw std::runtime_error("stb_image_write has failed.");
+    if (result != 0) {
+        throw std::runtime_error("failure stbi_write_png");
     }
 }
 } // namespace oiter

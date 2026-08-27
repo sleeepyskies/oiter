@@ -4,6 +4,7 @@ find_package(imgui REQUIRED)
 target_link_libraries(oiter PRIVATE
         bfg::lyra
         imgui::imgui
+        2iREN::2iREN
 )
 
 target_sources(oiter PRIVATE
