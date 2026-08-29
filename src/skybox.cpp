@@ -3,8 +3,8 @@
 #include <iterator>
 #include <vector>
 
-#include "2iren/asset/asset_server.hpp"
-#include "2iren/rhi/device.hpp"
+#include "2iREN/asset/asset_server.hpp"
+#include "2iREN/rhi/device.hpp"
 
 namespace oiter {
 namespace {

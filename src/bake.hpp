@@ -1,8 +1,8 @@
 #pragma once
 
-#include "2iren/asset/assets/gltf.hpp"
-#include "2iren/asset/assets/mesh.hpp"
-#include "2iren/rhi/resources/fwd.hpp"
+#include "2iREN/asset/assets/gltf.hpp"
+#include "2iREN/asset/assets/mesh.hpp"
+#include "2iREN/rhi/resources/fwd.hpp"
 
 namespace oiter {
 struct BakedSurface {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <libassert/assert.hpp>
+#include "2iREN/core/assert.hpp"
 
 #include <string>
 #include <string_view>

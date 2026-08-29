@@ -3,7 +3,7 @@
 #include <imgui.h>
 
 #include "../../bake.hpp"
-#include "2iren/rhi/device.hpp"
+#include "2iREN/rhi/device.hpp"
 
 namespace oiter {
 DualDepthPeeling::DualDepthPeeling(

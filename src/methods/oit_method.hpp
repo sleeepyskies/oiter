@@ -1,10 +1,10 @@
 #pragma once
 
-#include "2iren/rhi/resources/image.hpp"
-#include "2iren/util/camera.hpp"
+#include "2iREN/rhi/resources/image.hpp"
+#include "2iREN/util/camera.hpp"
 #include "../bake.hpp"
-#include "2iren/asset/assets/shader.hpp"
-#include "2iren/rhi/device.hpp"
+#include "2iREN/asset/assets/shader.hpp"
+#include "2iREN/rhi/device.hpp"
 
 namespace oiter {
 /**

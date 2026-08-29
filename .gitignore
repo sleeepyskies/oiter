@@ -1,5 +1,9 @@
 .git
 .idea
 /cmake-build-debug
+/build/
+/CMakeUserPresets.json
+/compile_commands.json
 /.venv
 /scripts/out/
+imgui.ini

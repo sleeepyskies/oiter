@@ -1,12 +1,11 @@
 #pragma once
 
-
-#include <string>
 #include <glm/vec3.hpp>
+#include <string>
 
+#include "2iREN/rhi/resources/swapchain.hpp"
 #include "interactive_state.hpp"
 #include "methods/method_kind.hpp"
-#include "2iren/rhi/resources/swapchain.hpp"
 
 namespace oiter {
 /**
@@ -15,7 +14,8 @@ namespace oiter {
 struct InteractiveAppOptions {
     /** @brief Path to the scene file to render. May either be a virtual or physical path. */
     std::string scene_path = "oiter://assets/meshes/stresstest.glb";
-    /** @brief The method to use. Note that this can be changed on the fly when running interactive mode. */
+    /** @brief The method to use. Note that this can be changed on the fly when running interactive
+     * mode. */
     MethodKind method = MethodKind::default_kind();
     /** @brief The initial position of the camera. */
     glm::vec3 camera_position = glm::vec3{0.f, 0.f, 2.f};
@@ -29,7 +29,8 @@ struct InteractiveAppOptions {
 struct RenderAppOptions {
     /** @brief Path to the scene file to render. May either be a virtual or physical path. */
     std::string scene_path = "oiter://assets/meshes/stresstest.glb";
-    /** @brief The method to use. Note that this can be changed on the fly when running interactive mode. */
+    /** @brief The method to use. Note that this can be changed on the fly when running interactive
+     * mode. */
     MethodKind method = MethodKind::default_kind();
     /** @brief The initial position of the camera. */
     glm::vec3 camera_position = glm::vec3{0.f, 0.f, 0.f};
@@ -42,7 +43,8 @@ struct RenderAppOptions {
 };
 
 /**
- * @brief The Oiter interactive application. Handles launching the demo/renderer and inits the 2iREN framework.
+ * @brief The Oiter interactive application. Handles launching the demo/renderer and inits the 2iREN
+ * framework.
  */
 class InteractiveApp {
 public:

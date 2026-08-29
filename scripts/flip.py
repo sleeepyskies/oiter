@@ -1,5 +1,6 @@
-# This script is used to run the flip metric between a blender reference image against all of oiter's OIT methods.
-# It assumes running on a linux environment and that the oiter build dir is name "cmake-build-debug"
+# This script is used to run the flip metric between a blender reference image
+# against all of oiter's OIT methods.
+# It assumes Oiter was built in Release mode through its Conan CMake preset.
 # Furthermore, blender must be installed and set in the system path
 
 from pathlib import Path
@@ -7,7 +8,7 @@ import subprocess
 
 oiter_root = Path(__file__).parent.parent.resolve()
 
-oiter_executable = Path(oiter_root / "cmake-build-debug" / "oiter").absolute()
+oiter_executable = Path(oiter_root / "build" / "build" / "Release" / "oiter").absolute()
 scene_file = "oiter://scripts/assets/stresstest.glb"
 blend_file = Path(oiter_root / "scripts" / "assets" / "stresstest.blend").absolute()
 output_dir = Path(oiter_root / "scripts" / "out").absolute()

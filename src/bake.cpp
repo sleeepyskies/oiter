@@ -1,7 +1,7 @@
 #include "bake.hpp"
 
-#include "2iren/asset/asset_server.hpp"
-#include "2iren/util/log.hpp"
+#include "2iREN/asset/asset_server.hpp"
+#include "2iREN/util/log.hpp"
 
 namespace oiter {
 static auto bake_node(

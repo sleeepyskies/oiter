@@ -2,7 +2,7 @@
 
 #include <imgui.h>
 
-#include "2iren/asset/asset_server.hpp"
+#include "2iREN/asset/asset_server.hpp"
 
 namespace oiter {
 DepthPeeling::DepthPeeling(

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "2iren/base.hpp"
+#include "2iREN/base.hpp"
 #include "methods/method_kind.hpp"
 
 #include <glm/vec3.hpp>

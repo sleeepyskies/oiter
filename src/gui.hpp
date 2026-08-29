@@ -4,7 +4,7 @@
 #include <imgui/backends/imgui_impl_glfw.h>
 #include <imgui/backends/imgui_impl_opengl3.h>
 
-#include "2iren/window.hpp"
+#include "2iREN/window.hpp"
 #include "interactive_state.hpp"
 #include "methods/method_kind.hpp"
 #include "methods/oit_method.hpp"

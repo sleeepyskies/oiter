@@ -1,14 +1,14 @@
 #include "app.hpp"
 
-#include "2iren/asset/assets/gltf.hpp"
-#include "2iren/input/input.hpp"
-#include "2iren/rhi/context.hpp"
-#include "2iren/rhi/device.hpp"
-#include "2iren/rhi/resources/swapchain.hpp"
-#include "2iren/util/camera.hpp"
-#include "2iren/util/filesystem.hpp"
-#include "2iren/util/time.hpp"
-#include "2iren/window.hpp"
+#include "2iREN/asset/assets/gltf.hpp"
+#include "2iREN/input/input.hpp"
+#include "2iREN/context.hpp"
+#include "2iREN/rhi/device.hpp"
+#include "2iREN/rhi/resources/swapchain.hpp"
+#include "2iREN/util/camera.hpp"
+#include "2iREN/util/filesystem.hpp"
+#include "2iREN/util/time.hpp"
+#include "2iREN/window.hpp"
 #include "bake.hpp"
 #include "gui.hpp"
 #include "methods/depth_peeling/depth_peeling.hpp"
@@ -18,7 +18,7 @@
 
 #include <utility>
 
-#include "2iren/util/stb_image_write.h"
+#include "2iREN/util/stb_image_write.h"
 #include "methods/a_buffer/a_buffer.hpp"
 #include "methods/k_buffer/k_buffer.hpp"
 
@@ -118,7 +118,7 @@ auto InteractiveApp::run() -> void {
     while (!window.should_close()) {
         m_frame_stats.frame++;
         if (!(m_frame_stats.frame % 60)) {
-            m_frame_stats.fps = 1 / siren::time::delta_s();
+            m_frame_stats.fps = 1.f / static_cast<siren::f32>(siren::time::delta().seconds());
         }
         SetTimer full_frame_timer{m_frame_stats.full_frame_ms};
 
@@ -179,7 +179,7 @@ auto InteractiveApp::run() -> void {
             }
         );
         device->flush_delete_queue();
-        siren::time::tick();
+        siren::time::step();
         input.update();
         m_interactive_state.camera_position = camera.position();
     }

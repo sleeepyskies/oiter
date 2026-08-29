@@ -3,10 +3,10 @@
 #include <memory>
 #include <string_view>
 
-#include "2iren/asset/assets/mesh.hpp"
-#include "2iren/asset/assets/shader.hpp"
-#include "2iren/rhi/resources/image.hpp"
-#include "2iren/util/camera.hpp"
+#include "2iREN/asset/assets/mesh.hpp"
+#include "2iREN/asset/assets/shader.hpp"
+#include "2iREN/rhi/resources/image.hpp"
+#include "2iREN/util/camera.hpp"
 
 namespace oiter {
 

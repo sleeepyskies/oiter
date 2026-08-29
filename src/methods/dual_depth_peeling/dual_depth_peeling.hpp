@@ -1,10 +1,10 @@
 #pragma once
 
 #include "../../bake.hpp"
-#include "2iren/asset/asset_server.hpp"
-#include "2iren/util/camera.hpp"
+#include "2iREN/asset/asset_server.hpp"
+#include "2iREN/util/camera.hpp"
 #include "../oit_method.hpp"
-#include "2iren/asset/assets/shader.hpp"
+#include "2iREN/asset/assets/shader.hpp"
 
 namespace oiter {
 

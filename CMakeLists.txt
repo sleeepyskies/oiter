@@ -4,9 +4,9 @@ project(oiter)
 # create compile_commands.json, needed for nvim navigation
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(SIREN_BUILD_EXAMPLES OFF CACHE BOOL "Build 2iREN examples")
+set(SIREN_BUILD_TESTS OFF CACHE BOOL "Build 2iREN tests")
+set(SIREN_SINGLE_THREADED ON CACHE BOOL "Compile 2iREN without multithreading")
 
 add_subdirectory(2iREN)
 
@@ -26,6 +26,14 @@ add_executable(oiter
         src/cli.cpp
 )
 
+target_compile_features(oiter PRIVATE cxx_std_23)
+set_target_properties(oiter PROPERTIES
+        CXX_STANDARD_REQUIRED ON
+        CXX_EXTENSIONS OFF
+)
+
 include(dependencies.cmake)
 
-target_compile_definitions(oiter PRIVATE OITER_VFS="${CMAKE_CURRENT_SOURCE_DIR}")
+target_compile_definitions(oiter PRIVATE
+    OITER_VFS="${CMAKE_CURRENT_SOURCE_DIR}"
+)

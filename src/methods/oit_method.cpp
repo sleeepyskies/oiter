@@ -1,7 +1,7 @@
 #include "oit_method.hpp"
 
-#include "2iren/asset/asset_server.hpp"
-#include "2iren/rhi/device.hpp"
+#include "2iREN/asset/asset_server.hpp"
+#include "2iREN/rhi/device.hpp"
 
 namespace oiter {
 OitMethod::OitMethod(siren::Device& device, siren::AssetServer& assets)

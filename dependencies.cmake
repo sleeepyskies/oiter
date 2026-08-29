@@ -8,10 +8,10 @@ target_link_libraries(oiter PRIVATE
 )
 
 target_sources(oiter PRIVATE
-        external/imgui/backends/imgui_impl_glfw.cpp
-        external/imgui/backends/imgui_impl_opengl3.cpp
+        third_party/imgui/backends/imgui_impl_glfw.cpp
+        third_party/imgui/backends/imgui_impl_opengl3.cpp
 )
 
 target_include_directories(oiter PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/external
+        ${CMAKE_CURRENT_SOURCE_DIR}/third_party
 )

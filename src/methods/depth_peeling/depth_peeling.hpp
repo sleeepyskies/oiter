@@ -2,7 +2,7 @@
 
 #include "../oit_method.hpp"
 #include "../../bake.hpp"
-#include "2iren/asset/asset_server.hpp"
+#include "2iREN/asset/asset_server.hpp"
 
 namespace oiter {
 class DepthPeeling final : public OitMethod {

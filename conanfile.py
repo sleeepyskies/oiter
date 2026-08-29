@@ -14,17 +14,24 @@ class Oiter(ConanFile):
         CMakeDeps(self).generate()
 
         tc = CMakeToolchain(self)
-        tc.user_presets_path = False
         tc.generate()
 
     def requirements(self):
-        requirements = self.conan_data.get('requirements', [])
+        # oiter dependencies
+        self.requires("imgui/1.92.8")
+        self.requires("lyra/1.7.0")
 
-        for requirement in requirements:
-            if isinstance(requirement, dict):
-                self.requires(
-                    requirement["ref"],
-                    options=requirement.get("options", {})
-                )
-            else:
-                self.requires(requirement)
+        # 2iREN dependencies
+        # Conan will only evaluate the root recipe, and since we have 2iREN
+        # as a git submodule, we need to copy 2iREN's dependencies here
+        self.requires("yaml-cpp/0.9.0")
+        self.requires("glm/1.0.1")
+        self.requires("opengl/system")
+        self.requires("glfw/3.4", options={"with_wayland": False})
+        self.requires(
+            "glad/2.0.8",
+            options={
+                "gl_version": "4.6",
+                "gl_profile": "core",
+            },
+        )
