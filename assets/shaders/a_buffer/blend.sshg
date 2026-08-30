@@ -26,10 +26,8 @@ stages:
       const uint INVALID = 0xFFFFFFFF; // identifies the final node next index
       const uint MAX_NODES = 8;
       
-      /**
-       * This fetch all colors in this pixels linked list, then sort them via their depth,
-       * blend using over blending and then return the final color.
-       */
+      /// This fetch all colors in this pixels linked list, then sort them via their depth,
+      /// blend using over blending and then return the final color.
       vec4 sorted_color(const uint first_index) {
           Node sorted[MAX_NODES];
           uint index = first_index;

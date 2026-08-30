@@ -3,22 +3,20 @@
 #include "../oit_method.hpp"
 
 namespace oiter {
-/**
- * @brief A node of the linked list.
- * @note This isn't used CPU side, we just have this here for reference.
- *
- * The actual SSBO object we use looks something like:
- * struct List {
- *     u32 counter;
- *     Node[] nodes;
- * }
- */
+/// @brief A node of the linked list.
+/// @note This isn't used CPU side, we just have this here for reference.
+///
+/// The actual SSBO object we use looks something like:
+/// struct List {
+///     u32 counter;
+///     Node[] nodes;
+/// }
 struct alignas(16) ABufferNode {
-    /** @brief The color of the node fragment. */
+    /// @brief The color of the node fragment.
     siren::Rgba color;
-    /** @brief The depth of the node fragment. */
+    /// @brief The depth of the node fragment.
     siren::f32 depth;
-    /** @brief The index of the next node in the list. */
+    /// @brief The index of the next node in the list.
     siren::u32 next;
 };
 

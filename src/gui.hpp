@@ -43,7 +43,7 @@ inline auto end_frame() -> void {
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-/** @brief Draws the debug overlay and returns requested state changes. */
+/// @brief Draws the debug overlay and returns requested state changes.
 [[nodiscard]] inline auto render_debug(
     const siren::Statistics& statistics,
     siren::PerspectiveCamera& camera,

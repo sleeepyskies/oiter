@@ -12,10 +12,9 @@
 [[nodiscard]] static auto parse_vec3(const std::string& text) -> glm::vec3 {
     std::stringstream stream{text};
 
-    // some weirdness with siren::f32
-    float x           = 0.f;
-    float y           = 0.f;
-    float z           = 0.f;
+    siren::f32 x      = 0.f;
+    siren::f32 y      = 0.f;
+    siren::f32 z      = 0.f;
     char first_comma  = '\0';
     char second_comma = '\0';
 
@@ -160,7 +159,6 @@ auto RenderCommand::create_parser() -> lyra::command {
 }
 
 auto RenderCommand::run() -> void {
-    // pass for now
     RenderApp app{m_options};
     app.run();
 }

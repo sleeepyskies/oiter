@@ -6,9 +6,7 @@
 #include <glm/vec3.hpp>
 
 namespace oiter {
-/**
- * @brief Mutable state for running in interactive mode.
- */
+/// @brief Mutable state for running in interactive mode.
 struct InteractiveState {
     MethodKind oit_method = MethodKind::default_kind();
     glm::vec3 camera_position;
@@ -16,9 +14,7 @@ struct InteractiveState {
     bool skybox_visible           = true;
 };
 
-/**
- * @brief Per frame general stats.
- */
+/// @brief Per frame general stats.
 struct FrameStats {
     siren::u32 full_frame_ms = 0;
     siren::u32 oit_render_ms = 0;
