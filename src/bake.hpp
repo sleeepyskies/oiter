@@ -1,8 +1,7 @@
 #pragma once
 
-#include "2iREN/asset/assets/gltf.hpp"
-#include "2iREN/asset/assets/mesh.hpp"
-#include "2iREN/rhi/resources/fwd.hpp"
+#include "2iREN/asset/gltf.hpp"
+#include "2iREN/asset/mesh.hpp"
 
 namespace oiter {
 struct BakedSurface {
@@ -22,8 +21,6 @@ struct BakedScene {
     std::vector<BakedMaterial> materials{};
 };
 
-auto bake_scene(
-    const siren::StrongHandle<siren::Gltf>& gltf_handle,
-    siren::AssetServer& server
-) -> BakedScene;
+auto bake_scene(const siren::StrongHandle<siren::Gltf>& gltf_handle, siren::AssetServer& server)
+    -> BakedScene;
 } // namespace oiter

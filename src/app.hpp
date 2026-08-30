@@ -1,9 +1,9 @@
 #pragma once
 
-#include <2iREN/util/log.hpp>
 #include <glm/glm.hpp>
 #include <string>
 
+#include "2iREN/utility/log.hpp"
 #include "interactive_state.hpp"
 #include "methods/method_kind.hpp"
 
@@ -40,8 +40,8 @@ struct RenderAppOptions {
     glm::uvec2 dimensions = glm::uvec2{1280, 720};
 };
 
-/// @brief The Oiter interactive application. Handles launching the demo/renderer and inits the 2iREN
-/// framework.
+/// @brief The Oiter interactive application. Handles launching the demo/renderer and inits the
+/// 2iREN framework.
 class InteractiveApp {
 public:
     explicit InteractiveApp(const InteractiveAppOptions& options);

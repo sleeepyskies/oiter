@@ -1,10 +1,11 @@
 #pragma once
 
-#include "../../bake.hpp"
 #include "2iREN/asset/asset_server.hpp"
-#include "2iREN/util/camera.hpp"
-#include "../oit_method.hpp"
-#include "2iREN/asset/assets/shader.hpp"
+#include "2iREN/asset/shader.hpp"
+#include "2iREN/scene/camera.hpp"
+
+#include "bake.hpp"
+#include "methods/oit_method.hpp"
 
 namespace oiter {
 
@@ -21,16 +22,14 @@ class DualDepthPeeling final : public OitMethod {
 
 public:
     explicit DualDepthPeeling(
-        siren::Device& device,
-        const glm::uvec2 extent,
-        siren::AssetServer& assets
+        siren::Device& device, const glm::uvec2 extent, siren::AssetServer& assets
     );
 
-    [[nodiscard]] auto render(
-        const siren::PerspectiveCamera& camera,
-        const BakedScene& scene
-    ) const -> const siren::Image& override;
-    [[nodiscard]] auto name() const noexcept -> std::string_view override { return "Dual Depth Peeling"; }
+    [[nodiscard]] auto render(const siren::PerspectiveCamera& camera, const BakedScene& scene) const
+        -> const siren::Image& override;
+    [[nodiscard]] auto name() const noexcept -> std::string_view override {
+        return "Dual Depth Peeling";
+    }
     auto resize(const glm::uvec2 extent) -> void override;
     auto reload_shaders() -> void override;
     auto render_debug_info() -> void override;

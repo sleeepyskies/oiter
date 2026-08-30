@@ -1,7 +1,8 @@
 #include "app.hpp"
-#include "cli.hpp"
 
 #include <iostream>
+
+#include "cli.hpp"
 
 auto main(const int argc, const char** argv) -> int {
     try {

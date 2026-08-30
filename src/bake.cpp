@@ -1,7 +1,7 @@
 #include "bake.hpp"
 
 #include "2iREN/asset/asset_server.hpp"
-#include "2iREN/util/log.hpp"
+#include "2iREN/utility/log.hpp"
 
 namespace oiter {
 static auto bake_node(
@@ -13,7 +13,8 @@ static auto bake_node(
     // bake this node
     const auto world_transform = ptransform * node.transform;
     if (node.mesh) {
-        for (const siren::Mesh& mesh = server.get_unsafe(*node.mesh); const auto& surfaceh : mesh.surfaces) {
+        for (const siren::Mesh& mesh = server.get_unsafe(*node.mesh);
+             const auto& surfaceh : mesh.surfaces) {
             siren::Surface& surface              = server.get_unsafe(surfaceh);
             const siren::MaterialAsset& material = server.get_unsafe(surface.material);
 
@@ -27,13 +28,15 @@ static auto bake_node(
                 (siren::u32)scene.materials.size() - 1,
             };
 
-                switch (material.alpha_mode()) {
-                    case siren::AlphaMode::Blend: scene.transparent.emplace_back(std::move(baked_surface));
-                        break;
+            switch (material.alpha_mode()) {
+                case siren::AlphaMode::Blend:
+                    scene.transparent.emplace_back(std::move(baked_surface));
+                    break;
 
-                    case siren::AlphaMode::Opaque:
-                    case siren::AlphaMode::Mask: scene.opaque.emplace_back(std::move(baked_surface));
-                        break;
+                case siren::AlphaMode::Opaque:
+                case siren::AlphaMode::Mask:
+                    scene.opaque.emplace_back(std::move(baked_surface));
+                    break;
             }
         }
     }
@@ -45,10 +48,8 @@ static auto bake_node(
     }
 }
 
-auto bake_scene(
-    const siren::StrongHandle<siren::Gltf>& gltf_handle,
-    siren::AssetServer& server
-) -> BakedScene {
+auto bake_scene(const siren::StrongHandle<siren::Gltf>& gltf_handle, siren::AssetServer& server)
+    -> BakedScene {
     BakedScene baked{};
 
     auto& gltf = server.get_unsafe(gltf_handle);

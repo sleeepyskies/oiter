@@ -66,9 +66,6 @@ struct Cli {
     /// @param argv Cli argument values.
     /// @return The selected command, or nullptr when help was requested.
     /// @throws std::runtime_error If the cli args are invalid.
-    [[nodiscard]] static auto parse(
-        int argc,
-        const char** argv
-    ) -> std::unique_ptr<Command>;
+    [[nodiscard]] static auto parse(int argc, const char** argv) -> std::unique_ptr<Command>;
 };
 } // namespace oiter

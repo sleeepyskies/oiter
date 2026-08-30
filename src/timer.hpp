@@ -1,22 +1,19 @@
 #pragma once
+
 #include <string_view>
 
-#include "2iREN/util/log.hpp"
+#include "2iREN/utility/log.hpp"
 
 namespace oiter {
 class LogTimer {
     using Clock = std::chrono::high_resolution_clock;
 
 public:
-    explicit LogTimer(
-        const std::string_view name
-    ) : m_name(name) {
-        m_start = Clock::now();
-    }
-
+    explicit LogTimer(const std::string_view name) : m_name(name) { m_start = Clock::now(); }
 
     ~LogTimer() {
-        const auto duration = std::chrono::duration<double, std::milli>(Clock::now() - m_start).count();
+        const auto duration =
+            std::chrono::duration<double, std::milli>(Clock::now() - m_start).count();
         siren::log::debug("{} took {:.3f}ms", m_name, duration);
     }
 
@@ -29,15 +26,12 @@ class SetTimer {
     using Clock = std::chrono::high_resolution_clock;
 
 public:
-    explicit SetTimer(
-        siren::u32& to_set
-    ) : m_to_set(to_set) {
-        m_start = Clock::now();
-    }
+    explicit SetTimer(siren::u32& to_set) : m_to_set(to_set) { m_start = Clock::now(); }
 
     ~SetTimer() {
-        const auto duration = std::chrono::duration<double, std::milli>(Clock::now() - m_start).count();
-        m_to_set            = duration;
+        const auto duration =
+            std::chrono::duration<double, std::milli>(Clock::now() - m_start).count();
+        m_to_set = duration;
     }
 
 private:

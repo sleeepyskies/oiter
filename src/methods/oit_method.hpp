@@ -1,10 +1,10 @@
 #pragma once
 
-#include "2iREN/rhi/resources/image.hpp"
-#include "2iREN/util/camera.hpp"
-#include "../bake.hpp"
-#include "2iREN/asset/assets/shader.hpp"
-#include "2iREN/rhi/device.hpp"
+#include "2iREN/graphics/device.hpp"
+#include "2iREN/graphics/image.hpp"
+#include "2iREN/scene/camera.hpp"
+
+#include "bake.hpp"
 
 namespace oiter {
 /// @brief The maximum number of meshes that can be drawn in a frame.
@@ -47,11 +47,11 @@ public:
     /// @param scene The scene to render.
     /// @return An image of the final rendered scene.
     [[nodiscard]] virtual auto render(
-        const siren::PerspectiveCamera& camera,
-        const BakedScene& scene
+        const siren::PerspectiveCamera& camera, const BakedScene& scene
     ) const -> const siren::Image& = 0;
 
-    /// @brief Initiates a resize of the OIT method. The OIT method should reconstruct all sized resources.
+    /// @brief Initiates a resize of the OIT method. The OIT method should reconstruct all sized
+    /// resources.
     /// @param extent The new size.
     virtual auto resize(const glm::uvec2 extent) -> void = 0;
 
@@ -86,22 +86,25 @@ protected:
 
 protected:
     /// @brief Updates the contents of the methods buffers.
-    auto update_buffers(const siren::PerspectiveCamera& camera, const BakedScene& scene) const -> void;
+    auto update_buffers(const siren::PerspectiveCamera& camera, const BakedScene& scene) const
+        -> void;
 
     /// @brief Returns the alignment size of the MeshUniforms buffer.
     [[nodiscard]] auto mesh_uniforms_alignment() const -> siren::usize {
-        return siren::align_up(sizeof(MeshUniforms), m_device.limits().uniform_buffer_offset_alignment);
+        return siren::align_up(
+            sizeof(MeshUniforms), m_device.limits().uniform_buffer_offset_alignment
+        );
     }
 
-    /// @brief Simple helper function to reduce code duplication for creating images. Creates a basic 2D Image.
+    /// @brief Simple helper function to reduce code duplication for creating images. Creates a
+    /// basic 2D Image.
     [[nodiscard]] auto create_standard_image(
-        const glm::uvec2 extent,
-        const std::string& label,
-        const siren::ImageFormat image_format
+        const glm::uvec2 extent, const std::string& label, const siren::ImageFormat image_format
     ) const -> std::unique_ptr<siren::Image>;
 
 private:
-    /// @brief Creates uniform buffers for the scene. This involves global scene data as well as per call data.
+    /// @brief Creates uniform buffers for the scene. This involves global scene data as well as per
+    /// call data.
     auto create_buffers() -> void;
 };
 } // namespace oiter

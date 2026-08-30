@@ -1,6 +1,8 @@
 #pragma once
 
-#include "../oit_method.hpp"
+#include "2iREN/asset/shader.hpp"
+
+#include "methods/oit_method.hpp"
 
 namespace oiter {
 /// @brief A node of the linked list.
@@ -28,10 +30,8 @@ class ABuffer final : public OitMethod {
 public:
     ABuffer(siren::Device& device, glm::uvec2 extent, siren::AssetServer& assets);
 
-    [[nodiscard]] auto render(
-        const siren::PerspectiveCamera& camera,
-        const BakedScene& scene
-    ) const -> const siren::Image& override;
+    [[nodiscard]] auto render(const siren::PerspectiveCamera& camera, const BakedScene& scene) const
+        -> const siren::Image& override;
 
     auto resize(const glm::uvec2 extent) -> void override;
     auto reload_shaders() -> void override;
@@ -50,11 +50,11 @@ private:
 
     std::unique_ptr<siren::Buffer> m_ssbo = nullptr;
 
-    siren::StrongHandle<siren::ShaderAsset> m_gather_shader  = siren::NullHandle;
-    siren::StrongHandle<siren::ShaderAsset> m_blend_shader = siren::NullHandle;
+    siren::StrongHandle<siren::ShaderAsset> m_gather_shader = siren::NullHandle;
+    siren::StrongHandle<siren::ShaderAsset> m_blend_shader  = siren::NullHandle;
 
-    std::unique_ptr<siren::GraphicsPipeline> m_gather_pipeline  = nullptr;
-    std::unique_ptr<siren::GraphicsPipeline> m_blend_pipeline = nullptr;
+    std::unique_ptr<siren::GraphicsPipeline> m_gather_pipeline = nullptr;
+    std::unique_ptr<siren::GraphicsPipeline> m_blend_pipeline  = nullptr;
 
     auto create_buffers(const glm::uvec2 extent) -> void;
     auto create_images(const glm::uvec2 extent) -> void;

@@ -34,6 +34,12 @@ set_target_properties(oiter PROPERTIES
 
 include(dependencies.cmake)
 
+target_include_directories(
+    oiter
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
 target_compile_definitions(oiter PRIVATE
     OITER_VFS="${CMAKE_CURRENT_SOURCE_DIR}"
 )

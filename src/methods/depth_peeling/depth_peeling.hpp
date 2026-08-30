@@ -1,28 +1,30 @@
 #pragma once
 
-#include "../oit_method.hpp"
-#include "../../bake.hpp"
+#include "bake.hpp"
+#include "methods/oit_method.hpp"
+
 #include "2iREN/asset/asset_server.hpp"
+#include "2iREN/asset/shader.hpp"
 
 namespace oiter {
 class DepthPeeling final : public OitMethod {
     struct Config {
-        siren::u32 layers    = 8;
+        siren::u32 layers  = 8;
         bool perform_query = true;
     } m_config;
 
 public:
     DepthPeeling(siren::Device& device, glm::uvec2 extent, siren::AssetServer& assets);
 
-    [[nodiscard]] auto render(
-        const siren::PerspectiveCamera& camera,
-        const BakedScene& scene
-    ) const -> const siren::Image& override;
+    [[nodiscard]] auto render(const siren::PerspectiveCamera& camera, const BakedScene& scene) const
+        -> const siren::Image& override;
 
     auto resize(const glm::uvec2 extent) -> void override;
     auto reload_shaders() -> void override;
 
-    [[nodiscard]] auto name() const noexcept -> std::string_view override { return "Depth Peeling"; }
+    [[nodiscard]] auto name() const noexcept -> std::string_view override {
+        return "Depth Peeling";
+    }
 
     auto render_debug_info() -> void override;
 

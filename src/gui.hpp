@@ -1,5 +1,9 @@
 #pragma once
 
+#include <format>
+#include <optional>
+#include <utility>
+
 #include <imgui.h>
 #include <imgui/backends/imgui_impl_glfw.h>
 #include <imgui/backends/imgui_impl_opengl3.h>
@@ -9,10 +13,6 @@
 #include "methods/method_kind.hpp"
 #include "methods/oit_method.hpp"
 
-#include <format>
-#include <optional>
-#include <utility>
-
 namespace oiter {
 class OitMethod;
 }
@@ -21,7 +21,6 @@ namespace gui {
 struct DebugPanelActions {
     std::optional<oiter::MethodKind> oit_method;
 };
-
 
 inline auto init(const siren::Window& window) -> void {
     IMGUI_CHECKVERSION();
@@ -64,37 +63,23 @@ inline auto end_frame() -> void {
     ImGui::Begin(
         "Debug Information",
         nullptr,
-        ImGuiWindowFlags_NoMove |
-        ImGuiWindowFlags_NoResize |
-        ImGuiWindowFlags_NoCollapse
+        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse
     );
 
     if (ImGui::CollapsingHeader("OIT Method", ImGuiTreeNodeFlags_DefaultOpen)) {
         auto method = static_cast<int>(method_kind.value);
 
         ImGui::RadioButton(
-            "Depth Peeling",
-            &method,
-            std::to_underlying(oiter::MethodKind::DepthPeeling)
+            "Depth Peeling", &method, std::to_underlying(oiter::MethodKind::DepthPeeling)
         );
 
         ImGui::RadioButton(
-            "Dual Depth Peeling",
-            &method,
-            std::to_underlying(oiter::MethodKind::DualDepthPeeling)
+            "Dual Depth Peeling", &method, std::to_underlying(oiter::MethodKind::DualDepthPeeling)
         );
 
-        ImGui::RadioButton(
-            "A-Buffer",
-            &method,
-            std::to_underlying(oiter::MethodKind::ABuffer)
-        );
+        ImGui::RadioButton("A-Buffer", &method, std::to_underlying(oiter::MethodKind::ABuffer));
 
-        ImGui::RadioButton(
-            "K-Buffer",
-            &method,
-            std::to_underlying(oiter::MethodKind::KBuffer)
-        );
+        ImGui::RadioButton("K-Buffer", &method, std::to_underlying(oiter::MethodKind::KBuffer));
 
         if (method != std::to_underlying(method_kind.value)) {
             actions.oit_method = static_cast<oiter::MethodKind::Value>(method);
@@ -141,9 +126,15 @@ inline auto end_frame() -> void {
         ImGui::SliderFloat("Camera Speed", &speed, 0.f, 20.f);
         ImGui::SliderFloat("Camera Sensitivity", &sensitivity, 0.f, 1.f);
 
-        if (speed != controller.speed()) { controller.set_speed(speed); }
-        if (sensitivity != controller.sensitivity()) { controller.set_sensitivity(sensitivity); }
-        if (fov != camera.fov()) { camera.set_fov(fov); }
+        if (speed != controller.speed()) {
+            controller.set_speed(speed);
+        }
+        if (sensitivity != controller.sensitivity()) {
+            controller.set_sensitivity(sensitivity);
+        }
+        if (fov != camera.fov()) {
+            camera.set_fov(fov);
+        }
     }
 
     const auto title = std::format("{} Controls", oit_method.name().data());
@@ -159,11 +150,8 @@ inline auto end_frame() -> void {
     ImGui::Begin(
         "Debug Controls",
         nullptr,
-        ImGuiWindowFlags_NoMove |
-        ImGuiWindowFlags_NoResize |
-        ImGuiWindowFlags_NoCollapse |
-        ImGuiWindowFlags_NoTitleBar |
-        ImGuiWindowFlags_NoBackground
+        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
+            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBackground
     );
 
     ImGui::Text("F1 - TOGGLE DEBUG   ");

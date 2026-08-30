@@ -2,9 +2,9 @@
 
 #include "2iREN/core/assert.hpp"
 
+#include <stdexcept>
 #include <string>
 #include <string_view>
-#include <stdexcept>
 
 namespace oiter {
 struct MethodKind {
@@ -44,8 +44,6 @@ struct MethodKind {
         throw std::invalid_argument("Invalid OIT method");
     }
 
-    [[nodiscard]] static auto default_kind() -> MethodKind {
-        return DepthPeeling;
-    }
+    [[nodiscard]] static auto default_kind() -> MethodKind { return DepthPeeling; }
 };
 } // namespace oiter
