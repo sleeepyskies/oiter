@@ -34,4 +34,4 @@ render *args: build
 
 # Runs the flip metric.
 flip: build
-    scripts/flip.py
+    python scripts/flip.py
