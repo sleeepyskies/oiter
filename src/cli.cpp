@@ -9,7 +9,10 @@
 #include <utility>
 #include <vector>
 
-[[nodiscard]] static auto parse_vec3(const std::string& text) -> glm::vec3 {
+namespace {
+
+[[nodiscard]]
+auto parse_vec3(const std::string& text) -> glm::vec3 {
     std::stringstream stream{text};
 
     siren::f32 x      = 0.f;
@@ -32,7 +35,8 @@
     return {x, y, z};
 }
 
-[[nodiscard]] static auto bind_vec3(glm::vec3& destination) {
+[[nodiscard]]
+auto bind_vec3(glm::vec3& destination) {
     return [destination = &destination](const std::string& text) -> lyra::parser_result {
         try {
             *destination = parse_vec3(text);
@@ -44,7 +48,8 @@
     };
 }
 
-[[nodiscard]] static auto bind_method(oiter::MethodKind& destination) {
+[[nodiscard]]
+auto bind_method(oiter::MethodKind& destination) {
     return [destination = &destination](const std::string& text) -> lyra::parser_result {
         try {
             *destination = oiter::MethodKind::from_string(text);
@@ -55,6 +60,21 @@
         }
     };
 }
+
+[[nodiscard]]
+auto bind_loglevel(siren::log::Level& destination) {
+    return [destination = &destination](const std::string& text) -> lyra::parser_result {
+        try {
+            *destination = *siren::log::Level::from_string(text);
+
+            return lyra::parser_result::ok(lyra::parser_result_type::matched);
+        } catch (const std::exception& error) {
+            return lyra::parser_result::error(lyra::parser_result_type::no_match, error.what());
+        }
+    };
+}
+
+} // namespace
 
 namespace oiter {
 Command::Command(std::string name, std::string description) :
@@ -99,6 +119,12 @@ auto InteractiveCommand::create_parser() -> lyra::command {
         lyra::opt(bind_vec3(m_options.camera_lookat), "x,y,z")["--camera-lookat"].help(
             "Camera lookat in x,y,z format."
         )
+    );
+
+    command.add_argument(
+        lyra::opt(bind_loglevel(m_options.log_level), "loglevel")["--loglevel"]
+            .choices("trace", "debug", "info", "warn", "error", "none")
+            .help("The logging output level.")
     );
 
     return command;
@@ -153,6 +179,12 @@ auto RenderCommand::create_parser() -> lyra::command {
 
     command.add_argument(
         lyra::opt(m_options.dimensions.y, "pixels")["--height"].help("Output image height.")
+    );
+
+    command.add_argument(
+        lyra::opt(bind_loglevel(m_options.log_level), "loglevel")["--loglevel"]
+            .choices("trace", "debug", "info", "warn", "error", "none")
+            .help("The logging output level.")
     );
 
     return command;
