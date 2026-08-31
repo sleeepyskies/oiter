@@ -59,7 +59,7 @@ def main() -> None:
     REFERENCE_IMAGE.unlink(missing_ok=True)
     run(
         [
-            "/home/strawberry/Downloads/blender-5.0.0-linux-x64/blender",
+            "blender",
             "-b",
             BLEND_FILE,
             "-o",
