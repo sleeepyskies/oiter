@@ -65,7 +65,7 @@ InteractiveApp::InteractiveApp(const InteractiveAppOptions& options) :
 auto InteractiveApp::run() -> void {
     const auto ctx = siren::Context::create({
         .debug   = true,
-        .level   = siren::log::Level::Debug,
+        .level   = m_options.log_level,
         .backend = siren::Backend::Auto,
     });
     auto window    = ctx.create_window({
@@ -184,7 +184,7 @@ RenderApp::RenderApp(const RenderAppOptions& options) : m_options(options) {
 auto RenderApp::run() -> void {
     const auto ctx = siren::Context::create({
         .debug   = true,
-        .level   = siren::log::Level::Debug,
+        .level   = m_options.log_level,
         .backend = siren::Backend::Auto,
     });
     auto window    = ctx.create_window({
@@ -196,41 +196,43 @@ auto RenderApp::run() -> void {
         .transparent  = false,
         .initial_mode = siren::WindowMode::Normal,
     });
-
-    auto device = ctx.create_device({.window = window});
+    auto device    = ctx.create_device({.window = window});
     siren::AssetServer server{*device};
 
     const auto sceneh = server.load<siren::Gltf>(m_options.scene_path);
     server.wait_until_loaded(sceneh);
-    auto baked = bake_scene(sceneh, server);
+    const auto baked = bake_scene(sceneh, server);
 
-    auto oit_method =
+    const auto oit_method =
         create_method(m_options.method, *device, {window.width(), window.height()}, server);
 
-    siren::PerspectiveCamera camera{};
+    auto camera = siren::PerspectiveCamera{};
     camera.set_position(m_options.camera_position);
     camera.look_at(m_options.camera_lookat);
 
-    const auto& image = oit_method->render(camera, baked);
+    const auto& rendered_image           = oit_method->render(camera, baked);
+    const auto rendered_image_descriptor = rendered_image.descriptor();
 
-    const auto& desc = image.descriptor();
-    ASSERT(desc.format == siren::ImageFormat::RGBA8, "Must be using RGBA8 Color space.");
+    ASSERT(
+        rendered_image_descriptor.format == siren::ImageFormat::RGBA8,
+        "Render output must be using RGBA8 color space."
+    );
 
     // convert linear to srgb color space
-    const auto sampler      = device->create_sampler({});
-    const auto output_image = device->create_image({
+    const auto sampler     = device->create_sampler({});
+    const auto final_image = device->create_image({
+        .label         = "Final Image",
         .format        = siren::ImageFormat::sRGBA8,
         .extent        = siren::ImageExtent{window.width(), window.height()},
         .dimension     = siren::ImageDimension::D2,
         .mipmap_levels = 1,
     });
-    const auto linear_to_srgb_shaderh =
-        server.load<siren::ShaderAsset>("oiter://assets/shaders/color_space.sshg");
-    server.wait_until_loaded(linear_to_srgb_shaderh);
-    const auto& shader        = server.get_unsafe(linear_to_srgb_shaderh);
-    const auto linear_to_srgb = device->create_graphics_pipeline({
+    const auto unpremultiply_shaderh =
+        server.load<siren::ShaderAsset>("oiter://assets/shaders/unpremultiply.sshg");
+    server.wait_until_loaded(unpremultiply_shaderh);
+    const auto unpremultiply_pipeline = device->create_graphics_pipeline({
         .layout = siren::FULLSCREEN_VERTEX_LAYOUT,
-        .shader = shader.shader.handle(),
+        .shader = server.get(unpremultiply_shaderh)->shader.handle(),
     });
     device->render_pass(
         siren::RenderPassDescriptor{
@@ -238,7 +240,7 @@ auto RenderApp::run() -> void {
             .target =
                 siren::RenderTarget{
                     .colors        = {siren::ColorAttachment{
-                        .image           = output_image.handle(),
+                        .image           = final_image.handle(),
                         .begin_operation = siren::BeginOperation::Clear,
                         .clear_color     = siren::Rgba::ZERO,
                     }},
@@ -247,25 +249,24 @@ auto RenderApp::run() -> void {
                 },
         },
         [&](siren::RenderPassRecorder& pass) {
-            pass.bind_graphics_pipeline(linear_to_srgb.handle());
-            pass.bind_sampled_image(image.handle(), sampler.handle(), 0);
+            pass.bind_graphics_pipeline(unpremultiply_pipeline.handle());
+            pass.bind_sampled_image(rendered_image.handle(), sampler.handle(), 0);
+            pass.draw_fullscreen();
         }
     );
 
-    const auto buffer = device->read_image(output_image.handle());
+    const auto buffer = device->read_image(final_image.handle());
 
     stbi_flip_vertically_on_write(true);
     const auto result = stbi_write_png(
         siren::FileSystem::to_physical(m_options.output_path)->c_str(),
-        desc.extent.width,
-        desc.extent.height,
+        rendered_image_descriptor.extent.width,
+        rendered_image_descriptor.extent.height,
         4,
         buffer.data(),
-        desc.extent.width * 4
+        rendered_image_descriptor.extent.width * 4
     );
 
-    if (result != 0) {
-        throw std::runtime_error("failure stbi_write_png");
-    }
+    ASSERT(result != 0, "stbi_write_png failed");
 }
 } // namespace oiter

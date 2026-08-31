@@ -25,6 +25,8 @@ struct InteractiveAppOptions {
 
 /// @brief Options for starting oiter render.
 struct RenderAppOptions {
+    /// @brief The log output level.
+    siren::log::Level log_level = siren::log::Level::Info;
     /// @brief Path to the scene file to render. May either be a virtual or physical path.
     std::string scene_path = "oiter://assets/meshes/stresstest.glb";
     /// @brief The method to use. Note that this can be changed on the fly when running interactive
