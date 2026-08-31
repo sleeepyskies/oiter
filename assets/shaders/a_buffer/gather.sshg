@@ -51,9 +51,6 @@ stages:
           uint next;
       };
       
-      // todo: pass this via ubo? or as compile def?
-      // const uint MAX_NODES = ;
-      
       layout(std430, binding = 0) coherent buffer linked_list {
           uint counter;
           Node[] nodes;

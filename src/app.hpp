@@ -1,11 +1,20 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <memory>
 #include <string>
 
+#include "2iREN/asset/asset_server.hpp"
+#include "2iREN/context.hpp"
+#include "2iREN/graphics/device.hpp"
+#include "2iREN/graphics/swapchain.hpp"
+#include "2iREN/scene/camera.hpp"
 #include "2iREN/utility/log.hpp"
+#include "2iREN/window.hpp"
 #include "interactive_state.hpp"
 #include "methods/method_kind.hpp"
+#include "methods/oit_method.hpp"
+#include "skybox.hpp"
 
 namespace oiter {
 /// @brief Options for starting oiter interactive.
@@ -54,6 +63,24 @@ private:
     InteractiveAppOptions m_options;
     InteractiveState m_interactive_state;
     FrameStats m_frame_stats;
+
+    struct Resources {
+        siren::Context ctx;
+        siren::Window window;
+        std::unique_ptr<siren::Device> device;
+        siren::AssetServer assets;
+        siren::Swapchain swapchain;
+        std::unique_ptr<OitMethod> oit_method;
+        siren::PerspectiveCamera camera;
+        siren::PerspectiveCameraController controller;
+        oiter::Skybox skybox;
+        oiter::BakedScene scene;
+    };
+
+    std::unique_ptr<Resources> m_resources = nullptr;
+
+    auto handle_input() -> void;
+    auto create_resources() -> void;
 };
 
 /// @brief The Oiter render application. Handles launching rendering an image and saving it to disk.

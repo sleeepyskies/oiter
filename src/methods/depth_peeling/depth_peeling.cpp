@@ -1,5 +1,6 @@
 #include "depth_peeling.hpp"
 
+#include <algorithm>
 #include <imgui.h>
 
 #include "2iREN/asset/asset_server.hpp"
@@ -83,8 +84,19 @@ auto DepthPeeling::render(const siren::PerspectiveCamera& camera, const BakedSce
             }
         );
 
-        // perform on the fly blending
+        if (m_config.inspecting == Config::Inspecting::DepthTexture &&
+            layer == m_config.inspected_layer - 1) {
+            m_device.wait_idle();
+            return *m_depths[write_buffer_index];
+        }
 
+        if (m_config.inspecting == Config::Inspecting::WriteTexture &&
+            layer == m_config.inspected_layer - 1) {
+            m_device.wait_idle();
+            return *m_write_color;
+        }
+
+        // perform on the fly blending
         m_device.render_pass(
             siren::RenderPassDescriptor{
                 .target =
@@ -106,9 +118,15 @@ auto DepthPeeling::render(const siren::PerspectiveCamera& camera, const BakedSce
             }
         );
 
+        if (m_config.inspecting == Config::Inspecting::AccumulationTexture &&
+            layer == m_config.inspected_layer - 1) {
+            m_device.wait_idle();
+            return *m_accumulation_color;
+        }
+
         if (m_config.perform_query) {
             const auto samples_passed = m_device.query(m_occlusion_query->handle());
-            if (samples_passed == 0) {
+            if (samples_passed == 0 && m_config.inspecting == Config::Inspecting::None) {
                 break;
             } // early end, nothing was drawn
         }
@@ -131,10 +149,33 @@ auto DepthPeeling::reload_shaders() -> void {
 
 auto DepthPeeling::render_debug_info() -> void {
     ImGui::Text("Peels performed last frame %u", m_last_frame_peels);
+    m_last_frame_peels = 0;
+
     ImGui::SliderInt("Layers", (int*)&m_config.layers, 1, 25);
     ImGui::Checkbox("Perform Occlusion Query", &m_config.perform_query);
 
-    m_last_frame_peels = 0;
+    siren::i32* inspecting  = (siren::i32*)(&m_config.inspecting);
+    const auto select_layer = [this]() {
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(100.0f);
+        if (ImGui::InputInt("", &m_config.inspected_layer)) {
+            m_config.inspected_layer =
+                std::clamp(m_config.inspected_layer, 1, (siren::i32)m_config.layers);
+        }
+    };
+
+    ImGui::RadioButton("Inspect Accumulation Texture", inspecting, 1);
+    if (m_config.inspecting == Config::Inspecting::AccumulationTexture) {
+        select_layer();
+    }
+    ImGui::RadioButton("Inspect Write Texture       ", inspecting, 2);
+    if (m_config.inspecting == Config::Inspecting::WriteTexture) {
+        select_layer();
+    }
+    ImGui::RadioButton("Inspect Depth Texture       ", inspecting, 3);
+    if (m_config.inspecting == Config::Inspecting::DepthTexture) {
+        select_layer();
+    }
 }
 
 auto DepthPeeling::create_images(const glm::uvec2 extent) -> void {

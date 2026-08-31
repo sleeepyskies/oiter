@@ -56,7 +56,6 @@ public:
     virtual auto resize(const glm::uvec2 extent) -> void = 0;
 
     /// @brief Reloads all shaders.
-    /// @todo not possible with 2iREN currently
     virtual auto reload_shaders() -> void = 0;
 
     /// @brief Returns the name of this method.
