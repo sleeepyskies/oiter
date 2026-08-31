@@ -1,0 +1,7 @@
+# clang lsp complains due to these flags for handling modulues, so we just remove for the lsp
+CompileFlags:
+  Remove: [
+    -fmodules-ts,
+    -fmodule-mapper=*,
+    -fdeps-format=*
+  ]
