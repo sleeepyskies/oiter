@@ -1,10 +1,14 @@
 #include "app.hpp"
 
-#include <stb/stb_image_write.h>
+#include <optional>
+#include <stdexcept>
+#include <utility>
 
-#include "2iREN/asset/gltf.hpp"
+#include "2iREN/asset/asset_server.hpp"
 #include "2iREN/context.hpp"
 #include "2iREN/graphics/device.hpp"
+#include "2iREN/graphics/graphics_pipeline.hpp"
+#include "2iREN/graphics/layout.hpp"
 #include "2iREN/graphics/swapchain.hpp"
 #include "2iREN/input/input.hpp"
 #include "2iREN/scene/camera.hpp"
@@ -12,275 +16,275 @@
 #include "2iREN/utility/time.hpp"
 #include "2iREN/window.hpp"
 
-#include "bake.hpp"
+#include "frame_stats.hpp"
 #include "gui.hpp"
+#include "image_output.hpp"
+#include "scene_renderer.hpp"
 #include "skybox.hpp"
 #include "timer.hpp"
-
-#include "methods/a_buffer/a_buffer.hpp"
-#include "methods/depth_peeling/depth_peeling.hpp"
-#include "methods/dual_depth_peeling/dual_depth_peeling.hpp"
-#include "methods/k_buffer/k_buffer.hpp"
 
 #ifndef OITER_VFS
 #define OITER_VFS "."
 #endif
 
-[[nodiscard]] static auto create_swapchain(siren::Device* device, siren::Window& window)
-    -> siren::Swapchain {
-    return device->create_swapchain({
+namespace {
+
+auto mount_app_filesystem() -> void { siren::FileSystem::mount("oiter", siren::Path{OITER_VFS}); }
+
+[[nodiscard]]
+auto aspect_ratio(const glm::uvec2 extent) -> siren::f32 {
+    return static_cast<siren::f32>(extent.x) / static_cast<siren::f32>(extent.y);
+}
+
+[[nodiscard]]
+auto create_swapchain(siren::Device& device, siren::Window& window) -> siren::Swapchain {
+    return device.create_swapchain({
         .label  = std::nullopt,
         .vsync  = true,
-        .extent = {window.width(), window.height()},
+        .extent = window.size(),
         .window = &window,
     });
 }
 
-[[nodiscard]] static auto create_method(
-    const oiter::MethodKind method_kind,
-    siren::Device& device,
-    glm::uvec2 extent,
-    siren::AssetServer& server
-) -> std::unique_ptr<oiter::OitMethod> {
-    // clang-format off
-    switch (method_kind) {
-        case oiter::MethodKind::DepthPeeling: return std::make_unique<oiter::DepthPeeling>(device, extent, server);
-        case oiter::MethodKind::DualDepthPeeling: return std::make_unique<oiter::DualDepthPeeling>(device, extent, server);
-        case oiter::MethodKind::ABuffer: return std::make_unique<oiter::ABuffer>(device, extent, server);
-        case oiter::MethodKind::KBuffer: return std::make_unique<oiter::KBuffer>(device, extent, server);
-        default:  throw std::runtime_error("oit method (" + method_kind.to_string() + ") is not supported.");
+auto validate(const oiter::RenderAppOptions& options) -> void {
+    if (options.dimensions.x == 0 || options.dimensions.y == 0) {
+        throw std::invalid_argument("Render dimensions must be greater than zero.");
     }
-    // clang-format on
+
+    if (options.output_path.empty()) {
+        throw std::invalid_argument("An output path is required in render mode.");
+    }
 }
+} // namespace
 
 namespace oiter {
-InteractiveApp::InteractiveApp(const InteractiveAppOptions& options) :
-    m_options(options), m_interactive_state{
-                            .oit_method      = options.method,
-                            .camera_position = options.camera_position,
-                        } {
-    siren::FileSystem::mount("oiter", siren::Path{OITER_VFS});
-}
+struct InteractiveApp::State {
+    siren::Context context;
+    siren::Window window;
+    std::unique_ptr<siren::Device> device;
+    siren::AssetServer assets;
+    siren::Input input;
+    siren::Swapchain swapchain;
 
-auto InteractiveApp::run() -> void {
-    auto& res = *m_resources.get();
-
-    while (!res.window.should_close()) {
-        m_frame_stats.frame++;
-        if (!(m_frame_stats.frame % 60)) {
-            m_frame_stats.fps = 1.f / static_cast<siren::f32>(siren::time::delta().seconds());
-        }
-        SetTimer full_frame_timer{m_frame_stats.full_frame_ms};
-
-        handle_input();
-
-        {
-            SetTimer oit_render_timer{m_frame_stats.oit_render_ms};
-            const auto& image = res.oit_method->render(res.camera, res.scene);
-            if (m_interactive_state.skybox_visible) {
-                res.skybox.render_behind(image, res.camera);
-            }
-            res.device->blit_image(image.handle(), swapchain.next_image());
-        }
-
-        res.swapchain.present_overlay([&] {
-            if (!m_interactive_state.debug_menu_visible) {
-                return;
-            }
-
-            const auto actions = gui::render_debug(
-                res.device->statistics(),
-                res.camera,
-                res.controller,
-                *res.oit_method,
-                m_interactive_state.oit_method,
-                m_frame_stats
-            );
-
-            if (actions.oit_method) {
-                m_interactive_state.oit_method = *actions.oit_method;
-                res.oit_method                 = create_method(
-                    m_interactive_state.oit_method,
-                    *res.device,
-                    {res.window.width(), res.window.height()},
-                    res.assets
-                );
-            }
-        });
-        res.device->flush_delete_queue();
-        siren::time::step();
-        res.input.update();
-        m_interactive_state.camera_position = res.camera.position();
-    }
-}
-
-auto InteractiveApp::handle_input() -> void {
-    auto& res = *m_resources.get();
-
-    res.window.poll_events();
-    if (!ImGui::GetIO().WantCaptureMouse) {
-        res.controller.update_look(res.camera, res.input);
-    }
-
-    if (!ImGui::GetIO().WantCaptureKeyboard) {
-        res.controller.update_position(res.camera, res.input);
-    }
-
-    if (res.input.keyboard().just_pressed(siren::Key::F1)) {
-        m_interactive_state.debug_menu_visible = !m_interactive_state.debug_menu_visible;
-    }
-
-    if (res.input.keyboard().just_pressed(siren::Key::F2)) {
-        res.oit_method->reload_shaders();
-    }
-
-    if (m_input.keyboard().just_pressed(siren::Key::F3)) {
-        m_interactive_state.skybox_visible = !m_interactive_state.skybox_visible;
-    }
-}
-
-auto InteractiveApp::create_resources() -> void {
-    auto ctx       = siren::Context::create({
-        .debug   = true,
-        .level   = m_options.log_level,
-        .backend = siren::Backend::Auto,
-    });
-    auto window    = ctx.create_window({.title = "Oiter"});
-    auto device    = ctx.create_device({.window = window});
-    auto swapchain = create_swapchain(device.get(), window);
-
-    siren::AssetServer server{*device};
-    siren::Input input{window};
-
-    device->render_thread().spawn([&] { gui::init(window); });
-
-    auto oit_method = create_method(
-        m_interactive_state.oit_method, *device, {window.width(), window.height()}, server
-    );
-
-    const auto sceneh = server.load<siren::Gltf>(m_options.scene_path);
-    server.wait_until_loaded(sceneh);
-    auto baked = bake_scene(sceneh, server);
-
-    siren::PerspectiveCamera camera{};
+    SceneRenderer renderer;
+    siren::PerspectiveCamera camera;
     siren::PerspectiveCameraController controller;
-    camera.set_position(m_interactive_state.camera_position);
-    camera.look_at(m_options.camera_lookat);
+    Skybox skybox;
+    gui::Session gui_session;
 
-    auto skybox = Skybox{"oiter://assets/textures/skybox/skybox.cubemap", *device, server};
+    FrameStats frame_stats;
+    siren::f64 fps_sample_seconds = 0.0;
+    siren::u32 fps_sample_frames  = 0;
+    bool debug_menu_visible       = true;
+    bool skybox_visible           = true;
 
-    window.on_resize([&](const glm::ivec2 size) {
-        if (size.x == 0 || size.y == 0) {
+    explicit State(const InteractiveAppOptions& options) :
+        context(
+            siren::Context::create({
+                .debug   = true,
+                .level   = options.log_level,
+                .backend = siren::Backend::Auto,
+            })
+        ),
+        window(context.create_window({.title = "Oiter"})),
+        device(context.create_device({.window = window})), assets(*device), input(window),
+        swapchain(create_swapchain(*device, window)),
+        renderer(*device, assets, options.scene_path, options.method, window.size()),
+        camera(
+            siren::PerspectiveCameraDescriptor{
+                .position = options.camera_position,
+                .aspect   = aspect_ratio(window.size()),
+            }
+        ),
+        skybox("oiter://assets/textures/skybox/skybox.cubemap", *device, assets),
+        gui_session(window, *device) {
+        camera.look_at(options.camera_lookat);
+        window.on_resize([this](const glm::ivec2 size) { resize(size); });
+    }
+
+    auto run() -> void {
+        siren::time::step();
+        while (!window.should_close()) {
+            tick();
+        }
+    }
+
+    auto tick() -> void {
+        siren::time::step();
+        if (frame_stats.frame > 0) {
+            sample_fps(siren::time::delta().seconds());
+        }
+
+        SetTimer full_frame_timer{frame_stats.full_frame_ms};
+        ++frame_stats.frame;
+
+        window.poll_events();
+        handle_input();
+        render_scene();
+        render_gui();
+
+        device->flush_delete_queue();
+        input.update();
+    }
+
+    auto handle_input() -> void {
+        if (!gui::wants_mouse_input()) {
+            controller.update_look(camera, input);
+        }
+
+        if (!gui::wants_keyboard_input()) {
+            controller.update_position(camera, input);
+        }
+
+        if (input.keyboard().just_pressed(siren::Key::F1)) {
+            debug_menu_visible = !debug_menu_visible;
+        }
+
+        if (input.keyboard().just_pressed(siren::Key::F2)) {
+            renderer.reload_shaders();
+        }
+
+        if (input.keyboard().just_pressed(siren::Key::F3)) {
+            skybox_visible = !skybox_visible;
+        }
+    }
+
+    auto render_scene() -> void {
+        SetTimer oit_render_timer{frame_stats.oit_render_ms};
+
+        const auto& image = renderer.render(camera);
+        if (skybox_visible) {
+            skybox.render_behind(image, camera);
+        }
+
+        device->blit_image(image.handle(), swapchain.next_image());
+    }
+
+    auto render_gui() -> void {
+        device->render_thread().spawn([] { gui::prepare_frame(); });
+        device->wait_idle();
+
+        const auto statistics = device->statistics();
+        const auto actions    = gui::build_frame(
+            debug_menu_visible,
+            {
+                .statistics  = statistics,
+                .camera      = camera,
+                .controller  = controller,
+                .oit_method  = renderer.method(),
+                .method_kind = renderer.method_kind(),
+                .frame_stats = frame_stats,
+            }
+        );
+
+        swapchain.present_overlay([] { gui::draw_frame(); });
+        device->wait_idle();
+
+        if (actions.oit_method) {
+            renderer.change_method(*actions.oit_method);
+        }
+    }
+
+    auto resize(const glm::ivec2 size) -> void {
+        if (size.x <= 0 || size.y <= 0) {
             return;
         }
-        camera.set_aspect(static_cast<siren::f32>(size.x) / static_cast<siren::f32>(size.y));
-        swapchain = create_swapchain(device.get(), window);
-        oit_method->resize({size.x, size.y});
-    });
 
-    m_resources = std::make_unqiue<Resources>(
-        std::move(ctx),
-        std::move(window),
-        std::move(device),
-        std::move(server),
-        std::move(swapchain),
-        std::move(oit_method),
-        std::move(camera),
-        std::move(controller),
-        std::move(skybox),
-    );
-}
+        device->wait_idle();
 
-RenderApp::RenderApp(const RenderAppOptions& options) : m_options(options) {
-    siren::FileSystem::mount("oiter", siren::Path{OITER_VFS});
-}
+        const auto extent = glm::uvec2{
+            static_cast<siren::u32>(size.x),
+            static_cast<siren::u32>(size.y),
+        };
+        auto resized_swapchain = create_swapchain(*device, window);
 
-auto RenderApp::run() -> void {
-    const auto ctx = siren::Context::create({
-        .debug   = true,
-        .level   = m_options.log_level,
-        .backend = siren::Backend::Auto,
-    });
-    auto window    = ctx.create_window({
-        .title        = "Oiter",
-        .width        = m_options.dimensions.x,
-        .height       = m_options.dimensions.y,
-        .decorated    = false,
-        .resizable    = false,
-        .transparent  = false,
-        .initial_mode = siren::WindowMode::Normal,
-    });
-    auto device    = ctx.create_device({.window = window});
-    siren::AssetServer server{*device};
+        renderer.resize(extent);
+        swapchain = std::move(resized_swapchain);
+        camera.set_aspect(aspect_ratio(extent));
+    }
 
-    const auto sceneh = server.load<siren::Gltf>(m_options.scene_path);
-    server.wait_until_loaded(sceneh);
-    const auto baked = bake_scene(sceneh, server);
+    auto sample_fps(const siren::f64 frame_seconds) -> void {
+        fps_sample_seconds += frame_seconds;
+        ++fps_sample_frames;
 
-    const auto oit_method =
-        create_method(m_options.method, *device, {window.width(), window.height()}, server);
-
-    auto camera = siren::PerspectiveCamera{};
-    camera.set_position(m_options.camera_position);
-    camera.look_at(m_options.camera_lookat);
-
-    const auto& rendered_image           = oit_method->render(camera, baked);
-    const auto rendered_image_descriptor = rendered_image.descriptor();
-
-    ASSERT(
-        rendered_image_descriptor.format == siren::ImageFormat::RGBA8,
-        "Render output must be using RGBA8 color space."
-    );
-
-    // convert linear to srgb color space
-    const auto sampler     = device->create_sampler({});
-    const auto final_image = device->create_image({
-        .label         = "Final Image",
-        .format        = siren::ImageFormat::sRGBA8,
-        .extent        = siren::ImageExtent{window.width(), window.height()},
-        .dimension     = siren::ImageDimension::D2,
-        .mipmap_levels = 1,
-    });
-    const auto unpremultiply_shaderh =
-        server.load<siren::ShaderAsset>("oiter://assets/shaders/unpremultiply.sshg");
-    server.wait_until_loaded(unpremultiply_shaderh);
-    const auto unpremultiply_pipeline = device->create_graphics_pipeline({
-        .layout = siren::FULLSCREEN_VERTEX_LAYOUT,
-        .shader = server.get(unpremultiply_shaderh)->shader.handle(),
-    });
-    device->render_pass(
-        siren::RenderPassDescriptor{
-            .label = "Linear to sRGB",
-            .target =
-                siren::RenderTarget{
-                    .colors        = {{
-                        .image           = final_image.handle(),
-                        .begin_operation = siren::BeginOperation::Clear,
-                        .clear_color     = siren::Rgba::ZERO,
-                    }},
-                    .depth_stencil = std::nullopt,
-                    .is_srgb       = true,
-                },
-        },
-        [&](siren::RenderPassRecorder& pass) {
-            pass.bind_graphics_pipeline(unpremultiply_pipeline.handle());
-            pass.bind_sampled_image(rendered_image.handle(), sampler.handle(), 0);
-            pass.draw_fullscreen();
+        if (fps_sample_frames < 60) {
+            return;
         }
-    );
 
-    const auto buffer = device->read_image(final_image.handle());
+        if (fps_sample_seconds > 0.0) {
+            frame_stats.fps = static_cast<siren::f32>(
+                static_cast<siren::f64>(fps_sample_frames) / fps_sample_seconds
+            );
+        }
 
-    stbi_flip_vertically_on_write(true);
-    const auto result = stbi_write_png(
-        siren::FileSystem::to_physical(m_options.output_path)->c_str(),
-        rendered_image_descriptor.extent.width,
-        rendered_image_descriptor.extent.height,
-        4,
-        buffer.data(),
-        rendered_image_descriptor.extent.width * 4
-    );
+        fps_sample_seconds = 0.0;
+        fps_sample_frames  = 0;
+    }
+};
 
-    ASSERT(result != 0, "stbi_write_png failed");
+struct RenderApp::State {
+    siren::Context context;
+    siren::Window window;
+    std::unique_ptr<siren::Device> device;
+    siren::AssetServer assets;
+
+    SceneRenderer renderer;
+    siren::PerspectiveCamera camera;
+    std::string output_path;
+
+    explicit State(const RenderAppOptions& options) :
+        context(
+            siren::Context::create({
+                .debug   = true,
+                .level   = options.log_level,
+                .backend = siren::Backend::Auto,
+            })
+        ),
+        window(context.create_window({
+            .title        = "Oiter",
+            .width        = options.dimensions.x,
+            .height       = options.dimensions.y,
+            .decorated    = false,
+            .resizable    = false,
+            .transparent  = false,
+            .initial_mode = siren::WindowMode::Normal,
+        })),
+        device(context.create_device({.window = window})), assets(*device),
+        renderer(*device, assets, options.scene_path, options.method, options.dimensions),
+        camera(
+            siren::PerspectiveCameraDescriptor{
+                .position = options.camera_position,
+                .aspect   = aspect_ratio(options.dimensions),
+            }
+        ),
+        output_path(options.output_path) {
+        camera.look_at(options.camera_lookat);
+    }
+
+    ~State() { device->wait_idle(); }
+
+    auto run() -> void {
+        const auto& image = renderer.render(camera);
+        write_rendered_image(*device, assets, image, output_path);
+    }
+};
+
+InteractiveApp::InteractiveApp(const InteractiveAppOptions& options) {
+    mount_app_filesystem();
+    m_state = std::make_unique<State>(options);
 }
+
+InteractiveApp::~InteractiveApp() = default;
+
+auto InteractiveApp::run() -> void { m_state->run(); }
+
+RenderApp::RenderApp(const RenderAppOptions& options) {
+    validate(options);
+    mount_app_filesystem();
+    m_state = std::make_unique<State>(options);
+}
+
+RenderApp::~RenderApp() = default;
+
+auto RenderApp::run() -> void { m_state->run(); }
 } // namespace oiter

@@ -1,96 +1,68 @@
 #pragma once
 
-#include <glm/glm.hpp>
 #include <memory>
 #include <string>
 
-#include "2iREN/asset/asset_server.hpp"
-#include "2iREN/context.hpp"
-#include "2iREN/graphics/device.hpp"
-#include "2iREN/graphics/swapchain.hpp"
-#include "2iREN/scene/camera.hpp"
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
+
 #include "2iREN/utility/log.hpp"
-#include "2iREN/window.hpp"
-#include "interactive_state.hpp"
+
 #include "methods/method_kind.hpp"
-#include "methods/oit_method.hpp"
-#include "skybox.hpp"
 
 namespace oiter {
-/// @brief Options for starting oiter interactive.
+
+/// @brief Options for starting Oiter in interactive mode.
 struct InteractiveAppOptions {
-    /// @brief The log output level.
     siren::log::Level log_level = siren::log::Level::Info;
-    /// @brief Path to the scene file to render. May either be a virtual or physical path.
-    std::string scene_path = "oiter://assets/meshes/stresstest.glb";
-    /// @brief The method to use. Note that this can be changed on the fly when running interactive
-    /// mode.
-    MethodKind method = MethodKind::default_kind();
-    /// @brief The initial position of the camera.
-    glm::vec3 camera_position = glm::vec3{0.f, 0.f, 2.f};
-    /// @brief The initial lookat of the camera.
-    glm::vec3 camera_lookat = glm::vec3{-1.f, 0.f, 2.f};
+    std::string scene_path      = "oiter://assets/meshes/stresstest.glb";
+    MethodKind method           = MethodKind::default_kind();
+    glm::vec3 camera_position   = {0.f, 0.f, 2.f};
+    glm::vec3 camera_lookat     = {-1.f, 0.f, 2.f};
 };
 
-/// @brief Options for starting oiter render.
+/// @brief Options for rendering a single image.
 struct RenderAppOptions {
-    /// @brief The log output level.
     siren::log::Level log_level = siren::log::Level::Info;
-    /// @brief Path to the scene file to render. May either be a virtual or physical path.
-    std::string scene_path = "oiter://assets/meshes/stresstest.glb";
-    /// @brief The method to use. Note that this can be changed on the fly when running interactive
-    /// mode.
-    MethodKind method = MethodKind::default_kind();
-    /// @brief The initial position of the camera.
-    glm::vec3 camera_position = glm::vec3{0.f, 0.f, 0.f};
-    /// @brief The initial lookat of the camera.
-    glm::vec3 camera_lookat = glm::vec3{1.f, 0.f, 0.f};
-    /// @brief The directory to save the output image into.
+    std::string scene_path      = "oiter://assets/meshes/stresstest.glb";
+    MethodKind method           = MethodKind::default_kind();
+    glm::vec3 camera_position   = {0.f, 0.f, 0.f};
+    glm::vec3 camera_lookat     = {1.f, 0.f, 0.f};
     std::string output_path;
-    /// @brief The dimensions to render the image as.
-    glm::uvec2 dimensions = glm::uvec2{1280, 720};
+    glm::uvec2 dimensions = {1280, 720};
 };
 
-/// @brief The Oiter interactive application. Handles launching the demo/renderer and inits the
-/// 2iREN framework.
+/// @brief Runs the interactive OIT renderer.
 class InteractiveApp {
 public:
     explicit InteractiveApp(const InteractiveAppOptions& options);
-    /// @brief Launches the oiter interactive mode.
+    ~InteractiveApp();
+
+    InteractiveApp(const InteractiveApp&)                    = delete;
+    auto operator=(const InteractiveApp&) -> InteractiveApp& = delete;
+
+    /// @brief Runs the interactive frame loop until the window is closed.
     auto run() -> void;
 
 private:
-    InteractiveAppOptions m_options;
-    InteractiveState m_interactive_state;
-    FrameStats m_frame_stats;
-
-    struct Resources {
-        siren::Context ctx;
-        siren::Window window;
-        std::unique_ptr<siren::Device> device;
-        siren::AssetServer assets;
-        siren::Swapchain swapchain;
-        std::unique_ptr<OitMethod> oit_method;
-        siren::PerspectiveCamera camera;
-        siren::PerspectiveCameraController controller;
-        oiter::Skybox skybox;
-        oiter::BakedScene scene;
-    };
-
-    std::unique_ptr<Resources> m_resources = nullptr;
-
-    auto handle_input() -> void;
-    auto create_resources() -> void;
+    struct State;
+    std::unique_ptr<State> m_state;
 };
 
-/// @brief The Oiter render application. Handles launching rendering an image and saving it to disk.
+/// @brief Renders a single image and writes it to disk.
 class RenderApp {
 public:
     explicit RenderApp(const RenderAppOptions& options);
-    /// @brief Launches the oiter render mode.
+    ~RenderApp();
+
+    RenderApp(const RenderApp&)                    = delete;
+    auto operator=(const RenderApp&) -> RenderApp& = delete;
+
+    /// @brief Renders and writes the configured image.
     auto run() -> void;
 
 private:
-    RenderAppOptions m_options;
+    struct State;
+    std::unique_ptr<State> m_state;
 };
 } // namespace oiter
