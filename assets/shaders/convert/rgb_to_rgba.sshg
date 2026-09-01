@@ -1,0 +1,22 @@
+name: rg_to_rgba
+stages:
+  vertex:
+    path: ../fullscreen.vert
+  fragment:
+    name: fragment
+    source: |
+      #version 460
+
+      layout(binding = 0) uniform sampler2D t_texture;
+      layout(location = 0) out vec4 out_color;
+
+      void main() {
+          const ivec2 pixel = ivec2(gl_FragCoord.xy);
+          const vec3 in_color = texelFetch(t_texture, pixel, 0).rgb;
+          out_color = vec4(
+              clamp(in_color.r, 0, 1), 
+              clamp(in_color.g, 0, 1), 
+              clamp(in_color.b, 0, 1), 
+              1
+          );
+      }
