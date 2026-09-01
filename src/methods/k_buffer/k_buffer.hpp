@@ -23,6 +23,11 @@ public:
         return "K-Buffer";
     }
 
+    [[nodiscard]]
+    auto kind() const noexcept -> MethodKind override {
+        return MethodKind::KBuffer;
+    }
+
     auto render_debug_info() -> void override;
 
 private:

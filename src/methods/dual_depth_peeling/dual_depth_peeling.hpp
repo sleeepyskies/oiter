@@ -4,8 +4,9 @@
 #include "2iREN/asset/shader.hpp"
 #include "2iREN/scene/camera.hpp"
 
-#include "bake.hpp"
+#include "methods/method_kind.hpp"
 #include "methods/oit_method.hpp"
+#include "utility/bake.hpp"
 
 namespace oiter {
 
@@ -25,10 +26,16 @@ public:
         siren::Device& device, const glm::uvec2 extent, siren::AssetServer& assets
     );
 
-    [[nodiscard]] auto render(const siren::PerspectiveCamera& camera, const BakedScene& scene) const
+    [[nodiscard]]
+    auto render(const siren::PerspectiveCamera& camera, const BakedScene& scene) const
         -> const siren::Image& override;
-    [[nodiscard]] auto name() const noexcept -> std::string_view override {
+    [[nodiscard]]
+    auto name() const noexcept -> std::string_view override {
         return "Dual Depth Peeling";
+    }
+    [[nodiscard]]
+    auto kind() const noexcept -> MethodKind override {
+        return MethodKind::DualDepthPeeling;
     }
     auto resize(const glm::uvec2 extent) -> void override;
     auto reload_shaders() -> void override;

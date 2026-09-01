@@ -18,7 +18,8 @@ struct MethodKind {
     constexpr MethodKind(const Value value) : value(value) {}
     constexpr operator Value() const { return value; }
 
-    [[nodiscard]] constexpr auto to_string() const -> std::string {
+    [[nodiscard]]
+    constexpr auto to_string() const -> std::string_view {
         switch (value) {
             case DepthPeeling: return "DepthPeeling";
             case DualDepthPeeling: return "DualDepthPeeling";
@@ -41,6 +42,7 @@ struct MethodKind {
         if (value == "ab" || value == "ABuffer") {
             return ABuffer;
         }
+
         throw std::invalid_argument("Invalid OIT method");
     }
 

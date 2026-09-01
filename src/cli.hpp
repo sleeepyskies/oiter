@@ -4,7 +4,8 @@
 #include <memory>
 #include <string>
 
-#include "app.hpp"
+#include "app/interactive.hpp"
+#include "app/render.hpp"
 
 namespace oiter {
 /// @brief Base class for commands.
@@ -41,7 +42,8 @@ private:
 class InteractiveCommand final : public Command {
 public:
     InteractiveCommand();
-    [[nodiscard]] auto create_parser() -> lyra::command override;
+    [[nodiscard]]
+    auto create_parser() -> lyra::command override;
     auto run() -> void override;
 
 private:
@@ -52,7 +54,8 @@ private:
 class RenderCommand final : public Command {
 public:
     RenderCommand();
-    [[nodiscard]] auto create_parser() -> lyra::command override;
+    [[nodiscard]]
+    auto create_parser() -> lyra::command override;
     auto run() -> void override;
 
 private:
@@ -66,6 +69,7 @@ struct Cli {
     /// @param argv Cli argument values.
     /// @return The selected command, or nullptr when help was requested.
     /// @throws std::runtime_error If the cli args are invalid.
-    [[nodiscard]] static auto parse(int argc, const char** argv) -> std::unique_ptr<Command>;
+    [[nodiscard]]
+    static auto parse(int argc, const char** argv) -> std::unique_ptr<Command>;
 };
 } // namespace oiter

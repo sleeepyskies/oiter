@@ -12,18 +12,21 @@ add_subdirectory(2iREN)
 
 add_executable(oiter
         src/main.cpp
-        src/app.cpp
-
-        src/bake.cpp
-
-        src/methods/dual_depth_peeling/dual_depth_peeling.cpp
-        src/methods/depth_peeling/depth_peeling.cpp
-        src/methods/oit_method.cpp
-        src/skybox.hpp
-        src/skybox.cpp
-        src/methods/k_buffer/k_buffer.cpp
-        src/methods/a_buffer/a_buffer.cpp
         src/cli.cpp
+        src/skybox.cpp
+        src/scene_renderer.cpp
+
+        src/app/interactive.cpp
+        src/app/render.cpp
+
+        src/utility/bake.cpp
+
+        src/methods/oit_method.cpp
+        src/methods/depth_peeling/depth_peeling.cpp
+        src/methods/dual_depth_peeling/dual_depth_peeling.cpp
+        src/methods/a_buffer/a_buffer.cpp
+        src/methods/k_buffer/k_buffer.cpp
+
 )
 
 target_compile_features(oiter PRIVATE cxx_std_23)

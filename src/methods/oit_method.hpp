@@ -4,12 +4,13 @@
 #include "2iREN/graphics/image.hpp"
 #include "2iREN/scene/camera.hpp"
 
-#include "bake.hpp"
+#include "methods/method_kind.hpp"
+#include "utility/bake.hpp"
 
 namespace oiter {
 /// @brief The maximum number of meshes that can be drawn in a frame.
 /// @warning oiter will crash for a scene with _more_ meshes than this.
-constexpr auto MAX_MESHES = 512;
+constexpr auto MAX_MESHES = 512u;
 
 /// @brief Data shared across the entire rendered scene.
 struct alignas(16) SceneUniforms {
@@ -66,6 +67,10 @@ public:
     /// Implementations of this function should render using ImGui, which will be displayed
     /// on the debug panel. This can be toggled by pressing F1.
     virtual auto render_debug_info() -> void {}
+
+    /// @brief Retuns the kind of this method.
+    [[nodiscard]]
+    virtual auto kind() const noexcept -> MethodKind = 0;
 
 protected:
     /// @brief Cached reference to the @ref Device.

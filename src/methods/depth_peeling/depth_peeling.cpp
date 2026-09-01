@@ -118,12 +118,6 @@ auto DepthPeeling::render(const siren::PerspectiveCamera& camera, const BakedSce
             }
         );
 
-        if (m_config.inspecting == Config::Inspecting::AccumulationTexture &&
-            layer == m_config.inspected_layer - 1) {
-            m_device.wait_idle();
-            return *m_accumulation_color;
-        }
-
         if (m_config.perform_query) {
             const auto samples_passed = m_device.query(m_occlusion_query->handle());
             if (samples_passed == 0 && m_config.inspecting == Config::Inspecting::None) {
@@ -158,21 +152,18 @@ auto DepthPeeling::render_debug_info() -> void {
     const auto select_layer = [this]() {
         ImGui::SameLine();
         ImGui::SetNextItemWidth(100.0f);
-        if (ImGui::InputInt("", &m_config.inspected_layer)) {
+        if (ImGui::InputInt("##inspected_layer", &m_config.inspected_layer)) {
             m_config.inspected_layer =
                 std::clamp(m_config.inspected_layer, 1, (siren::i32)m_config.layers);
         }
     };
 
-    ImGui::RadioButton("Inspect Accumulation Texture", inspecting, 1);
-    if (m_config.inspecting == Config::Inspecting::AccumulationTexture) {
-        select_layer();
-    }
-    ImGui::RadioButton("Inspect Write Texture       ", inspecting, 2);
+    ImGui::RadioButton("See Final Output     ", inspecting, 0);
+    ImGui::RadioButton("Inspect Write Texture", inspecting, 1);
     if (m_config.inspecting == Config::Inspecting::WriteTexture) {
         select_layer();
     }
-    ImGui::RadioButton("Inspect Depth Texture       ", inspecting, 3);
+    ImGui::RadioButton("Inspect Depth Texture", inspecting, 2);
     if (m_config.inspecting == Config::Inspecting::DepthTexture) {
         select_layer();
     }

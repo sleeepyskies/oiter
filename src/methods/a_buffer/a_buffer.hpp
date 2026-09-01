@@ -41,6 +41,11 @@ public:
         return "A-Buffer";
     }
 
+    [[nodiscard]]
+    auto kind() const noexcept -> MethodKind override {
+        return MethodKind::ABuffer;
+    }
+
     auto render_debug_info() -> void override;
 
 private:

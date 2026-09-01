@@ -1,7 +1,7 @@
 #pragma once
 
-#include "bake.hpp"
 #include "methods/oit_method.hpp"
+#include "utility/bake.hpp"
 
 #include "2iREN/asset/asset_server.hpp"
 #include "2iREN/asset/shader.hpp"
@@ -10,10 +10,9 @@ namespace oiter {
 class DepthPeeling final : public OitMethod {
     struct Config {
         enum class Inspecting : siren::i32 {
-            None                = 0,
-            AccumulationTexture = 1,
-            WriteTexture        = 2,
-            DepthTexture        = 3,
+            None         = 0,
+            WriteTexture = 1,
+            DepthTexture = 2,
         } inspecting;
         siren::i32 inspected_layer = 1;
         siren::u32 layers          = 8;
@@ -33,6 +32,11 @@ public:
     [[nodiscard]]
     auto name() const noexcept -> std::string_view override {
         return "Depth Peeling";
+    }
+
+    [[nodiscard]]
+    auto kind() const noexcept -> MethodKind override {
+        return MethodKind::DepthPeeling;
     }
 
     auto render_debug_info() -> void override;

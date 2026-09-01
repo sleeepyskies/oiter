@@ -9,7 +9,7 @@
 #include <imgui/backends/imgui_impl_opengl3.h>
 
 #include "2iREN/window.hpp"
-#include "interactive_state.hpp"
+#include "app/interactive.hpp"
 #include "methods/method_kind.hpp"
 #include "methods/oit_method.hpp"
 
@@ -31,6 +31,12 @@ inline auto init(const siren::Window& window) -> void {
     ImGui::StyleColorsDark();
 }
 
+inline auto shutdown() -> void {
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+}
+
 inline auto new_frame() -> void {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -45,11 +51,8 @@ inline auto end_frame() -> void {
 /// @brief Draws the debug overlay and returns requested state changes.
 [[nodiscard]] inline auto render_debug(
     const siren::Statistics& statistics,
-    siren::PerspectiveCamera& camera,
-    siren::PerspectiveCameraController& controller,
-    oiter::OitMethod& oit_method,
-    const oiter::MethodKind method_kind,
-    const oiter::FrameStats& frame_stats
+    const oiter::FrameStats& frame_stats,
+    oiter::OitMethod& oit_method
 ) -> DebugPanelActions {
     DebugPanelActions actions;
 
@@ -67,7 +70,7 @@ inline auto end_frame() -> void {
     );
 
     if (ImGui::CollapsingHeader("OIT Method", ImGuiTreeNodeFlags_DefaultOpen)) {
-        auto method = static_cast<int>(method_kind.value);
+        auto method = static_cast<siren::i32>(oit_method.kind());
 
         ImGui::RadioButton(
             "Depth Peeling", &method, std::to_underlying(oiter::MethodKind::DepthPeeling)
@@ -81,7 +84,7 @@ inline auto end_frame() -> void {
 
         ImGui::RadioButton("K-Buffer", &method, std::to_underlying(oiter::MethodKind::KBuffer));
 
-        if (method != std::to_underlying(method_kind.value)) {
+        if (method != std::to_underlying(oit_method.kind().value)) {
             actions.oit_method = static_cast<oiter::MethodKind::Value>(method);
         }
     }
@@ -111,30 +114,6 @@ inline auto end_frame() -> void {
         ImGui::Text("Upload Image: %u", statistics.count_upload_image);
         ImGui::Text("Draw Calls: %u", statistics.count_draw_calls);
         ImGui::Text("Render Passes: %u", statistics.count_render_passes);
-    }
-
-    if (ImGui::CollapsingHeader("Scene", ImGuiTreeNodeFlags_DefaultOpen)) {
-        const auto position = camera.position();
-        auto speed          = (float)controller.speed();
-        auto sensitivity    = (float)controller.sensitivity();
-        auto fov            = (float)camera.fov();
-
-        ImGui::Text("Camera Position: (%f, %f, %f)", position.x, position.y, position.z);
-        ImGui::Text("Camera Yaw: %f", camera.yaw());
-        ImGui::Text("Camera Pitch: %f", camera.pitch());
-        ImGui::SliderFloat("Camera Fov", &fov, 30.f, 120.f);
-        ImGui::SliderFloat("Camera Speed", &speed, 0.f, 20.f);
-        ImGui::SliderFloat("Camera Sensitivity", &sensitivity, 0.f, 1.f);
-
-        if (speed != controller.speed()) {
-            controller.set_speed(speed);
-        }
-        if (sensitivity != controller.sensitivity()) {
-            controller.set_sensitivity(sensitivity);
-        }
-        if (fov != camera.fov()) {
-            camera.set_fov(fov);
-        }
     }
 
     const auto title = std::format("{} Controls", oit_method.name().data());
