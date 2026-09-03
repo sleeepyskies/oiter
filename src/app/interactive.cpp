@@ -53,6 +53,7 @@ struct InteractiveApp::Impl {
         swapchain(create_swapchain(*device, window)),
         skybox("oiter://assets/textures/skybox/skybox.cubemap", *device, assets),
         interactive_state(interactive_state), frame_stats(frame_stats) {
+
         camera.set_position(options.camera_position);
         camera.lookat(options.camera_lookat);
         camera.set_aspect(window.aspect());
@@ -83,7 +84,7 @@ struct InteractiveApp::Impl {
     siren::Swapchain swapchain;
     Skybox skybox;
     siren::Camera camera               = siren::Camera{{}};
-    siren::CameraController controller = siren::CameraController{5.f, 10.f};
+    siren::CameraController controller = siren::CameraController{5.f, 0.5f};
     InteractiveState& interactive_state;
     FrameStats& frame_stats;
     std::optional<MethodKind> pending_method;
@@ -115,7 +116,7 @@ struct InteractiveApp::Impl {
         window.poll_events();
 
         if (!ImGui::GetIO().WantCaptureMouse) {
-            controller.process_look(camera, input.movement(), siren::time::delta().seconds());
+            controller.process_look(camera, input);
         }
 
         if (!ImGui::GetIO().WantCaptureKeyboard) {

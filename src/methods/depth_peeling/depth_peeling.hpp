@@ -9,11 +9,11 @@
 namespace oiter {
 class DepthPeeling final : public OitMethod {
     struct Config {
-        enum class Inspecting : siren::i32 {
+        enum Inspecting : siren::i32 {
             None         = 0,
             WriteTexture = 1,
             DepthTexture = 2,
-        } inspecting;
+        } inspecting               = None;
         siren::i32 inspected_layer = 1;
         siren::u32 layers          = 8;
         bool perform_query         = true;

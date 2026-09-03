@@ -11,12 +11,15 @@ stages:
       layout(location = 0) out vec4 out_color;
 
       void main() {
+          // this is kinda linearizing the depth but not properly, some 
+          // values have been tweaked to make it look better for visuals
           const ivec2 pixel = ivec2(gl_FragCoord.xy);
-          const float in_color = texelFetch(t_texture, pixel, 0).r;
+          float depth = clamp(texelFetch(t_texture, pixel, 0).r, 0, 1);
+          depth = (200 / (1000.1 - depth * 999.9)) / 50;
           out_color = vec4(
-              clamp(in_color, 0, 1), 
-              clamp(in_color, 0, 1), 
-              clamp(in_color, 0, 1), 
+              depth,
+              depth,
+              depth,
               1
           );
       }

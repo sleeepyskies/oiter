@@ -86,20 +86,12 @@ auto DepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) 
             }
         );
 
-        if (m_config.inspecting
-            == Config::Inspecting::DepthTexture
-            && layer
-            == m_config.inspected_layer
-            - 1) {
+        if (m_config.inspecting == Config::DepthTexture && layer == m_config.inspected_layer - 1) {
             m_device.wait_idle();
             return *m_depths[write_buffer_index];
         }
 
-        if (m_config.inspecting
-            == Config::Inspecting::WriteTexture
-            && layer
-            == m_config.inspected_layer
-            - 1) {
+        if (m_config.inspecting == Config::WriteTexture && layer == m_config.inspected_layer - 1) {
             m_device.wait_idle();
             return *m_write_color;
         }
