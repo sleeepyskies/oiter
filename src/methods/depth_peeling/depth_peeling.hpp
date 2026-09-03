@@ -20,13 +20,13 @@ class DepthPeeling final : public OitMethod {
     } m_config;
 
 public:
-    DepthPeeling(siren::Device& device, glm::uvec2 extent, siren::AssetServer& assets);
+    DepthPeeling(siren::Device& device, siren::Extent2u extent, siren::AssetServer& assets);
 
     [[nodiscard]]
-    auto render(const siren::PerspectiveCamera& camera, const BakedScene& scene) const
+    auto render(const siren::Camera& camera, const BakedScene& scene) const
         -> const siren::Image& override;
 
-    auto resize(const glm::uvec2 extent) -> void override;
+    auto resize(const siren::Extent2u extent) -> void override;
     auto reload_shaders() -> void override;
 
     [[nodiscard]]
@@ -59,7 +59,7 @@ private:
     siren::StrongHandle<siren::ShaderAsset> m_gather_shader       = siren::NullHandle;
     siren::StrongHandle<siren::ShaderAsset> m_blend_shader        = siren::NullHandle;
 
-    auto create_images(const glm::uvec2 extent) -> void;
+    auto create_images(const siren::Extent2u extent) -> void;
     auto create_sampler() -> void;
     auto create_pipelines() -> void;
     auto create_query() -> void;

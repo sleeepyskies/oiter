@@ -1,5 +1,6 @@
 #pragma once
 
+#include "2iREN/math/extent.hpp"
 #include "methods/oit_method.hpp"
 
 namespace oiter {
@@ -9,13 +10,13 @@ class KBuffer final : public OitMethod {
     } m_config;
 
 public:
-    KBuffer(siren::Device& device, glm::uvec2 extent, siren::AssetServer& assets);
+    KBuffer(siren::Device& device, siren::Extent2u extent, siren::AssetServer& assets);
 
     [[nodiscard]]
-    auto render(const siren::PerspectiveCamera& camera, const BakedScene& scene) const
+    auto render(const siren::Camera& camera, const BakedScene& scene) const
         -> const siren::Image& override;
 
-    auto resize(const glm::uvec2 extent) -> void override;
+    auto resize(const siren::Extent2u extent) -> void override;
     auto reload_shaders() -> void override;
 
     [[nodiscard]]

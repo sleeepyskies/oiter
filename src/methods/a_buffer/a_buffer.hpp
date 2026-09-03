@@ -2,6 +2,7 @@
 
 #include "2iREN/asset/shader.hpp"
 
+#include "2iREN/math/extent.hpp"
 #include "methods/oit_method.hpp"
 
 namespace oiter {
@@ -28,12 +29,12 @@ class ABuffer final : public OitMethod {
     } m_config;
 
 public:
-    ABuffer(siren::Device& device, glm::uvec2 extent, siren::AssetServer& assets);
+    ABuffer(siren::Device& device, siren::Extent2u extent, siren::AssetServer& assets);
 
-    [[nodiscard]] auto render(const siren::PerspectiveCamera& camera, const BakedScene& scene) const
+    [[nodiscard]] auto render(const siren::Camera& camera, const BakedScene& scene) const
         -> const siren::Image& override;
 
-    auto resize(const glm::uvec2 extent) -> void override;
+    auto resize(const siren::Extent2u extent) -> void override;
     auto reload_shaders() -> void override;
 
     [[nodiscard]]
@@ -64,8 +65,8 @@ private:
     std::unique_ptr<siren::GraphicsPipeline> m_gather_pipeline = nullptr;
     std::unique_ptr<siren::GraphicsPipeline> m_blend_pipeline  = nullptr;
 
-    auto create_buffers(const glm::uvec2 extent) -> void;
-    auto create_images(const glm::uvec2 extent) -> void;
+    auto create_buffers(const siren::Extent2u extent) -> void;
+    auto create_images(const siren::Extent2u extent) -> void;
     auto create_pipelines() -> void;
 };
 } // namespace oiter

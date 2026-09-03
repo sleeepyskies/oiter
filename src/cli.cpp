@@ -9,10 +9,12 @@
 #include <utility>
 #include <vector>
 
+#include "2iREN/math/point.hpp"
+
 namespace {
 
 [[nodiscard]]
-auto parse_vec3(const std::string& text) -> glm::vec3 {
+auto parse_point3f(const std::string& text) -> siren::Point3f {
     std::stringstream stream{text};
 
     siren::f32 x      = 0.f;
@@ -21,8 +23,11 @@ auto parse_vec3(const std::string& text) -> glm::vec3 {
     char first_comma  = '\0';
     char second_comma = '\0';
 
-    if (!(stream >> x >> first_comma >> y >> second_comma >> z) || first_comma != ',' ||
-        second_comma != ',') {
+    if (!(stream >> x >> first_comma >> y >> second_comma >> z)
+        || first_comma
+        != ','
+        || second_comma
+        != ',') {
         throw std::runtime_error("Invalid vec3 '" + text + "'. Expected x,y,z.");
     }
 
@@ -32,14 +37,14 @@ auto parse_vec3(const std::string& text) -> glm::vec3 {
         throw std::runtime_error("Invalid vec3 '" + text + "'. Expected x,y,z.");
     }
 
-    return {x, y, z};
+    return siren::Point3f{x, y, z};
 }
 
 [[nodiscard]]
-auto bind_vec3(glm::vec3& destination) {
+auto bind_point3f(siren::Point3f& destination) {
     return [destination = &destination](const std::string& text) -> lyra::parser_result {
         try {
-            *destination = parse_vec3(text);
+            *destination = parse_point3f(text);
 
             return lyra::parser_result::ok(lyra::parser_result_type::matched);
         } catch (const std::exception& error) {
@@ -110,13 +115,13 @@ auto InteractiveCommand::create_parser() -> lyra::command {
     );
 
     command.add_argument(
-        lyra::opt(bind_vec3(m_options.camera_position), "x,y,z")["--camera-position"].help(
+        lyra::opt(bind_point3f(m_options.camera_position), "x,y,z")["--camera-position"].help(
             "Camera position in x,y,z format."
         )
     );
 
     command.add_argument(
-        lyra::opt(bind_vec3(m_options.camera_lookat), "x,y,z")["--camera-lookat"].help(
+        lyra::opt(bind_point3f(m_options.camera_lookat), "x,y,z")["--camera-lookat"].help(
             "Camera lookat in x,y,z format."
         )
     );
@@ -156,13 +161,13 @@ auto RenderCommand::create_parser() -> lyra::command {
     );
 
     command.add_argument(
-        lyra::opt(bind_vec3(m_options.camera_position), "x,y,z")["--camera-position"].help(
+        lyra::opt(bind_point3f(m_options.camera_position), "x,y,z")["--camera-position"].help(
             "Camera position in x,y,z format."
         )
     );
 
     command.add_argument(
-        lyra::opt(bind_vec3(m_options.camera_lookat), "x,y,z")["--camera-lookat"].help(
+        lyra::opt(bind_point3f(m_options.camera_lookat), "x,y,z")["--camera-lookat"].help(
             "Camera lookat in x,y,z format."
         )
     );

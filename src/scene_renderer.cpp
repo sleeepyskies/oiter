@@ -24,7 +24,7 @@ auto create_method(
     const oiter::MethodKind kind,
     siren::Device& device,
     siren::AssetServer& assets,
-    const glm::uvec2 extent
+    const siren::Extent2u extent
 ) -> std::unique_ptr<oiter::OitMethod> {
     switch (kind) {
         case oiter::MethodKind::DepthPeeling:
@@ -46,7 +46,7 @@ SceneRenderer::SceneRenderer(
     siren::AssetServer& assets,
     const std::string& scene_path,
     const MethodKind kind,
-    const glm::uvec2 extent
+    const siren::Extent2u extent
 ) :
     m_device(device), m_assets(assets), m_method(create_method(kind, device, assets, extent)),
     m_extent(extent) {
@@ -57,7 +57,7 @@ SceneRenderer::SceneRenderer(
     m_output_image = std::make_unique<siren::Image>(m_device.create_image({
         .label         = "SceneRenderer Output Image",
         .format        = siren::ImageFormat::RGBA8,
-        .extent        = {m_extent.x, m_extent.y},
+        .extent        = m_extent.to_extent3(),
         .dimension     = siren::ImageDimension::D2,
         .mipmap_levels = 1,
     }));
@@ -112,7 +112,7 @@ SceneRenderer::SceneRenderer(
     }
 }
 
-auto SceneRenderer::render(const siren::PerspectiveCamera& camera) -> const siren::Image& {
+auto SceneRenderer::render(const siren::Camera& camera) -> const siren::Image& {
     auto& image = m_method->render(camera, m_scene);
 
     const auto format = image.descriptor().format;
@@ -160,7 +160,8 @@ auto SceneRenderer::render(const siren::PerspectiveCamera& camera) -> const sire
 }
 
 auto SceneRenderer::convert_format(
-    const siren::Image& image, siren::GraphicsPipelineHandle pipeline_handle
+    const siren::Image& image,
+    siren::GraphicsPipelineHandle pipeline_handle
 ) -> const siren::Image& {
     m_device.render_pass(
         siren::RenderPassDescriptor{
@@ -170,7 +171,7 @@ auto SceneRenderer::convert_format(
                     .colors = {siren::ColorAttachment{
                         .image           = m_output_image->handle(),
                         .begin_operation = siren::BeginOperation::Clear,
-                        .clear_color     = siren::Rgba::ZERO,
+                        .clear_color     = siren::Rgba::ZERO(),
                     }}
                 },
         },
@@ -186,11 +187,11 @@ auto SceneRenderer::convert_format(
 
 auto SceneRenderer::method() noexcept -> OitMethod& { return *m_method; }
 
-auto SceneRenderer::set_method(const MethodKind kind, const glm::uvec2 extent) -> void {
-    m_method = create_method(kind, m_device, m_assets, extent);
+auto SceneRenderer::set_method(const MethodKind kind) -> void {
+    m_method = create_method(kind, m_device, m_assets, m_extent);
 }
 
-auto SceneRenderer::resize(const glm::uvec2 extent) -> void {
+auto SceneRenderer::resize(const siren::Extent2u extent) -> void {
     m_extent = extent;
     m_method->resize(extent);
 }

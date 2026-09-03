@@ -1,16 +1,17 @@
 #include "a_buffer.hpp"
 
 #include "2iREN/asset/asset_server.hpp"
+#include "2iREN/scene/camera.hpp"
 
 namespace oiter {
-ABuffer::ABuffer(siren::Device& device, const glm::uvec2 extent, siren::AssetServer& assets) :
+ABuffer::ABuffer(siren::Device& device, const siren::Extent2u extent, siren::AssetServer& assets) :
     OitMethod(device, assets) {
     create_buffers(extent);
     create_images(extent);
     create_pipelines();
 }
 
-auto ABuffer::render(const siren::PerspectiveCamera& camera, const BakedScene& scene) const
+auto ABuffer::render(const siren::Camera& camera, const BakedScene& scene) const
     -> const siren::Image& {
     update_buffers(camera, scene);
 
@@ -55,7 +56,7 @@ auto ABuffer::render(const siren::PerspectiveCamera& camera, const BakedScene& s
                             siren::ColorAttachment{
                                 .image           = m_output->handle(),
                                 .begin_operation = siren::BeginOperation::Clear,
-                                .clear_color     = siren::Rgba::ZERO,
+                                .clear_color     = siren::Rgba::ZERO(),
                             },
                         },
                     .depth_stencil = std::nullopt,
@@ -72,7 +73,7 @@ auto ABuffer::render(const siren::PerspectiveCamera& camera, const BakedScene& s
     return *m_output;
 }
 
-auto ABuffer::resize(const glm::uvec2 extent) -> void {
+auto ABuffer::resize(const siren::Extent2u extent) -> void {
     create_buffers(extent);
     create_images(extent);
 }
@@ -89,7 +90,7 @@ auto ABuffer::render_debug_info() -> void {
     // UNIMPLEMENTED();
 }
 
-auto ABuffer::create_buffers(const glm::uvec2 extent) -> void {
+auto ABuffer::create_buffers(const siren::Extent2u extent) -> void {
     const auto max_ssbo_size = m_device.limits().max_shader_storage_block_size;
     const auto desired_size =
         sizeof(siren::u32) + (k_list_length * extent.x * extent.y * sizeof(ABufferNode));
@@ -107,7 +108,7 @@ auto ABuffer::create_buffers(const glm::uvec2 extent) -> void {
     }));
 }
 
-auto ABuffer::create_images(const glm::uvec2 extent) -> void {
+auto ABuffer::create_images(const siren::Extent2u extent) -> void {
     m_list_head =
         create_standard_image(extent, "A-Buffer List Head Image", siren::ImageFormat::R32UI);
     m_output = create_standard_image(extent, "A-Buffer Output Image", siren::ImageFormat::RGBA8);

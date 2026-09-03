@@ -8,6 +8,7 @@
 #include <imgui/backends/imgui_impl_glfw.h>
 #include <imgui/backends/imgui_impl_opengl3.h>
 
+#include "2iREN/utility/time.hpp"
 #include "2iREN/window.hpp"
 #include "app/interactive.hpp"
 #include "methods/method_kind.hpp"
@@ -90,7 +91,7 @@ inline auto end_frame() -> void {
     }
 
     if (ImGui::CollapsingHeader("Render Statistics", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::Text("Current Frame: %lu", frame_stats.frame);
+        ImGui::Text("Current Frame: %lu", (long)siren::time::current_frame());
         ImGui::Text("FPS: %.1f fps", frame_stats.fps);
 
         ImGui::Separator();
@@ -129,8 +130,11 @@ inline auto end_frame() -> void {
     ImGui::Begin(
         "Debug Controls",
         nullptr,
-        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBackground
+        ImGuiWindowFlags_NoMove
+            | ImGuiWindowFlags_NoResize
+            | ImGuiWindowFlags_NoCollapse
+            | ImGuiWindowFlags_NoTitleBar
+            | ImGuiWindowFlags_NoBackground
     );
 
     ImGui::Text("F1 - TOGGLE DEBUG   ");

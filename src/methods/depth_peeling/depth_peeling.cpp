@@ -7,7 +7,9 @@
 
 namespace oiter {
 DepthPeeling::DepthPeeling(
-    siren::Device& device, const glm::uvec2 extent, siren::AssetServer& assets
+    siren::Device& device,
+    const siren::Extent2u extent,
+    siren::AssetServer& assets
 ) : OitMethod(device, assets) {
     create_images(extent);
     create_sampler();
@@ -15,7 +17,7 @@ DepthPeeling::DepthPeeling(
     create_query();
 }
 
-auto DepthPeeling::render(const siren::PerspectiveCamera& camera, const BakedScene& scene) const
+auto DepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) const
     -> const siren::Image& {
     update_buffers(camera, scene);
 
@@ -38,7 +40,7 @@ auto DepthPeeling::render(const siren::PerspectiveCamera& camera, const BakedSce
     const auto write_color = siren::ColorAttachment{
         .image           = m_write_color->handle(),
         .begin_operation = siren::BeginOperation::Clear,
-        .clear_color     = siren::Rgba::ZERO,
+        .clear_color     = siren::Rgba::ZERO(),
     };
 
     const auto accumulation_color = siren::ColorAttachment{
@@ -47,7 +49,7 @@ auto DepthPeeling::render(const siren::PerspectiveCamera& camera, const BakedSce
     };
 
     // set up image to back to front blending
-    m_accumulation_color->clear(siren::Rgba::ZERO);
+    m_accumulation_color->clear(siren::Rgba::ZERO());
 
     for (const auto layer : siren::range(m_config.layers)) {
         m_last_frame_peels++;
@@ -84,14 +86,20 @@ auto DepthPeeling::render(const siren::PerspectiveCamera& camera, const BakedSce
             }
         );
 
-        if (m_config.inspecting == Config::Inspecting::DepthTexture &&
-            layer == m_config.inspected_layer - 1) {
+        if (m_config.inspecting
+            == Config::Inspecting::DepthTexture
+            && layer
+            == m_config.inspected_layer
+            - 1) {
             m_device.wait_idle();
             return *m_depths[write_buffer_index];
         }
 
-        if (m_config.inspecting == Config::Inspecting::WriteTexture &&
-            layer == m_config.inspected_layer - 1) {
+        if (m_config.inspecting
+            == Config::Inspecting::WriteTexture
+            && layer
+            == m_config.inspected_layer
+            - 1) {
             m_device.wait_idle();
             return *m_write_color;
         }
@@ -129,7 +137,7 @@ auto DepthPeeling::render(const siren::PerspectiveCamera& camera, const BakedSce
     return *m_accumulation_color;
 }
 
-auto DepthPeeling::resize(const glm::uvec2 extent) -> void { create_images(extent); }
+auto DepthPeeling::resize(const siren::Extent2u extent) -> void { create_images(extent); }
 
 auto DepthPeeling::reload_shaders() -> void {
     m_gather_first_shader   = siren::NullHandle;
@@ -169,7 +177,7 @@ auto DepthPeeling::render_debug_info() -> void {
     }
 }
 
-auto DepthPeeling::create_images(const glm::uvec2 extent) -> void {
+auto DepthPeeling::create_images(const siren::Extent2u extent) -> void {
     m_accumulation_color = create_standard_image(
         extent, "Depth Peeling Accumulation Color", siren::ImageFormat::RGBA8
     );

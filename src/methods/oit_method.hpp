@@ -2,6 +2,7 @@
 
 #include "2iREN/graphics/device.hpp"
 #include "2iREN/graphics/image.hpp"
+#include "2iREN/math/extent.hpp"
 #include "2iREN/scene/camera.hpp"
 
 #include "methods/method_kind.hpp"
@@ -15,9 +16,9 @@ constexpr auto MAX_MESHES = 512u;
 /// @brief Data shared across the entire rendered scene.
 struct alignas(16) SceneUniforms {
     /// @brief Combined projection and view transformation matrix.
-    glm::mat4 projection_view;
+    siren::Mat4x4f projection_view;
     /// @brief World space position of the camera.
-    glm::vec3 camera_position;
+    siren::Point3f camera_position;
     /// @brief Nothing at all...
     siren::f32 _pad = 0;
 };
@@ -30,7 +31,7 @@ struct alignas(16) MeshUniforms {
     /// @brief Material parameters used when shading the mesh.
     BakedMaterial material;
     /// @brief World transformation matrix of the mesh.
-    glm::mat4 model;
+    siren::Mat4x4f model;
 };
 
 /// @brief Base class all OIT methods should implement.
@@ -47,14 +48,13 @@ public:
     /// @param camera The camera to render the scene from.
     /// @param scene The scene to render.
     /// @return An image of the final rendered scene.
-    [[nodiscard]] virtual auto render(
-        const siren::PerspectiveCamera& camera, const BakedScene& scene
-    ) const -> const siren::Image& = 0;
+    [[nodiscard]] virtual auto render(const siren::Camera& camera, const BakedScene& scene) const
+        -> const siren::Image& = 0;
 
     /// @brief Initiates a resize of the OIT method. The OIT method should reconstruct all sized
     /// resources.
     /// @param extent The new size.
-    virtual auto resize(const glm::uvec2 extent) -> void = 0;
+    virtual auto resize(const siren::Extent2u extent) -> void = 0;
 
     /// @brief Reloads all shaders.
     virtual auto reload_shaders() -> void = 0;
@@ -90,8 +90,7 @@ protected:
 
 protected:
     /// @brief Updates the contents of the methods buffers.
-    auto update_buffers(const siren::PerspectiveCamera& camera, const BakedScene& scene) const
-        -> void;
+    auto update_buffers(const siren::Camera& camera, const BakedScene& scene) const -> void;
 
     /// @brief Returns the alignment size of the MeshUniforms buffer.
     [[nodiscard]] auto mesh_uniforms_alignment() const -> siren::usize {
@@ -103,7 +102,9 @@ protected:
     /// @brief Simple helper function to reduce code duplication for creating images. Creates a
     /// basic 2D Image.
     [[nodiscard]] auto create_standard_image(
-        const glm::uvec2 extent, const std::string& label, const siren::ImageFormat image_format
+        const siren::Extent2u extent,
+        const std::string& label,
+        const siren::ImageFormat image_format
     ) const -> std::unique_ptr<siren::Image>;
 
 private:

@@ -4,11 +4,11 @@
 
 #include <stb/stb_image_write.h>
 
-#include "2iREN/asset/gltf.hpp"
 #include "2iREN/context.hpp"
 #include "2iREN/graphics/device.hpp"
 #include "2iREN/graphics/swapchain.hpp"
 #include "2iREN/input/input.hpp"
+#include "2iREN/math/extent.hpp"
 #include "2iREN/scene/camera.hpp"
 #include "2iREN/utility/filesystem.hpp"
 #include "2iREN/utility/time.hpp"
@@ -17,7 +17,6 @@
 #include "gui.hpp"
 #include "scene_renderer.hpp"
 #include "skybox.hpp"
-#include "utility/bake.hpp"
 #include "utility/timer.hpp"
 
 #ifndef OITER_VFS
@@ -30,7 +29,7 @@ static auto create_swapchain(siren::Device& device, siren::Window& window) -> si
     return device.create_swapchain({
         .label  = std::nullopt,
         .vsync  = true,
-        .extent = window.size(),
+        .extent = window.extent(),
         .window = &window,
     });
 }
@@ -50,30 +49,19 @@ struct InteractiveApp::Impl {
         ),
         window(context.create_window({.title = "Oiter"})),
         device(context.create_device({.window = window})), assets(*device), input(window),
-        renderer(
-            *device, assets, options.scene_path, options.method, {window.width(), window.height()}
-        ),
+        renderer(*device, assets, options.scene_path, options.method, window.extent()),
         swapchain(create_swapchain(*device, window)),
         skybox("oiter://assets/textures/skybox/skybox.cubemap", *device, assets),
         interactive_state(interactive_state), frame_stats(frame_stats) {
         camera.set_position(options.camera_position);
-        camera.look_at(options.camera_lookat);
-        camera.set_aspect(
-            static_cast<siren::f32>(window.width()) / static_cast<siren::f32>(window.height())
-        );
+        camera.lookat(options.camera_lookat);
+        camera.set_aspect(window.aspect());
 
         device->render_thread().spawn([this] { gui::init(window); });
         device->wait_idle();
 
-        window.on_resize([this](const glm::ivec2 size) {
-            if (size.x <= 0 || size.y <= 0) {
-                return;
-            }
-
+        window.on_resize([this](const siren::Extent2u extent) {
             device->wait_idle();
-            const glm::uvec2 extent{
-                static_cast<siren::u32>(size.x), static_cast<siren::u32>(size.y)
-            };
             camera.set_aspect(
                 static_cast<siren::f32>(extent.x) / static_cast<siren::f32>(extent.y)
             );
@@ -94,8 +82,8 @@ struct InteractiveApp::Impl {
     SceneRenderer renderer;
     siren::Swapchain swapchain;
     Skybox skybox;
-    siren::PerspectiveCamera camera;
-    siren::PerspectiveCameraController controller;
+    siren::Camera camera               = siren::Camera{{}};
+    siren::CameraController controller = siren::CameraController{5.f, 10.f};
     InteractiveState& interactive_state;
     FrameStats& frame_stats;
     std::optional<MethodKind> pending_method;
@@ -104,8 +92,7 @@ struct InteractiveApp::Impl {
         siren::time::step();
         while (!window.should_close()) {
             siren::time::step();
-            frame_stats.frame++;
-            if (!(frame_stats.frame % 60)) {
+            if (!(siren::time::current_frame() % 60)) {
                 frame_stats.fps = 1.f / static_cast<siren::f32>(siren::time::delta().seconds());
             }
             TimerMs full_frame_timer{[this](const siren::f64 ms) {
@@ -128,11 +115,11 @@ struct InteractiveApp::Impl {
         window.poll_events();
 
         if (!ImGui::GetIO().WantCaptureMouse) {
-            controller.update_look(camera, input);
+            controller.process_look(camera, input.movement(), siren::time::delta().seconds());
         }
 
         if (!ImGui::GetIO().WantCaptureKeyboard) {
-            controller.update_position(camera, input);
+            controller.process_movement(camera, input.keyboard(), siren::time::delta().seconds());
         }
 
         if (input.keyboard().just_pressed(siren::Key::F1)) {
@@ -176,7 +163,7 @@ struct InteractiveApp::Impl {
 
         if (pending_method) {
             interactive_state.oit_method = *pending_method;
-            renderer.set_method(interactive_state.oit_method, window.size());
+            renderer.set_method(interactive_state.oit_method);
             pending_method.reset();
         }
     }

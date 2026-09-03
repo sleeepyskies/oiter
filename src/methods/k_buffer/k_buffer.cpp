@@ -1,7 +1,7 @@
 #include "k_buffer.hpp"
 
 namespace oiter {
-KBuffer::KBuffer(siren::Device& device, glm::uvec2 extent, siren::AssetServer& assets) :
+KBuffer::KBuffer(siren::Device& device, siren::Extent2u extent, siren::AssetServer& assets) :
     OitMethod(device, assets) {
     /*
     create_images(extent);
@@ -10,12 +10,12 @@ KBuffer::KBuffer(siren::Device& device, glm::uvec2 extent, siren::AssetServer& a
 */
 }
 
-auto KBuffer::render(const siren::PerspectiveCamera& camera, const BakedScene& scene) const
+auto KBuffer::render(const siren::Camera& camera, const BakedScene& scene) const
     -> const siren::Image& {
     UNIMPLEMENTED();
 }
 
-auto KBuffer::resize(const glm::uvec2 extent) -> void { UNIMPLEMENTED(); }
+auto KBuffer::resize(const siren::Extent2u extent) -> void { UNIMPLEMENTED(); }
 
 auto KBuffer::reload_shaders() -> void { UNIMPLEMENTED(); }
 

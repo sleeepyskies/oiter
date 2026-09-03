@@ -8,7 +8,7 @@ static auto bake_node(
     BakedScene& scene,
     siren::AssetServer& server,
     const siren::GltfNode& node,
-    const glm::mat4& ptransform
+    const siren::Mat4x4f ptransform
 ) -> void {
     // bake this node
     const auto world_transform = ptransform * node.transform;
@@ -59,7 +59,7 @@ auto bake_scene(const siren::StrongHandle<siren::Gltf>& gltf_handle, siren::Asse
 
     for (const auto& nodeh : scene.root_nodes) {
         auto& node = server.get_unsafe(nodeh);
-        bake_node(baked, server, node, glm::mat4{1});
+        bake_node(baked, server, node, siren::Mat4x4f::IDENTITY());
     }
 
     siren::log::debug(

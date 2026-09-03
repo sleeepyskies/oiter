@@ -2,6 +2,7 @@
 
 #include "2iREN/asset/asset_server.hpp"
 #include "2iREN/graphics/device.hpp"
+#include "2iREN/math/extent.hpp"
 
 namespace oiter {
 OitMethod::OitMethod(siren::Device& device, siren::AssetServer& assets) :
@@ -9,12 +10,11 @@ OitMethod::OitMethod(siren::Device& device, siren::AssetServer& assets) :
     create_buffers();
 }
 
-auto OitMethod::update_buffers(
-    const siren::PerspectiveCamera& camera, const BakedScene& scene
-) const -> void {
+auto OitMethod::update_buffers(const siren::Camera& camera, const BakedScene& scene) const -> void {
     m_scene_buffer->upload(
         SceneUniforms{
-            .projection_view = camera.projection_view(), .camera_position = camera.position()
+            .projection_view = camera.projection_view(),
+            .camera_position = camera.position(),
         }
     );
 
@@ -47,12 +47,14 @@ auto OitMethod::update_buffers(
 }
 
 auto OitMethod::create_standard_image(
-    const glm::uvec2 extent, const std::string& label, const siren::ImageFormat image_format
+    const siren::Extent2u extent,
+    const std::string& label,
+    const siren::ImageFormat image_format
 ) const -> std::unique_ptr<siren::Image> {
     return std::make_unique<siren::Image>(m_device.create_image({
         .label         = label,
         .format        = image_format,
-        .extent        = {.width = extent.x, .height = extent.y, .depth_or_layers = 1},
+        .extent        = extent.to_extent3(),
         .dimension     = siren::ImageDimension::D2,
         .mipmap_levels = 1,
     }));
@@ -69,10 +71,9 @@ auto OitMethod::create_buffers() -> void {
     m_mesh_buffer = std::make_unique<siren::Buffer>(m_device.create_buffer({
         .label = "mesh uniforms",
         .data  = std::nullopt,
-        .size  = siren::align_up(
-                     sizeof(MeshUniforms), m_device.limits().uniform_buffer_offset_alignment
-                 ) *
-            MAX_MESHES,
+        .size =
+            siren::align_up(sizeof(MeshUniforms), m_device.limits().uniform_buffer_offset_alignment)
+            * MAX_MESHES,
         .usage = siren::BufferUsage::Static,
     }));
 }

@@ -43,8 +43,7 @@ Skybox::Skybox(const std::string_view path, siren::Device& device, siren::AssetS
     create_resources();
 }
 
-auto Skybox::render_behind(const siren::Image& image, const siren::PerspectiveCamera& camera) const
-    -> void {
+auto Skybox::render_behind(const siren::Image& image, const siren::Camera& camera) const -> void {
     m_uniform_buffer->upload(
         Uniforms{
             .projection_view = camera.projection_view(),

@@ -7,7 +7,7 @@ namespace oiter {
 struct BakedSurface {
     siren::VertexBuffer& vertex;
     siren::IndexBuffer& index;
-    glm::mat4 transform;
+    siren::Mat4x4f transform;
     siren::u32 material_index;
 };
 

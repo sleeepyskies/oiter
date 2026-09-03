@@ -10,6 +10,7 @@
 #include "2iREN/asset/shader.hpp"
 #include "2iREN/graphics/image.hpp"
 #include "2iREN/graphics/sampler.hpp"
+#include "2iREN/math/extent.hpp"
 #include "2iREN/scene/camera.hpp"
 
 #include "methods/oit_method.hpp"
@@ -24,17 +25,17 @@ public:
         siren::AssetServer& assets,
         const std::string& scene_path,
         const MethodKind kind,
-        const glm::uvec2 extent
+        const siren::Extent2u extent
     );
 
     [[nodiscard]]
-    auto render(const siren::PerspectiveCamera& camera) -> const siren::Image&;
+    auto render(const siren::Camera& camera) -> const siren::Image&;
 
     [[nodiscard]]
     auto method() noexcept -> OitMethod&;
 
-    auto set_method(MethodKind kind, glm::uvec2 extent) -> void;
-    auto resize(glm::uvec2 extent) -> void;
+    auto set_method(MethodKind kind) -> void;
+    auto resize(siren::Extent2u extent) -> void;
     auto reload_shaders() -> void;
 
 private:
@@ -61,7 +62,7 @@ private:
 
     siren::Device& m_device;
     siren::AssetServer& m_assets;
-    glm::uvec2 m_extent;
+    siren::Extent2u m_extent;
     std::unique_ptr<OitMethod> m_method = nullptr;
 
     siren::StrongHandle<siren::Gltf> m_scene_asset = siren::NullHandle;

@@ -6,6 +6,7 @@
 #include "2iREN/asset/mesh.hpp"
 #include "2iREN/asset/shader.hpp"
 #include "2iREN/graphics/image.hpp"
+#include "2iREN/math/mat4x4.hpp"
 #include "2iREN/scene/camera.hpp"
 
 namespace oiter {
@@ -22,14 +23,13 @@ public:
     /// @brief Renders the skybox behind the alpha contents of an image.
     /// @param image Image to render the skybox into.
     /// @param camera Camera used to view the skybox.
-    auto render_behind(const siren::Image& image, const siren::PerspectiveCamera& camera) const
-        -> void;
+    auto render_behind(const siren::Image& image, const siren::Camera& camera) const -> void;
 
 private:
     /// @brief Uniform data used to render the skybox.
     struct alignas(16) Uniforms {
-        glm::mat4 projection_view;
-        glm::vec3 camera_position;
+        siren::Mat4x4f projection_view;
+        siren::Point3f camera_position;
         siren::f32 _pad = 0;
     };
 

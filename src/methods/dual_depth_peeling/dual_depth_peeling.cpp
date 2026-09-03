@@ -7,7 +7,9 @@
 
 namespace oiter {
 DualDepthPeeling::DualDepthPeeling(
-    siren::Device& device, const glm::uvec2 extent, siren::AssetServer& assets
+    siren::Device& device,
+    const siren::Extent2u extent,
+    siren::AssetServer& assets
 ) : OitMethod(device, assets) {
     create_query();
     create_sampler();
@@ -16,7 +18,7 @@ DualDepthPeeling::DualDepthPeeling(
     create_pipelines();
 }
 
-auto DualDepthPeeling::render(const siren::PerspectiveCamera& camera, const BakedScene& scene) const
+auto DualDepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) const
     -> const siren::Image& {
     // todo: could we cache and reuse the command buffers across frames? ig wont help 2 much for
     // opengl
@@ -47,7 +49,7 @@ auto DualDepthPeeling::render(const siren::PerspectiveCamera& camera, const Bake
         }
     );
 
-    m_blend_image->clear(siren::Rgba::ZERO);
+    m_blend_image->clear(siren::Rgba::ZERO());
 
     for (const auto _ : siren::range(m_config.max_peels)) {
         m_last_frame_peels++;
@@ -119,7 +121,7 @@ auto DualDepthPeeling::render(const siren::PerspectiveCamera& camera, const Bake
     return *m_final_image;
 }
 
-auto DualDepthPeeling::resize(const glm::uvec2 extent) -> void {
+auto DualDepthPeeling::resize(const siren::Extent2u extent) -> void {
     create_images(extent);
     create_render_targets();
 }
@@ -154,7 +156,7 @@ auto DualDepthPeeling::create_sampler() -> void {
     }));
 }
 
-auto DualDepthPeeling::create_images(const glm::uvec2 extent) -> void {
+auto DualDepthPeeling::create_images(const siren::Extent2u extent) -> void {
     // create ping pong dual depth images
     for (const auto i : siren::range(2)) {
         m_pingpong_colors[i * 3] = create_standard_image(
@@ -181,18 +183,20 @@ auto DualDepthPeeling::create_render_targets() -> void {
     m_pingpong_targets[0] = siren::RenderTarget{
         .colors =
             {
-                {.image           = m_pingpong_colors[0]->handle(),
-                 .begin_operation = siren::BeginOperation::Clear,
-                 .clear_color     = siren::Rgba{-1, -1, 0, 0}},
+                {
+                    .image           = m_pingpong_colors[0]->handle(),
+                    .begin_operation = siren::BeginOperation::Clear,
+                    .clear_color     = siren::Rgba{-1, -1, 0, 0},
+                },
                 {
                     .image           = m_pingpong_colors[1]->handle(),
                     .begin_operation = siren::BeginOperation::Clear,
-                    .clear_color     = siren::Rgba::ZERO,
+                    .clear_color     = siren::Rgba::ZERO(),
                 },
                 {
                     .image           = m_pingpong_colors[2]->handle(),
                     .begin_operation = siren::BeginOperation::Clear,
-                    .clear_color     = siren::Rgba::ZERO,
+                    .clear_color     = siren::Rgba::ZERO(),
                 },
             },
         .depth_stencil = std::nullopt,
@@ -201,18 +205,20 @@ auto DualDepthPeeling::create_render_targets() -> void {
     m_pingpong_targets[1] = siren::RenderTarget{
         .colors =
             {
-                {.image           = m_pingpong_colors[3]->handle(),
-                 .begin_operation = siren::BeginOperation::Clear,
-                 .clear_color     = siren::Rgba{-1, -1, 0, 0}},
+                {
+                    .image           = m_pingpong_colors[3]->handle(),
+                    .begin_operation = siren::BeginOperation::Clear,
+                    .clear_color     = siren::Rgba{-1, -1, 0, 0},
+                },
                 {
                     .image           = m_pingpong_colors[4]->handle(),
                     .begin_operation = siren::BeginOperation::Clear,
-                    .clear_color     = siren::Rgba::ZERO,
+                    .clear_color     = siren::Rgba::ZERO(),
                 },
                 {
                     .image           = m_pingpong_colors[5]->handle(),
                     .begin_operation = siren::BeginOperation::Clear,
-                    .clear_color     = siren::Rgba::ZERO,
+                    .clear_color     = siren::Rgba::ZERO(),
                 },
             },
         .depth_stencil = std::nullopt,
@@ -224,7 +230,7 @@ auto DualDepthPeeling::create_render_targets() -> void {
                 {
                     .image           = m_blend_image->handle(),
                     .begin_operation = siren::BeginOperation::Preserve,
-                    .clear_color     = siren::Rgba::ZERO,
+                    .clear_color     = siren::Rgba::ZERO(),
                 },
             },
         .depth_stencil = std::nullopt,
@@ -236,7 +242,7 @@ auto DualDepthPeeling::create_render_targets() -> void {
                 {
                     .image           = m_final_image->handle(),
                     .begin_operation = siren::BeginOperation::Preserve,
-                    .clear_color     = siren::Rgba::ZERO,
+                    .clear_color     = siren::Rgba::ZERO(),
                 },
             },
         .depth_stencil = std::nullopt,

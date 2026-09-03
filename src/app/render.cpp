@@ -39,10 +39,10 @@ struct RenderApp::Impl {
         renderer(*device, assets, options.scene_path, options.method, options.dimensions),
         output_path(options.output_path) {
         camera.set_position(options.camera_position);
-        camera.look_at(options.camera_lookat);
+        camera.lookat(options.camera_lookat);
         camera.set_aspect(
-            static_cast<siren::f32>(options.dimensions.x) /
-            static_cast<siren::f32>(options.dimensions.y)
+            static_cast<siren::f32>(options.dimensions.x)
+            / static_cast<siren::f32>(options.dimensions.y)
         );
     }
 
@@ -51,7 +51,7 @@ struct RenderApp::Impl {
     std::unique_ptr<siren::Device> device;
     siren::AssetServer assets;
     SceneRenderer renderer;
-    siren::PerspectiveCamera camera;
+    siren::Camera camera = siren::Camera{{}};
     std::string output_path;
 
     auto run() -> void {
@@ -85,7 +85,7 @@ struct RenderApp::Impl {
                         .colors        = {{
                             .image           = output.handle(),
                             .begin_operation = siren::BeginOperation::Clear,
-                            .clear_color     = siren::Rgba::ZERO,
+                            .clear_color     = siren::Rgba::ZERO(),
                         }},
                         .depth_stencil = std::nullopt,
                         .is_srgb       = true,
@@ -110,11 +110,11 @@ struct RenderApp::Impl {
         stbi_flip_vertically_on_write(true);
         const auto result = stbi_write_png(
             physical_output->c_str(),
-            static_cast<int>(descriptor.extent.width),
-            static_cast<int>(descriptor.extent.height),
+            static_cast<int>(descriptor.extent.x),
+            static_cast<int>(descriptor.extent.y),
             4,
             pixels.data(),
-            static_cast<int>(descriptor.extent.width * 4)
+            static_cast<int>(descriptor.extent.x * 4)
         );
 
         ASSERT(result != 0);
