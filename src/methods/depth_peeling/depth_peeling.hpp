@@ -16,6 +16,7 @@ class DepthPeeling final : public OitMethod {
         } inspecting               = None;
         siren::i32 inspected_layer = 1;
         siren::u32 layers          = 8;
+
         bool perform_query         = true;
     } m_config;
 
@@ -43,7 +44,7 @@ public:
 
 private:
     mutable siren::u32 m_last_frame_peels = 0;
-    std::unique_ptr<siren::Query> m_occlusion_query;
+    std::unique_ptr<siren::Query> m_query;
 
     std::unique_ptr<siren::Image> m_accumulation_color;
     std::unique_ptr<siren::Image> m_write_color;

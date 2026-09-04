@@ -20,8 +20,6 @@ DualDepthPeeling::DualDepthPeeling(
 
 auto DualDepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) const
     -> const siren::Image& {
-    // todo: could we cache and reuse the command buffers across frames? ig wont help 2 much for
-    // opengl
     update_buffers(camera, scene);
 
     const auto draw_scene = [&](siren::RenderPassRecorder& pass) {
@@ -51,8 +49,13 @@ auto DualDepthPeeling::render(const siren::Camera& camera, const BakedScene& sce
 
     m_blend_image->clear(siren::Rgba::ZERO());
 
-    for (const auto _ : siren::range(m_config.max_peels)) {
+    for (const auto layer : siren::range(m_config.max_peels)) {
         m_last_frame_peels++;
+
+        if (m_config.perform_query && layer != 0) {
+            m_device.begin_conditional_rendering(m_query->handle());
+        }
+
         // peel pass
         m_device.render_pass(
             siren::RenderPassDescriptor{.target = write_target()},
@@ -75,12 +78,16 @@ auto DualDepthPeeling::render(const siren::Camera& camera, const BakedScene& sce
             }
         );
 
+        if (m_config.perform_query && layer != 0) {
+            m_device.end_conditional_rendering();
+        }
+
         // blend pass
         m_device.render_pass(
             siren::RenderPassDescriptor{.target = m_blend_target},
             [this](siren::RenderPassRecorder& pass) -> void {
                 if (m_config.perform_query) {
-                    pass.begin_query(m_occlusion_query->handle());
+                    pass.begin_query(m_query->handle());
                 }
 
                 pass.bind_graphics_pipeline(m_blend_pipeline->handle());
@@ -88,19 +95,17 @@ auto DualDepthPeeling::render(const siren::Camera& camera, const BakedScene& sce
                 pass.draw_fullscreen();
 
                 if (m_config.perform_query) {
-                    pass.end_query(m_occlusion_query->handle());
+                    pass.end_query(m_query->handle());
                 }
             }
         );
 
         swap_targets();
+        // if (m_config.perform_query && m_device.query(m_query->handle()) == 0) { break; }
+    }
 
-        if (m_config.perform_query) {
-            const auto samples_passed = m_device.query(m_occlusion_query->handle());
-            if (samples_passed == 0) {
-                break;
-            } // early end, nothing was drawn
-        }
+    if (m_config.perform_query) {
+        m_device.begin_conditional_rendering(m_query->handle());
     }
 
     // final pass
@@ -111,10 +116,14 @@ auto DualDepthPeeling::render(const siren::Camera& camera, const BakedScene& sce
             pass.bind_sampled_image(read_target().colors[1].image, m_sampler->handle(), 0);
             pass.bind_sampled_image(
                 m_blend_image->handle(), m_sampler->handle(), 1
-            ); // accumulated back
+            );
             pass.draw_fullscreen();
         }
     );
+
+    if (m_config.perform_query) {
+        m_device.end_conditional_rendering();
+    }
 
     reset_targets();
 
@@ -345,8 +354,8 @@ auto DualDepthPeeling::create_pipelines() -> void {
 }
 
 auto DualDepthPeeling::create_query() -> void {
-    m_occlusion_query = std::make_unique<siren::Query>(
-        m_device.create_query({.kind = siren::QueryKind::SamplesPassed})
+    m_query = std::make_unique<siren::Query>(
+        m_device.create_query({.kind = siren::QueryKind::AnySamplesPassed})
     );
 }
 

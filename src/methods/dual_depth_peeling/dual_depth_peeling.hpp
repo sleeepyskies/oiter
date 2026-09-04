@@ -13,7 +13,7 @@ namespace oiter {
 class DualDepthPeeling final : public OitMethod {
     struct Config {
         siren::i32 max_peels = 8;
-        bool perform_query   = false;
+        bool perform_query   = true;
     } m_config;
 
 public:
@@ -34,7 +34,7 @@ public:
     auto kind() const noexcept -> MethodKind override {
         return MethodKind::DualDepthPeeling;
     }
-    auto resize(const siren::Extent2u extent) -> void override;
+    auto resize(siren::Extent2u extent) -> void override;
     auto reload_shaders() -> void override;
     auto render_debug_info() -> void override;
 
@@ -42,7 +42,7 @@ private:
     mutable siren::u32 m_last_frame_peels = 0;
     mutable siren::u32 m_pingpong_index   = 0;
 
-    std::unique_ptr<siren::Query> m_occlusion_query;
+    std::unique_ptr<siren::Query> m_query;
 
     std::unique_ptr<siren::GraphicsPipeline> m_init_pipeline;
     std::unique_ptr<siren::GraphicsPipeline> m_peel_pipeline;

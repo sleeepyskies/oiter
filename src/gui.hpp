@@ -29,6 +29,11 @@ inline auto init(const siren::Window& window) -> void {
     ImGui_ImplGlfw_InitForOpenGL(window.handle(), true);
     ImGui_ImplOpenGL3_Init("#version 460");
 
+    // ImGui::GetIO().DisplayFramebufferScale
+
+    ImGui::GetStyle().FontScaleDpi = 3.f;
+    ImGui::GetStyle().ScaleAllSizes(3.f);
+
     ImGui::StyleColorsDark();
 }
 
@@ -61,13 +66,15 @@ inline auto end_frame() -> void {
 
     const auto& io = ImGui::GetIO();
 
+    /*
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(350, io.DisplaySize.y), ImGuiCond_Always);
+    */
 
     ImGui::Begin(
         "Debug Information",
         nullptr,
-        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse
+        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse
     );
 
     if (ImGui::CollapsingHeader("OIT Method", ImGuiTreeNodeFlags_DefaultOpen)) {

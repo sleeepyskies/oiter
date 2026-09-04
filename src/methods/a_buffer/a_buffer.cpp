@@ -108,7 +108,7 @@ auto ABuffer::create_buffers(const siren::Extent2u extent) -> void {
     const auto desired_size =
         sizeof(siren::u32) + (k_list_length * extent.x * extent.y * sizeof(ABufferNode));
 
-    ASSERT(max_ssbo_size > desired_size);
+    ASSERT(max_ssbo_size > desired_size, "requested to make ssbo with size {}, max size allowed: {}", desired_size, max_ssbo_size);
 
     m_ssbo = std::make_unique<siren::Buffer>(m_device.create_buffer({
         .label = "A Buffer SSBO",

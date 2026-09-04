@@ -82,9 +82,19 @@ auto DepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) 
                     );
                 }
                 pass.bind_graphics_pipeline(peel_pipeline);
+                if (m_config.perform_query) {
+                    pass.begin_query(m_query->handle());
+                }
                 draw_scene(pass);
+                if (m_config.perform_query) {
+                    pass.begin_query(m_query->handle());
+                }
             }
         );
+
+        if (m_config.perform_query && layer != 0) {
+            m_device.begin_conditional_rendering(m_query->handle());
+        }
 
         if (m_config.inspecting == Config::DepthTexture && layer == m_config.inspected_layer - 1) {
             m_device.wait_idle();
@@ -106,24 +116,24 @@ auto DepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) 
                     }
             },
             [&](siren::RenderPassRecorder& pass) {
-                if (m_config.perform_query) {
-                    pass.begin_query(m_occlusion_query->handle());
-                }
                 pass.bind_graphics_pipeline(m_blend_pipeline->handle());
                 pass.bind_sampled_image(m_write_color->handle(), m_sampler->handle(), 0);
                 pass.draw_fullscreen();
-                if (m_config.perform_query) {
-                    pass.end_query(m_occlusion_query->handle());
-                }
             }
         );
 
+        if (m_config.perform_query && layer != 0) {
+            m_device.end_conditional_rendering();
+        }
+
+        /*
         if (m_config.perform_query) {
             const auto samples_passed = m_device.query(m_occlusion_query->handle());
             if (samples_passed == 0 && m_config.inspecting == Config::Inspecting::None) {
                 break;
-            } // early end, nothing was drawn
+            }
         }
+        */
     }
 
     return *m_accumulation_color;
@@ -270,8 +280,8 @@ auto DepthPeeling::create_pipelines() -> void {
 }
 
 auto DepthPeeling::create_query() -> void {
-    m_occlusion_query = std::make_unique<siren::Query>(
-        m_device.create_query({.kind = siren::QueryKind::SamplesPassed})
+    m_query = std::make_unique<siren::Query>(
+        m_device.create_query({.kind = siren::QueryKind::AnySamplesPassed})
     );
 }
 } // namespace oiter
