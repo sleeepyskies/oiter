@@ -29,6 +29,9 @@ stages:
     name: fragment
     source: !glsl |
       #version 460
+      #extension GL_KHR_shader_subgroup_basic : require
+      #extension GL_KHR_shader_subgroup_arithmetic : require
+      #extension GL_KHR_shader_subgroup_ballot : require
       
       struct BakedMaterial {
           vec4 color;
@@ -51,18 +54,56 @@ stages:
           uint next;
       };
       
-      layout(std430, binding = 0) coherent buffer linked_list {
+      layout(std430, binding = 0) buffer linked_list {
           uint counter;
           Node[] nodes;
       };
       
       layout(r32ui, binding = 0) uniform uimage2D heads;
 
-      uint next_index() { return atomicAdd(counter, 1u); }
+      uint next_index() {
+          //return atomicAdd(counter, 1);
+          subgroupMemoryBarrier();
+          uint count = subgroupAdd(1u);
+          uint base = 0;
+          subgroupMemoryBarrier();
+          if (subgroupElect() && count > 0) {
+              subgroupMemoryBarrier();
+              base = atomicAdd(counter, count);
+              subgroupMemoryBarrier();
+          }
+          subgroupMemoryBarrier();
+          base = subgroupBroadcastFirst(base);
+          subgroupMemoryBarrier();
+          uint index = base + subgroupExclusiveAdd(1u);
+          subgroupMemoryBarrier();
+          return index;
+      }
       
       void main() {
-          const ivec2 pixel = ivec2(gl_FragCoord.xy);
-          const uint index = next_index();
+          const ivec2 pixel = ivec2(gl_FragCoord.xy);      
+          
+          if (gl_SubgroupInvocationID > 0) {
+              discard;
+          }
+          
+          subgroupMemoryBarrier();
+          uint count = subgroupAdd(1u);
+          uint base = 0;
+          subgroupMemoryBarrier();
+          if (subgroupElect() && count > 0) {
+              subgroupMemoryBarrier();
+              base = atomicAdd(counter, 32);
+              base = atomicAdd(counter, 1);
+              subgroupMemoryBarrier();
+          }
+          subgroupMemoryBarrier();
+          base = subgroupBroadcastFirst(base);
+          subgroupMemoryBarrier();
+          uint index = base + subgroupExclusiveAdd(1u);
+          subgroupMemoryBarrier();
+          
+          //const uint index = next_index();
           
           if (index >= uint(nodes.length())) {
               discard;
@@ -70,7 +111,21 @@ stages:
           
           const uint old = imageAtomicExchange(heads, pixel, index);
           
+          vec4 debug_color = vec4(1.0, 0, 0, 1.0);      
+          vec4 pink;
+          if (subgroupElect()) {
+              debug_color = vec4(0, 1.0, 0, 1.0);
+              pink = vec4(1, 0, 1, 1.0);
+          }
+          uint ii = subgroupExclusiveAdd(1u);
+          debug_color.x = (float((ii / 4) % 8)) / 8.0f;
+          debug_color.y = (float((ii / 2) % 8)) / 8.0f;
+          debug_color.z = (float((ii    ) % 8)) / 8.0f;
+          pink = subgroupBroadcastFirst(pink);
+          debug_color = pink;
+          
           nodes[index].color = material.color;
+          nodes[index].color = debug_color;
           nodes[index].depth = gl_FragCoord.z;
           nodes[index].next = old;
       }
