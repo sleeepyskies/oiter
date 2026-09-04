@@ -41,6 +41,7 @@ public:
 private:
     auto convert_format(const siren::Image& image, siren::GraphicsPipelineHandle pipeline_handle)
         -> const siren::Image&;
+    auto create_images() -> void;
 
 private:
     struct FormatConverter {
@@ -52,13 +53,12 @@ private:
         SingleChannel,
         DualChannel,
         TripleChannel,
-
         DepthChannel,
-
-        MAX,
+        UnsignedIntChannel,
+        Max,
     };
 
-    std::array<FormatConverter, std::to_underlying(ImageFormatGroup::MAX)> m_format_pipelines;
+    std::array<FormatConverter, std::to_underlying(ImageFormatGroup::Max)> m_format_pipelines;
 
     siren::Device& m_device;
     siren::AssetServer& m_assets;

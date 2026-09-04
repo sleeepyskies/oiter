@@ -11,14 +11,9 @@
 namespace oiter {
 
 class DualDepthPeeling final : public OitMethod {
-    /// @brief A bunch of configuration options that can be tweaked during runtime for
-    /// the @ref DualDepthPeeling OitMethod. These can be viewed in the F1 debug menu when
-    /// the DualDepthPeeling method is active.
     struct Config {
-        /// @brief The maximum number of peels to perform.
         siren::i32 max_peels = 8;
-        /// @brief Whether to query in order to stop early.
-        bool perform_query = false;
+        bool perform_query   = false;
     } m_config;
 
 public:

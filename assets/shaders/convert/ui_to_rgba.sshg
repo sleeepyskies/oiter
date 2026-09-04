@@ -1,0 +1,22 @@
+name: ui_to_rgba
+stages:
+  vertex:
+    path: ../fullscreen.vert
+  fragment:
+    name: fragment
+    source: |
+      #version 460
+
+      layout(binding = 0) uniform usampler2D t_texture;
+      layout(location = 0) out vec4 out_color;
+
+      void main() {
+          const ivec2 pixel = ivec2(gl_FragCoord.xy);
+          const uint index = texelFetch(t_texture, pixel, 0).r;
+          out_color = vec4(
+              (index >> 24) & 0xFF,
+              (index >> 16) & 0xFF,
+              (index >> 8)  & 0xFF,
+              255
+          ) / 255;
+      }

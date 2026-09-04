@@ -25,7 +25,10 @@ struct alignas(16) ABufferNode {
 
 class ABuffer final : public OitMethod {
     struct Config {
-        // nothing yet :D
+        enum Inspecting : siren::i32 {
+            None     = 0,
+            ListHead = 1,
+        } inspecting = None;
     } m_config;
 
 public:

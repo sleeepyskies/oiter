@@ -83,7 +83,9 @@ inline auto end_frame() -> void {
 
         ImGui::RadioButton("A-Buffer", &method, std::to_underlying(oiter::MethodKind::ABuffer));
 
-        ImGui::RadioButton("K-Buffer", &method, std::to_underlying(oiter::MethodKind::KBuffer));
+        ImGui::RadioButton(
+            "Screen Door", &method, std::to_underlying(oiter::MethodKind::ScreenDoor)
+        );
 
         if (method != std::to_underlying(oit_method.kind().value)) {
             actions.oit_method = static_cast<oiter::MethodKind::Value>(method);

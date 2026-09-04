@@ -1,36 +1,42 @@
 #pragma once
 
-#include "2iREN/math/extent.hpp"
 #include "methods/oit_method.hpp"
 
 namespace oiter {
-class KBuffer final : public OitMethod {
+
+class ScreenDoor final : public OitMethod {
+public:
     struct Config {
-        // nothing yet :D
+        siren::f32 threshold = 0.5;
     } m_config;
 
-public:
-    KBuffer(siren::Device& device, siren::Extent2u extent, siren::AssetServer& assets);
+    explicit ScreenDoor(
+        siren::Device& device,
+        const siren::Extent2u extent,
+        siren::AssetServer& assets
+    );
 
     [[nodiscard]]
     auto render(const siren::Camera& camera, const BakedScene& scene) const
         -> const siren::Image& override;
 
     auto resize(const siren::Extent2u extent) -> void override;
+
     auto reload_shaders() -> void override;
 
     [[nodiscard]]
     auto name() const noexcept -> std::string_view override {
-        return "K-Buffer";
+        return "Screen Door";
     }
 
     [[nodiscard]]
     auto kind() const noexcept -> MethodKind override {
-        return MethodKind::KBuffer;
+        return MethodKind::ScreenDoor;
     }
 
-    auto render_debug_info() -> void override;
-
 private:
+    auto create_images(siren::Extent2u extent) -> void;
+    auto create_shaders() -> void;
 };
+
 } // namespace oiter

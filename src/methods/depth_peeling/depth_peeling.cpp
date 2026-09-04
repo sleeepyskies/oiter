@@ -145,7 +145,7 @@ auto DepthPeeling::render_debug_info() -> void {
     ImGui::Text("Peels performed last frame %u", m_last_frame_peels);
     m_last_frame_peels = 0;
 
-    ImGui::SliderInt("Layers", (int*)&m_config.layers, 1, 25);
+    ImGui::SliderInt("Layers", (siren::i32*)&m_config.layers, 1, 25);
     ImGui::Checkbox("Perform Occlusion Query", &m_config.perform_query);
 
     siren::i32* inspecting  = (siren::i32*)(&m_config.inspecting);

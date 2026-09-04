@@ -1,0 +1,76 @@
+name: dither
+stages:
+  vertex:
+    name: vertex
+    source: !glsl |
+      #version 460
+
+      layout(std140, binding = 0) uniform SceneUniforms {
+          mat4 projection_view;
+          vec3 camera_position;
+          float _pad0;
+      };
+      
+      struct BakedMaterial {
+          vec4 color;
+      };
+      
+      layout(std140, binding = 1) uniform MeshUniforms {
+          BakedMaterial material;
+          mat4 model;
+      };
+
+      layout(location = 0) in vec4 a_position;
+
+      void main() {
+          gl_Position = projection_view * model * a_position;
+      }
+  fragment:
+    name: fragment
+    source: !glsl |
+      #version 460
+      
+      struct BakedMaterial {
+          vec4 color;
+      };
+
+      layout(std140, binding = 0) uniform SceneUniforms {
+          mat4 projection_view;
+          vec3 camera_position;
+          float _pad0;
+      };
+
+      layout(std140, binding = 1) uniform MeshUniforms {
+          BakedMaterial material;
+          mat4 model;
+      };
+      
+      struct Node {
+          vec4 color;
+          float depth;
+          uint next;
+      };
+      
+      layout(std430, binding = 0) coherent buffer linked_list {
+          uint counter;
+          Node[] nodes;
+      };
+      
+      layout(r32ui, binding = 0) uniform uimage2D heads;
+
+      uint next_index() { return atomicAdd(counter, 1u); }
+      
+      void main() {
+          const ivec2 pixel = ivec2(gl_FragCoord.xy);
+          const uint index = next_index();
+          
+          if (index >= uint(nodes.length())) {
+              discard;
+          }
+          
+          const uint old = imageAtomicExchange(heads, pixel, index);
+          
+          nodes[index].color = material.color;
+          nodes[index].depth = gl_FragCoord.z;
+          nodes[index].next = old;
+      }

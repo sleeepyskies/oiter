@@ -14,9 +14,9 @@
 #include "methods/a_buffer/a_buffer.hpp"
 #include "methods/depth_peeling/depth_peeling.hpp"
 #include "methods/dual_depth_peeling/dual_depth_peeling.hpp"
-#include "methods/k_buffer/k_buffer.hpp"
 #include "methods/method_kind.hpp"
 #include "methods/oit_method.hpp"
+#include "methods/screen_door/screen_door.hpp"
 #include "utility/bake.hpp"
 
 namespace {
@@ -33,9 +33,9 @@ auto create_method(
             return std::make_unique<oiter::DualDepthPeeling>(device, extent, assets);
         case oiter::MethodKind::ABuffer:
             return std::make_unique<oiter::ABuffer>(device, extent, assets);
-        case oiter::MethodKind::KBuffer:
-            return std::make_unique<oiter::KBuffer>(device, extent, assets);
-        default: PANIC("invalid state");
+        case oiter::MethodKind::ScreenDoor:
+            return std::make_unique<oiter::ScreenDoor>(device, extent, assets);
+        default: PANIC("invalid method selected");
     }
 }
 } // namespace
@@ -54,13 +54,7 @@ SceneRenderer::SceneRenderer(
     m_sampler = std::make_unique<siren::Sampler>(m_device.create_sampler({}));
 
     // images
-    m_output_image = std::make_unique<siren::Image>(m_device.create_image({
-        .label         = "SceneRenderer Output Image",
-        .format        = siren::ImageFormat::RGBA8,
-        .extent        = m_extent.to_extent3(),
-        .dimension     = siren::ImageDimension::D2,
-        .mipmap_levels = 1,
-    }));
+    create_images();
 
     // scene
     m_scene_asset = m_assets.load<siren::Gltf>(scene_path);
@@ -93,6 +87,11 @@ SceneRenderer::SceneRenderer(
             "oiter://assets/shaders/convert/depth_to_rgba.sshg",
             "Depth to RGBA GraphicsPipeline",
             ImageFormatGroup::DepthChannel,
+        },
+        {
+            "oiter://assets/shaders/convert/ui_to_rgba.sshg",
+            "Ui32 to RGBA GraphicsPipeline",
+            ImageFormatGroup::UnsignedIntChannel,
         },
     };
 
@@ -149,6 +148,13 @@ auto SceneRenderer::render(const siren::Camera& camera) -> const siren::Image& {
                     .pipeline->handle()
             );
 
+        case siren::ImageFormat::R32UI:
+            return convert_format(
+                image,
+                m_format_pipelines[std::to_underlying(ImageFormatGroup::UnsignedIntChannel)]
+                    .pipeline->handle()
+            );
+
         case siren::ImageFormat::RGBA16f:
         case siren::ImageFormat::sRGBA8:
         case siren::ImageFormat::RGBA8: break; // format is already fine :D
@@ -185,7 +191,19 @@ auto SceneRenderer::convert_format(
     return *m_output_image;
 }
 
-auto SceneRenderer::method() noexcept -> OitMethod& { return *m_method; }
+auto SceneRenderer::create_images() -> void {
+    m_output_image = std::make_unique<siren::Image>(m_device.create_image({
+        .label         = "SceneRenderer Output Image",
+        .format        = siren::ImageFormat::RGBA8,
+        .extent        = m_extent.to_extent3(),
+        .dimension     = siren::ImageDimension::D2,
+        .mipmap_levels = 1,
+    }));
+}
+
+auto SceneRenderer::method() noexcept -> OitMethod& {
+    return *m_method;
+}
 
 auto SceneRenderer::set_method(const MethodKind kind) -> void {
     m_method = create_method(kind, m_device, m_assets, m_extent);
@@ -194,8 +212,11 @@ auto SceneRenderer::set_method(const MethodKind kind) -> void {
 auto SceneRenderer::resize(const siren::Extent2u extent) -> void {
     m_extent = extent;
     m_method->resize(extent);
+    create_images();
 }
 
-auto SceneRenderer::reload_shaders() -> void { m_method->reload_shaders(); }
+auto SceneRenderer::reload_shaders() -> void {
+    m_method->reload_shaders();
+}
 
 } // namespace oiter

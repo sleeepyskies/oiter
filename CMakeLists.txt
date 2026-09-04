@@ -25,7 +25,7 @@ add_executable(oiter
         src/methods/depth_peeling/depth_peeling.cpp
         src/methods/dual_depth_peeling/dual_depth_peeling.cpp
         src/methods/a_buffer/a_buffer.cpp
-        src/methods/k_buffer/k_buffer.cpp
+        src/methods/screen_door/screen_door.cpp
 
 )
 

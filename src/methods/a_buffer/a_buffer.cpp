@@ -1,4 +1,6 @@
 #include "a_buffer.hpp"
+#include <imgui.h>
+#include <utility>
 
 #include "2iREN/asset/asset_server.hpp"
 #include "2iREN/scene/camera.hpp"
@@ -47,6 +49,10 @@ auto ABuffer::render(const siren::Camera& camera, const BakedScene& scene) const
         }
     );
 
+    if (m_config.inspecting == Config::ListHead) {
+        return *m_list_head;
+    }
+
     m_device.render_pass(
         {
             .target =
@@ -87,7 +93,14 @@ auto ABuffer::reload_shaders() -> void {
 }
 
 auto ABuffer::render_debug_info() -> void {
-    // UNIMPLEMENTED();
+    auto inspecting = (siren::i32*)(&m_config.inspecting);
+
+    if (ImGui::RadioButton("See Final Output         ", inspecting, 0)) {
+        m_config.inspecting = Config::None;
+    }
+    if (ImGui::RadioButton("Inspect List Head Texture", inspecting, 1)) {
+        m_config.inspecting = Config::ListHead;
+    }
 }
 
 auto ABuffer::create_buffers(const siren::Extent2u extent) -> void {

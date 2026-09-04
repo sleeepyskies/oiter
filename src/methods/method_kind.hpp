@@ -3,7 +3,6 @@
 #include "2iREN/core/assert.hpp"
 
 #include <stdexcept>
-#include <string>
 #include <string_view>
 
 namespace oiter {
@@ -12,7 +11,7 @@ struct MethodKind {
         DepthPeeling,
         DualDepthPeeling,
         ABuffer,
-        KBuffer,
+        ScreenDoor,
     } value;
 
     constexpr MethodKind(const Value value) : value(value) {}
@@ -23,8 +22,8 @@ struct MethodKind {
         switch (value) {
             case DepthPeeling: return "DepthPeeling";
             case DualDepthPeeling: return "DualDepthPeeling";
-            case KBuffer: return "KBuffer";
             case ABuffer: return "ABuffer";
+            case ScreenDoor: return "ScreenDoor";
             default: UNREACHABLE();
         }
     }
@@ -36,11 +35,11 @@ struct MethodKind {
         if (value == "dp" || value == "DepthPeeling") {
             return DepthPeeling;
         }
-        if (value == "kb" || value == "KBuffer") {
-            return KBuffer;
-        }
         if (value == "ab" || value == "ABuffer") {
             return ABuffer;
+        }
+        if (value == "sd" || value == "ScreenDoor") {
+            return ScreenDoor;
         }
 
         throw std::invalid_argument("Invalid OIT method");
