@@ -1,5 +1,10 @@
 #pragma once
 
+#include <memory>
+#include "2iREN/asset/shader.hpp"
+#include "2iREN/graphics/graphics_pipeline.hpp"
+#include "2iREN/graphics/image.hpp"
+#include "2iREN/utility/identifier.hpp"
 #include "methods/oit_method.hpp"
 
 namespace oiter {
@@ -37,6 +42,12 @@ public:
 private:
     auto create_images(siren::Extent2u extent) -> void;
     auto create_shaders() -> void;
+
+    std::unique_ptr<siren::GraphicsPipeline> m_screendoor_pipeline = nullptr;
+    siren::StrongHandle<siren::ShaderAsset> m_screendoor_shader    = siren::NullHandle;
+
+    std::unique_ptr<siren::Image> m_output = nullptr;
+    std::unique_ptr<siren::Image> m_depth  = nullptr;
 };
 
 } // namespace oiter

@@ -83,9 +83,11 @@ auto bind_loglevel(siren::log::Level& destination) {
 
 namespace oiter {
 Command::Command(std::string name, std::string description) :
-    m_name(std::move(name)), m_description(std::move(description)) {}
+    m_name(std::move(name)), m_description(std::move(description)) { }
 
-auto Command::selected() const noexcept -> bool { return m_selected; }
+auto Command::selected() const noexcept -> bool {
+    return m_selected;
+}
 
 auto Command::create_base_parser() -> lyra::command {
     return lyra::command{
@@ -99,7 +101,7 @@ InteractiveCommand::InteractiveCommand() :
     Command{
         "interactive",
         "Runs Oiter in interactive mode.",
-    } {}
+    } { }
 
 auto InteractiveCommand::create_parser() -> lyra::command {
     auto command = create_base_parser();
@@ -110,8 +112,8 @@ auto InteractiveCommand::create_parser() -> lyra::command {
 
     command.add_argument(
         lyra::opt(bind_method(m_options.method), "method")["-m"]["--method"]
-            .choices("ddp", "dp", "ab", "kb")
-            .help("OIT method: ddp, dp, ab, kb.")
+            .choices("ddp", "dp", "ab", "sd")
+            .help("OIT method: ddp, dp, ab, sd.")
     );
 
     command.add_argument(
@@ -144,7 +146,7 @@ RenderCommand::RenderCommand() :
     Command{
         "render",
         "Renders a single image.",
-    } {}
+    } { }
 
 auto RenderCommand::create_parser() -> lyra::command {
     auto command = create_base_parser();
@@ -155,8 +157,8 @@ auto RenderCommand::create_parser() -> lyra::command {
 
     command.add_argument(
         lyra::opt(bind_method(m_options.method), "method")["-m"]["--method"]
-            .choices("ddp", "dp", "ab", "kb")
-            .help("OIT method: ddp, dp, ab, kb.")
+            .choices("ddp", "dp", "ab", "sd")
+            .help("OIT method: ddp, dp, ab, sd.")
             .required()
     );
 

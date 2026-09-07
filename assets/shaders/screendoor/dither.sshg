@@ -1,0 +1,65 @@
+name: dither
+stages:
+  vertex:
+    name: vertex
+    source: !glsl |
+      #version 460
+
+      layout(std140, binding = 0) uniform SceneUniforms {
+          mat4 projection_view;
+          vec3 camera_position;
+          float _pad0;
+      };
+      
+      struct BakedMaterial {
+          vec4 color;
+      };
+      
+      layout(std140, binding = 1) uniform MeshUniforms {
+          BakedMaterial material;
+          mat4 model;
+      };
+
+      layout(location = 0) in vec4 a_position;
+
+      void main() {
+          gl_Position = projection_view * model * a_position;
+      }
+  fragment:
+    name: fragment
+    source: !glsl |
+      #version 460
+      
+      struct BakedMaterial {
+          vec4 color;
+      };
+
+      layout(std140, binding = 0) uniform SceneUniforms {
+          mat4 projection_view;
+          vec3 camera_position;
+          float _pad0;
+      };
+
+      layout(std140, binding = 1) uniform MeshUniforms {
+          BakedMaterial material;
+          mat4 model;
+      };
+
+      layout(location = 0) out vec4 out_color;
+
+      const float[16] bayermatrix = float[16](
+            1.0  / 17.0,  9.0  / 17.0,  3.0  / 17.0,  11.0 / 17.0,
+            13.0 / 17.0,  5.0  / 17.0,  15.0 / 17.0,  7.0  / 17.0,
+            4.0  / 17.0,  12.0 / 17.0,  2.0  / 17.0,  10.0 / 17.0,
+            16.0 / 17.0,  8.0  / 17.0,  14.0 / 17.0,  6.0  / 17.0
+      );
+      
+      void main() {
+          const ivec2 pixel = ivec2(gl_FragCoord.xy) % ivec2(4);
+
+          if (bayermatrix[pixel.y * 4 + pixel.x] > material.color.a) {
+              discard;
+          }
+
+          out_color = vec4(material.color.rgb, 1.f);
+      }

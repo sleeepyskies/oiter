@@ -181,6 +181,8 @@ InteractiveApp::InteractiveApp(const InteractiveAppOptions& options) :
 
 InteractiveApp::~InteractiveApp() = default;
 
-auto InteractiveApp::run() -> void { m_impl->run(); }
+auto InteractiveApp::run() -> void {
+    m_impl->run();
+}
 
 } // namespace oiter
