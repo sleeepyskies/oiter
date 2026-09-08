@@ -93,8 +93,6 @@ struct InteractiveApp::Impl {
             device->flush_delete_queue();
             interactive_state.camera_position = camera.position();
         }
-
-        device->wait_idle();
     }
 
     auto handle_input() -> void {
@@ -147,7 +145,6 @@ struct InteractiveApp::Impl {
                 pending_method = actions.oit_method;
             }
         });
-        device->wait_idle();
 
         if (pending_method) {
             interactive_state.oit_method = *pending_method;

@@ -19,7 +19,6 @@ DepthPeeling::DepthPeeling(
     create_sampler();
     create_pipelines();
     create_queries();
-    m_device.wait_idle();
 }
 
 auto DepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) const
