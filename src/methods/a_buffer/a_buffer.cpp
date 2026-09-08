@@ -4,6 +4,7 @@
 
 #include "2iREN/asset/asset_server.hpp"
 #include "2iREN/scene/camera.hpp"
+#include "2iREN/utility/byte_buffer.hpp"
 
 namespace oiter {
 ABuffer::ABuffer(siren::Device& device, const siren::Extent2u extent, siren::AssetServer& assets) :
@@ -33,7 +34,8 @@ auto ABuffer::render(const siren::Camera& camera, const BakedScene& scene) const
     };
 
     // reset the counter each frame
-    m_ssbo->upload(siren::ByteBuffer{siren::u32{0}}.data());
+    const auto ssbodata = siren::ByteBuffer::make({0});
+    m_ssbo->upload(ssbodata.view());
     // reset the list heads each frame using 0xFFFFFFFF
     m_list_head->clear(std::numeric_limits<siren::u32>::max());
 
@@ -110,10 +112,8 @@ auto ABuffer::create_buffers(const siren::Extent2u extent) -> void {
 
     ASSERT(max_ssbo_size > desired_size);
 
-    m_ssbo = std::make_unique<siren::Buffer>(m_device.create_buffer({
+    m_ssbo = std::make_unique<siren::Buffer>(m_device.make_buffer({
         .label = "A Buffer SSBO",
-        // just 0 init the counter
-        .data = std::nullopt,
         // we need to be able to store k_list_length * image_size * node_size elements PLUS a u32
         // for the counter
         .size  = desired_size,
@@ -134,7 +134,7 @@ auto ABuffer::create_pipelines() -> void {
             m_assets.load<siren::ShaderAsset>("oiter://assets/shaders/a_buffer/gather.sshg");
         m_assets.wait_until_loaded(m_gather_shader);
         m_gather_pipeline =
-            std::make_unique<siren::GraphicsPipeline>(m_device.create_graphics_pipeline({
+            std::make_unique<siren::GraphicsPipeline>(m_device.make_graphics_pipeline({
                 .label             = "A-Buffer Gather Pipeline",
                 .layout            = siren::DEFAULT_VERTEX_LAYOUT,
                 .shader            = m_assets.get_unsafe(m_gather_shader).shader.handle(),
@@ -152,7 +152,7 @@ auto ABuffer::create_pipelines() -> void {
             m_assets.load<siren::ShaderAsset>("oiter://assets/shaders/a_buffer/blend.sshg");
         m_assets.wait_until_loaded(m_blend_shader);
         m_blend_pipeline =
-            std::make_unique<siren::GraphicsPipeline>(m_device.create_graphics_pipeline({
+            std::make_unique<siren::GraphicsPipeline>(m_device.make_graphics_pipeline({
                 .label             = "A-Buffer Blend Pipeline",
                 .layout            = siren::FULLSCREEN_VERTEX_LAYOUT,
                 .shader            = m_assets.get_unsafe(m_blend_shader).shader.handle(),

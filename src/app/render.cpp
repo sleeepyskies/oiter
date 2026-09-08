@@ -52,8 +52,8 @@ struct RenderApp::Impl {
         auto& image                 = renderer.render(camera);
         const auto image_descriptor = image.descriptor();
 
-        const auto sampler = device->create_sampler({});
-        const auto output  = device->create_image({
+        const auto sampler = device->make_sampler({});
+        const auto output  = device->make_image({
             .label         = "Rendered Image",
             .format        = siren::ImageFormat::sRGBA8,
             .extent        = image_descriptor.extent,
@@ -65,7 +65,7 @@ struct RenderApp::Impl {
             assets.load<siren::ShaderAsset>("oiter://assets/shaders/unpremultiply.sshg");
         assets.wait_until_loaded(shader_handle);
 
-        const auto pipeline = device->create_graphics_pipeline({
+        const auto pipeline = device->make_graphics_pipeline({
             .label  = "Image Output Pipeline",
             .layout = siren::FULLSCREEN_VERTEX_LAYOUT,
             .shader = assets.get_unsafe(shader_handle).shader.handle(),

@@ -199,7 +199,7 @@ auto DepthPeeling::create_images(const siren::Extent2u extent) -> void {
 }
 
 auto DepthPeeling::create_sampler() -> void {
-    m_sampler = std::make_unique<siren::Sampler>(m_device.create_sampler({
+    m_sampler = std::make_unique<siren::Sampler>(m_device.make_sampler({
         .min_filter    = siren::ImageFilterMode::Nearest,
         .max_filter    = siren::ImageFilterMode::Nearest,
         .mipmap_filter = siren::ImageFilterMode::Nearest,
@@ -229,7 +229,7 @@ auto DepthPeeling::create_pipelines() -> void {
         const auto shader = m_assets.get_unsafe(m_gather_first_shader).shader.handle();
 
         m_gather_first_pipeline =
-            std::make_unique<siren::GraphicsPipeline>(m_device.create_graphics_pipeline({
+            std::make_unique<siren::GraphicsPipeline>(m_device.make_graphics_pipeline({
                 .label             = "Depth Peeling Gather First",
                 .layout            = siren::DEFAULT_VERTEX_LAYOUT,
                 .shader            = shader,
@@ -248,7 +248,7 @@ auto DepthPeeling::create_pipelines() -> void {
         const auto shader = m_assets.get_unsafe(m_gather_shader).shader.handle();
 
         m_gather_pipeline =
-            std::make_unique<siren::GraphicsPipeline>(m_device.create_graphics_pipeline({
+            std::make_unique<siren::GraphicsPipeline>(m_device.make_graphics_pipeline({
                 .label             = "Depth Peeling Gather",
                 .layout            = siren::DEFAULT_VERTEX_LAYOUT,
                 .shader            = shader,
@@ -266,7 +266,7 @@ auto DepthPeeling::create_pipelines() -> void {
             m_assets.load<siren::ShaderAsset>("oiter://assets/shaders/depth_peeling/blend.sshg");
         const auto shader = m_assets.get_unsafe(m_blend_shader).shader.handle();
         m_blend_pipeline =
-            std::make_unique<siren::GraphicsPipeline>(m_device.create_graphics_pipeline({
+            std::make_unique<siren::GraphicsPipeline>(m_device.make_graphics_pipeline({
                 .label      = "Depth Peeling Blend",
                 .layout     = siren::FULLSCREEN_VERTEX_LAYOUT,
                 .shader     = shader,
@@ -294,7 +294,7 @@ auto DepthPeeling::create_pipelines() -> void {
 auto DepthPeeling::create_queries() -> void {
     for (auto& query : m_queries) {
         query = std::make_unique<siren::Query>(
-            m_device.create_query({.kind = siren::QueryKind::AnySamplesPassed})
+            m_device.make_query({.kind = siren::QueryKind::AnySamplesPassed})
         );
     }
 }

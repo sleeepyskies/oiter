@@ -51,7 +51,7 @@ SceneRenderer::SceneRenderer(
     m_device(device), m_assets(assets), m_method(create_method(kind, device, assets, extent)),
     m_extent(extent) {
     // samplers
-    m_sampler = std::make_unique<siren::Sampler>(m_device.create_sampler({}));
+    m_sampler = std::make_unique<siren::Sampler>(m_device.make_sampler({}));
 
     // images
     create_images();
@@ -101,7 +101,7 @@ SceneRenderer::SceneRenderer(
         auto& shader                                  = m_assets.get_unsafe(shaderhandle);
         m_format_pipelines[std::to_underlying(group)] = FormatConverter{
             .pipeline =
-                std::make_unique<siren::GraphicsPipeline>(m_device.create_graphics_pipeline({
+                std::make_unique<siren::GraphicsPipeline>(m_device.make_graphics_pipeline({
                     .label  = label,
                     .layout = siren::FULLSCREEN_VERTEX_LAYOUT,
                     .shader = shader.shader.handle(),
@@ -192,7 +192,7 @@ auto SceneRenderer::convert_format(
 }
 
 auto SceneRenderer::create_images() -> void {
-    m_output_image = std::make_unique<siren::Image>(m_device.create_image({
+    m_output_image = std::make_unique<siren::Image>(m_device.make_image({
         .label         = "SceneRenderer Output Image",
         .format        = siren::ImageFormat::RGBA8,
         .extent        = m_extent.to_extent3(),

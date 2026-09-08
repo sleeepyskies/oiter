@@ -101,7 +101,7 @@ auto ScreenDoor::create_shaders() -> void {
     m_assets.wait_until_loaded(m_screendoor_shader);
     const auto& shader = m_assets.get_unsafe(m_screendoor_shader);
     m_screendoor_pipeline =
-        std::make_unique<siren::GraphicsPipeline>(m_device.create_graphics_pipeline({
+        std::make_unique<siren::GraphicsPipeline>(m_device.make_graphics_pipeline({
             .label  = "ScreenDoor Dither Pipeline",
             .shader = shader.shader.handle(),
         }));

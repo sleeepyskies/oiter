@@ -26,7 +26,7 @@
 namespace oiter {
 
 static auto create_swapchain(siren::Device& device, siren::Window& window) -> siren::Swapchain {
-    return device.create_swapchain(window, {.label = std::nullopt, .vsync = false});
+    return device.make_swapchain(window, {.label = std::nullopt, .vsync = false});
 }
 
 struct InteractiveApp::Impl {
@@ -90,7 +90,6 @@ struct InteractiveApp::Impl {
             draw_scene();
             draw_gui();
 
-            device->flush_delete_queue();
             interactive_state.camera_position = camera.position();
         }
     }
@@ -129,7 +128,7 @@ struct InteractiveApp::Impl {
         if (interactive_state.skybox_visible) {
             skybox.render_behind(image, camera);
         }
-        device->blit_image(image.handle(), swapchain.next_image());
+        device->blit_to_image(image.handle(), swapchain.next_image());
     }
 
     auto draw_gui() -> void {

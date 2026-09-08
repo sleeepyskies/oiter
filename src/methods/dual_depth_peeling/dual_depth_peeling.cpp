@@ -143,7 +143,7 @@ void DualDepthPeeling::render_debug_info() {
 }
 
 auto DualDepthPeeling::create_sampler() -> void {
-    m_sampler = std::make_unique<siren::Sampler>(m_device.create_sampler({
+    m_sampler = std::make_unique<siren::Sampler>(m_device.make_sampler({
         .min_filter    = siren::ImageFilterMode::Nearest,
         .max_filter    = siren::ImageFilterMode::Nearest,
         .mipmap_filter = siren::ImageFilterMode::Nearest,
@@ -253,7 +253,7 @@ auto DualDepthPeeling::create_pipelines() -> void {
         m_assets.wait_until_loaded(m_init_shader);
         const auto shader = m_assets.get(m_init_shader)->shader.handle();
         m_init_pipeline =
-            std::make_unique<siren::GraphicsPipeline>(m_device.create_graphics_pipeline({
+            std::make_unique<siren::GraphicsPipeline>(m_device.make_graphics_pipeline({
                 .label             = "Init Pipeline",
                 .layout            = siren::DEFAULT_VERTEX_LAYOUT,
                 .shader            = shader,
@@ -274,7 +274,7 @@ auto DualDepthPeeling::create_pipelines() -> void {
         m_assets.wait_until_loaded(m_peel_shader);
         const auto shader = m_assets.get(m_peel_shader)->shader.handle();
         m_peel_pipeline =
-            std::make_unique<siren::GraphicsPipeline>(m_device.create_graphics_pipeline({
+            std::make_unique<siren::GraphicsPipeline>(m_device.make_graphics_pipeline({
                 .label             = "Peel Pipeline",
                 .layout            = siren::DEFAULT_VERTEX_LAYOUT,
                 .shader            = shader,
@@ -296,7 +296,7 @@ auto DualDepthPeeling::create_pipelines() -> void {
         const auto shader = m_assets.get(m_blend_shader)->shader.handle();
 
         m_blend_pipeline =
-            std::make_unique<siren::GraphicsPipeline>(m_device.create_graphics_pipeline({
+            std::make_unique<siren::GraphicsPipeline>(m_device.make_graphics_pipeline({
                 .label      = "Blend Pipeline",
                 .layout     = siren::DEFAULT_VERTEX_LAYOUT,
                 .shader     = shader,
@@ -327,7 +327,7 @@ auto DualDepthPeeling::create_pipelines() -> void {
         m_assets.wait_until_loaded(m_final_shader);
         const auto shader = m_assets.get(m_final_shader)->shader.handle();
         m_final_pipeline =
-            std::make_unique<siren::GraphicsPipeline>(m_device.create_graphics_pipeline({
+            std::make_unique<siren::GraphicsPipeline>(m_device.make_graphics_pipeline({
                 .label             = "Final Pipeline",
                 .layout            = siren::DEFAULT_VERTEX_LAYOUT,
                 .shader            = shader,
@@ -342,7 +342,7 @@ auto DualDepthPeeling::create_pipelines() -> void {
 
 auto DualDepthPeeling::create_query() -> void {
     m_occlusion_query = std::make_unique<siren::Query>(
-        m_device.create_query({.kind = siren::QueryKind::AnySamplesPassed})
+        m_device.make_query({.kind = siren::QueryKind::AnySamplesPassed})
     );
 }
 
