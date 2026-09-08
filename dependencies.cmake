@@ -1,10 +1,12 @@
 find_package(lyra REQUIRED)
 find_package(imgui REQUIRED)
+find_package(glfw3 REQUIRED)
 
 target_link_libraries(oiter PRIVATE
         bfg::lyra
         imgui::imgui
         2iREN::2iREN
+        glfw
 )
 
 target_sources(oiter PRIVATE

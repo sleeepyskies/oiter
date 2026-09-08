@@ -3,9 +3,11 @@
 #include <imgui.h>
 
 #include "2iREN/graphics/device.hpp"
+#include "2iREN/graphics/query.hpp"
 #include "utility/bake.hpp"
 
 namespace oiter {
+
 DualDepthPeeling::DualDepthPeeling(
     siren::Device& device,
     const siren::Extent2u extent,
@@ -20,8 +22,6 @@ DualDepthPeeling::DualDepthPeeling(
 
 auto DualDepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) const
     -> const siren::Image& {
-    // todo: could we cache and reuse the command buffers across frames? ig wont help 2 much for
-    // opengl
     update_buffers(camera, scene);
 
     const auto draw_scene = [&](siren::RenderPassRecorder& pass) {
@@ -96,10 +96,6 @@ auto DualDepthPeeling::render(const siren::Camera& camera, const BakedScene& sce
         swap_targets();
 
         if (m_config.perform_query) {
-            const auto samples_passed = m_device.query(m_occlusion_query->handle());
-            if (samples_passed == 0) {
-                break;
-            } // early end, nothing was drawn
         }
     }
 
@@ -346,7 +342,7 @@ auto DualDepthPeeling::create_pipelines() -> void {
 
 auto DualDepthPeeling::create_query() -> void {
     m_occlusion_query = std::make_unique<siren::Query>(
-        m_device.create_query({.kind = siren::QueryKind::SamplesPassed})
+        m_device.create_query({.kind = siren::QueryKind::AnySamplesPassed})
     );
 }
 
@@ -358,7 +354,11 @@ auto DualDepthPeeling::write_target() const -> const siren::RenderTarget& {
     return m_pingpong_targets[1 - m_pingpong_index];
 }
 
-auto DualDepthPeeling::swap_targets() const -> void { m_pingpong_index = 1 - m_pingpong_index; }
+auto DualDepthPeeling::swap_targets() const -> void {
+    m_pingpong_index = 1 - m_pingpong_index;
+}
 
-auto DualDepthPeeling::reset_targets() const -> void { m_pingpong_index = 0; }
+auto DualDepthPeeling::reset_targets() const -> void {
+    m_pingpong_index = 0;
+}
 } // namespace oiter

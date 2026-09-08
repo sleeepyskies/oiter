@@ -4,12 +4,11 @@
 #include <iostream>
 #include <memory>
 #include <sstream>
-#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "2iREN/math/point.hpp"
+#include "2iREN/math/point3.hpp"
 
 namespace {
 
@@ -17,24 +16,20 @@ namespace {
 auto parse_point3f(const std::string& text) -> siren::Point3f {
     std::stringstream stream{text};
 
-    siren::f32 x      = 0.f;
-    siren::f32 y      = 0.f;
-    siren::f32 z      = 0.f;
-    char first_comma  = '\0';
-    char second_comma = '\0';
+    siren::f32 x = 0.f;
+    siren::f32 y = 0.f;
+    siren::f32 z = 0.f;
+    char firstc  = '\0';
+    char secondc = '\0';
 
-    if (!(stream >> x >> first_comma >> y >> second_comma >> z)
-        || first_comma
-        != ','
-        || second_comma
-        != ',') {
-        throw std::runtime_error("Invalid vec3 '" + text + "'. Expected x,y,z.");
+    if (!(stream >> x >> firstc >> y >> secondc >> z) || firstc != ',' || secondc != ',') {
+        PANIC("Invalid vec3 '" + text + "'. Expected x,y,z.");
     }
 
     stream >> std::ws;
 
     if (!stream.eof()) {
-        throw std::runtime_error("Invalid vec3 '" + text + "'. Expected x,y,z.");
+        PANIC("invalid vec3 '" + text + "'. expected x,y,z.");
     }
 
     return siren::Point3f{x, y, z};
@@ -230,14 +225,14 @@ auto Cli::parse(const int argc, const char** argv) -> std::unique_ptr<Command> {
     }
 
     if (!result) {
-        throw std::runtime_error(result.message());
+        PANIC(result.message());
     }
 
     const auto selected =
         std::ranges::find_if(commands, [](const auto& command) { return command->selected(); });
 
     if (selected == commands.end()) {
-        throw std::logic_error("Parsing succeeded without selecting a command.");
+        PANIC("parsing succeeded without selecting a command.");
     }
 
     return std::move(*selected);

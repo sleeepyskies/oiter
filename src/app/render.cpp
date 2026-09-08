@@ -8,34 +8,28 @@
 
 #include "2iREN/asset/asset_server.hpp"
 #include "2iREN/asset/shader.hpp"
-#include "2iREN/context.hpp"
+#include "2iREN/core/context.hpp"
 #include "2iREN/scene/camera.hpp"
 #include "2iREN/utility/filesystem.hpp"
+#include "2iREN/window/window.hpp"
 
-#include "2iREN/window.hpp"
 #include "scene_renderer.hpp"
 
 namespace oiter {
 
 struct RenderApp::Impl {
     Impl(const RenderAppOptions& options) :
-        context(
-            siren::Context::create({
-                .debug   = true,
-                .level   = options.log_level,
-                .backend = siren::Backend::Auto,
-            })
-        ),
-        window(context.create_window({
-            .title        = "Oiter",
-            .width        = options.dimensions.x,
-            .height       = options.dimensions.y,
-            .decorated    = false,
-            .resizable    = false,
-            .transparent  = false,
-            .initial_mode = siren::WindowMode::Normal,
+        context(siren::Context::make({.debug = true, .level = options.log_level})),
+        window(context.make_window({
+            .title       = "Oiter",
+            .width       = options.dimensions.x,
+            .height      = options.dimensions.y,
+            .decorated   = false,
+            .resizable   = false,
+            .transparent = false,
+            .mode        = siren::WindowMode::Normal,
         })),
-        device(context.create_device({.window = window})), assets(*device),
+        device(context.make_device()), assets(*device),
         renderer(*device, assets, options.scene_path, options.method, options.dimensions),
         output_path(options.output_path) {
         camera.set_position(options.camera_position);
@@ -132,6 +126,8 @@ RenderApp::RenderApp(const RenderAppOptions& options) {
 
 RenderApp::~RenderApp() = default;
 
-auto RenderApp::run() -> void { m_impl->run(); }
+auto RenderApp::run() -> void {
+    m_impl->run();
+}
 
 } // namespace oiter

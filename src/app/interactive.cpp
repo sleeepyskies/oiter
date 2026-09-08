@@ -4,15 +4,15 @@
 
 #include <stb/stb_image_write.h>
 
-#include "2iREN/context.hpp"
+#include "2iREN/core/context.hpp"
 #include "2iREN/graphics/device.hpp"
 #include "2iREN/graphics/swapchain.hpp"
-#include "2iREN/input/input.hpp"
 #include "2iREN/math/extent.hpp"
 #include "2iREN/scene/camera.hpp"
 #include "2iREN/utility/filesystem.hpp"
 #include "2iREN/utility/time.hpp"
-#include "2iREN/window.hpp"
+#include "2iREN/window/input.hpp"
+#include "2iREN/window/window.hpp"
 
 #include "gui.hpp"
 #include "scene_renderer.hpp"
@@ -26,12 +26,7 @@
 namespace oiter {
 
 static auto create_swapchain(siren::Device& device, siren::Window& window) -> siren::Swapchain {
-    return device.create_swapchain({
-        .label  = std::nullopt,
-        .vsync  = true,
-        .extent = window.extent(),
-        .window = &window,
-    });
+    return device.create_swapchain(window, {.label = std::nullopt, .vsync = false});
 }
 
 struct InteractiveApp::Impl {
@@ -40,15 +35,9 @@ struct InteractiveApp::Impl {
         InteractiveState& interactive_state,
         FrameStats& frame_stats
     ) :
-        context(
-            siren::Context::create({
-                .debug   = true,
-                .level   = options.log_level,
-                .backend = siren::Backend::Auto,
-            })
-        ),
-        window(context.create_window({.title = "Oiter"})),
-        device(context.create_device({.window = window})), assets(*device), input(window),
+        context(siren::Context::make({.debug = true, .level = options.log_level})),
+        window(context.make_window({.title = "Oiter"})), device(context.make_device()),
+        assets(*device),
         renderer(*device, assets, options.scene_path, options.method, window.extent()),
         swapchain(create_swapchain(*device, window)),
         skybox("oiter://assets/textures/skybox/skybox.cubemap", *device, assets),
@@ -58,11 +47,9 @@ struct InteractiveApp::Impl {
         camera.lookat(options.camera_lookat);
         camera.set_aspect(window.aspect());
 
-        device->render_thread().spawn([this] { gui::init(window); });
-        device->wait_idle();
+        gui::init(window);
 
         window.on_resize([this](const siren::Extent2u extent) {
-            device->wait_idle();
             camera.set_aspect(
                 static_cast<siren::f32>(extent.x) / static_cast<siren::f32>(extent.y)
             );
@@ -72,14 +59,13 @@ struct InteractiveApp::Impl {
     }
 
     ~Impl() {
-        device->render_thread().spawn([] { gui::shutdown(); });
+        gui::shutdown();
     }
 
     siren::Context context;
     siren::Window window;
     std::unique_ptr<siren::Device> device;
     siren::AssetServer assets;
-    siren::Input input;
     SceneRenderer renderer;
     siren::Swapchain swapchain;
     Skybox skybox;
@@ -105,7 +91,6 @@ struct InteractiveApp::Impl {
             draw_gui();
 
             device->flush_delete_queue();
-            input.update();
             interactive_state.camera_position = camera.position();
         }
 
@@ -116,22 +101,24 @@ struct InteractiveApp::Impl {
         window.poll_events();
 
         if (!ImGui::GetIO().WantCaptureMouse) {
-            controller.process_look(camera, input);
+            controller.process_look(camera, window.input());
         }
 
         if (!ImGui::GetIO().WantCaptureKeyboard) {
-            controller.process_movement(camera, input.keyboard(), siren::time::delta().seconds());
+            controller.process_movement(
+                camera, window.input().keyboard(), siren::time::delta().seconds()
+            );
         }
 
-        if (input.keyboard().just_pressed(siren::Key::F1)) {
+        if (window.input().keyboard().just_pressed(siren::Key::F1)) {
             interactive_state.debug_menu_visible = !interactive_state.debug_menu_visible;
         }
 
-        if (input.keyboard().just_pressed(siren::Key::F2)) {
+        if (window.input().keyboard().just_pressed(siren::Key::F2)) {
             renderer.reload_shaders();
         }
 
-        if (input.keyboard().just_pressed(siren::Key::F3)) {
+        if (window.input().keyboard().just_pressed(siren::Key::F3)) {
             interactive_state.skybox_visible = !interactive_state.skybox_visible;
         }
     }

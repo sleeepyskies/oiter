@@ -32,7 +32,7 @@ public:
     auto render(const siren::Camera& camera) -> const siren::Image&;
 
     [[nodiscard]]
-    auto method() noexcept -> OitMethod&;
+    auto method() const noexcept -> OitMethod&;
 
     auto set_method(MethodKind kind) -> void;
     auto resize(siren::Extent2u extent) -> void;

@@ -1,11 +1,15 @@
 #include "depth_peeling.hpp"
 
-#include <algorithm>
 #include <imgui.h>
+#include <ranges>
 
 #include "2iREN/asset/asset_server.hpp"
+#include "2iREN/core/base.hpp"
+
+#include "utility/imgui_extras.hpp"
 
 namespace oiter {
+
 DepthPeeling::DepthPeeling(
     siren::Device& device,
     const siren::Extent2u extent,
@@ -14,7 +18,8 @@ DepthPeeling::DepthPeeling(
     create_images(extent);
     create_sampler();
     create_pipelines();
-    create_query();
+    create_queries();
+    m_device.wait_idle();
 }
 
 auto DepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) const
@@ -52,26 +57,39 @@ auto DepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) 
     m_accumulation_color->clear(siren::Rgba::ZERO());
 
     for (const auto layer : siren::range(m_config.layers)) {
-        m_last_frame_peels++;
+        const auto query_index      = layer % m_queries.size();
+        const auto last_query_index = 1 - query_index;
+        const auto& query           = m_queries[query_index];
+        const auto& last_query      = m_queries[last_query_index];
 
         // we need to ping pong between our 2 depth buffers
         const auto write_buffer_index = layer % 2;
         const auto read_buffer_index  = 1 - write_buffer_index;
 
+        if (m_config.occlusion_cull_enabled && layer > 0) {
+            m_device.begin_conditional_render(last_query->handle());
+        }
+
         // perform the peeling pass
         m_device.render_pass(
             siren::RenderPassDescriptor{
                 .target =
-                    {.colors = {write_color},
-                     .depth_stencil =
-                         siren::DepthStencilAttachment{
-                             .image           = m_depths[write_buffer_index]->handle(),
-                             .begin_operation = siren::BeginOperation::Clear,
-                             .clear_depth     = 1,
-                             .clear_stencil   = 0,
-                         }}
+                    {
+                        .colors = {write_color},
+                        .depth_stencil =
+                            siren::DepthStencilAttachment{
+                                .image           = m_depths[write_buffer_index]->handle(),
+                                .begin_operation = siren::BeginOperation::Clear,
+                                .clear_depth     = 1,
+                                .clear_stencil   = 0,
+                            },
+                    }
             },
             [&](siren::RenderPassRecorder& pass) {
+                if (m_config.occlusion_cull_enabled) {
+                    pass.begin_query(query->handle());
+                }
+
                 // use different peel shader on the first pass
                 const auto first_pass = layer == 0;
                 const auto peel_pipeline =
@@ -82,18 +100,34 @@ auto DepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) 
                     );
                 }
                 pass.bind_graphics_pipeline(peel_pipeline);
+
                 draw_scene(pass);
+
+                if (m_config.occlusion_cull_enabled) {
+                    pass.end_query(query->handle());
+                }
             }
         );
 
-        if (m_config.inspecting == Config::DepthTexture && layer == m_config.inspected_layer - 1) {
-            m_device.wait_idle();
-            return *m_depths[write_buffer_index];
+        if (m_config.occlusion_cull_enabled && layer > 0) {
+            m_device.end_conditional_render();
         }
 
-        if (m_config.inspecting == Config::WriteTexture && layer == m_config.inspected_layer - 1) {
-            m_device.wait_idle();
-            return *m_write_color;
+        // stop early for debug inspections
+        if (m_config.inspected_layer.get() - 1u == layer) {
+            switch (m_config.inspecting) {
+                case Config::DepthTexture: {
+                    return *m_depths[write_buffer_index];
+                }
+                case Config::WriteTexture: {
+                    return *m_write_color;
+                }
+                default: break;
+            }
+        }
+
+        if (m_config.occlusion_cull_enabled) {
+            m_device.begin_conditional_render(query->handle());
         }
 
         // perform on the fly blending
@@ -106,63 +140,47 @@ auto DepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) 
                     }
             },
             [&](siren::RenderPassRecorder& pass) {
-                if (m_config.perform_query) {
-                    pass.begin_query(m_occlusion_query->handle());
-                }
                 pass.bind_graphics_pipeline(m_blend_pipeline->handle());
                 pass.bind_sampled_image(m_write_color->handle(), m_sampler->handle(), 0);
                 pass.draw_fullscreen();
-                if (m_config.perform_query) {
-                    pass.end_query(m_occlusion_query->handle());
-                }
             }
         );
 
-        if (m_config.perform_query) {
-            const auto samples_passed = m_device.query(m_occlusion_query->handle());
-            if (samples_passed == 0 && m_config.inspecting == Config::Inspecting::None) {
-                break;
-            } // early end, nothing was drawn
+        if (m_config.occlusion_cull_enabled) {
+            m_device.end_conditional_render();
         }
     }
 
     return *m_accumulation_color;
 }
 
-auto DepthPeeling::resize(const siren::Extent2u extent) -> void { create_images(extent); }
+auto DepthPeeling::resize(const siren::Extent2u extent) -> void {
+    create_images(extent);
+}
 
 auto DepthPeeling::reload_shaders() -> void {
-    m_gather_first_shader   = siren::NullHandle;
-    m_gather_shader         = siren::NullHandle;
-    m_blend_shader          = siren::NullHandle;
-    m_gather_first_pipeline = nullptr;
-    m_gather_pipeline       = nullptr;
-    m_blend_pipeline        = nullptr;
     create_pipelines();
 }
 
 auto DepthPeeling::render_debug_info() -> void {
-    ImGui::Text("Peels performed last frame %u", m_last_frame_peels);
-    m_last_frame_peels = 0;
+    ImGuiExtra::SliderBoundedU32("Layers", &m_config.layers);
+    ImGui::Checkbox("Perform Occlussion Query", &m_config.occlusion_cull_enabled);
 
-    ImGui::SliderInt("Layers", (siren::i32*)&m_config.layers, 1, 25);
-    ImGui::Checkbox("Perform Occlusion Query", &m_config.perform_query);
-
-    siren::i32* inspecting  = (siren::i32*)(&m_config.inspecting);
     const auto select_layer = [this]() {
         ImGui::SameLine();
         ImGui::SetNextItemWidth(100.0f);
-        if (ImGui::InputInt("##inspected_layer", &m_config.inspected_layer)) {
-            m_config.inspected_layer =
-                std::clamp(m_config.inspected_layer, 1, (siren::i32)m_config.layers);
-        }
+        ImGuiExtra::SliderBoundedU32("##inspected_layer", &m_config.inspected_layer);
     };
 
+    siren::i32* inspecting = (siren::i32*)(&m_config.inspecting);
+
     ImGui::RadioButton("See Final Output     ", inspecting, 0);
+
     ImGui::RadioButton("Inspect Write Texture", inspecting, 1);
     if (m_config.inspecting == Config::Inspecting::WriteTexture) {
         select_layer();
     }
+
     ImGui::RadioButton("Inspect Depth Texture", inspecting, 2);
     if (m_config.inspecting == Config::Inspecting::DepthTexture) {
         select_layer();
@@ -198,7 +216,13 @@ auto DepthPeeling::create_sampler() -> void {
 }
 
 auto DepthPeeling::create_pipelines() -> void {
-    // create our graphics pipelines
+    m_gather_first_shader   = siren::NullHandle;
+    m_gather_shader         = siren::NullHandle;
+    m_blend_shader          = siren::NullHandle;
+    m_gather_first_pipeline = nullptr;
+    m_gather_pipeline       = nullptr;
+    m_blend_pipeline        = nullptr;
+
     {
         m_gather_first_shader = m_assets.load<siren::ShaderAsset>(
             "oiter://assets/shaders/depth_peeling/gather_first.sshg"
@@ -242,7 +266,6 @@ auto DepthPeeling::create_pipelines() -> void {
         m_blend_shader =
             m_assets.load<siren::ShaderAsset>("oiter://assets/shaders/depth_peeling/blend.sshg");
         const auto shader = m_assets.get_unsafe(m_blend_shader).shader.handle();
-
         m_blend_pipeline =
             std::make_unique<siren::GraphicsPipeline>(m_device.create_graphics_pipeline({
                 .label      = "Depth Peeling Blend",
@@ -269,9 +292,11 @@ auto DepthPeeling::create_pipelines() -> void {
     }
 }
 
-auto DepthPeeling::create_query() -> void {
-    m_occlusion_query = std::make_unique<siren::Query>(
-        m_device.create_query({.kind = siren::QueryKind::SamplesPassed})
-    );
+auto DepthPeeling::create_queries() -> void {
+    for (auto& query : m_queries) {
+        query = std::make_unique<siren::Query>(
+            m_device.create_query({.kind = siren::QueryKind::AnySamplesPassed})
+        );
+    }
 }
 } // namespace oiter

@@ -201,7 +201,7 @@ auto SceneRenderer::create_images() -> void {
     }));
 }
 
-auto SceneRenderer::method() noexcept -> OitMethod& {
+auto SceneRenderer::method() const noexcept -> OitMethod& {
     return *m_method;
 }
 

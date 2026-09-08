@@ -14,8 +14,10 @@ struct MethodKind {
         ScreenDoor,
     } value;
 
-    constexpr MethodKind(const Value value) : value(value) {}
-    constexpr operator Value() const { return value; }
+    constexpr MethodKind(const Value value) : value(value) { }
+    constexpr operator Value() const {
+        return value;
+    }
 
     [[nodiscard]]
     constexpr auto to_string() const -> std::string_view {
@@ -45,6 +47,8 @@ struct MethodKind {
         throw std::invalid_argument("Invalid OIT method");
     }
 
-    [[nodiscard]] static auto default_kind() -> MethodKind { return DepthPeeling; }
+    [[nodiscard]] static auto default_kind() -> MethodKind {
+        return DepthPeeling;
+    }
 };
 } // namespace oiter

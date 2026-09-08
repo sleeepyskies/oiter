@@ -14,7 +14,6 @@ scene = trimesh.Scene()
 
 
 def random_mesh():
-    """Generate a random-ish primitive or convex blob."""
     kind = rng.choice(["box", "sphere", "ico", "cylinder", "blob"])
 
     if kind == "box":
@@ -41,7 +40,6 @@ def random_mesh():
             sections=12,
         )
 
-    # Random convex blob
     points = rng.normal(size=(20, 3))
     points *= rng.uniform(0.3, 1.0, size=3)
     return trimesh.convex.convex_hull(points)
@@ -50,12 +48,11 @@ def random_mesh():
 for i in range(NUM_OBJECTS):
     mesh = random_mesh()
 
-    # Transparent random PBR color
     rgba = [
         float(rng.uniform(0.1, 1.0)),
         float(rng.uniform(0.1, 1.0)),
         float(rng.uniform(0.1, 1.0)),
-        float(rng.uniform(0.08, 0.5)),
+        float(rng.uniform(0.08, 0.8)),
     ]
 
     material = PBRMaterial(
@@ -69,7 +66,6 @@ for i in range(NUM_OBJECTS):
 
     mesh.visual = TextureVisuals(material=material)
 
-    # Random transform
     transform = trimesh.transformations.compose_matrix(
         translate=rng.uniform(
             -SCENE_SIZE / 2,
@@ -88,8 +84,6 @@ for i in range(NUM_OBJECTS):
     )
 
 
-# Add a few large overlapping transparent objects to make OIT
-# artifacts especially obvious.
 for i in range(15):
     mesh = trimesh.creation.icosphere(subdivisions=2, radius=2.5)
 
@@ -117,10 +111,6 @@ for i in range(15):
     )
 
 
-# Binary glTF
 scene.export("oit_test.glb")
-
-# Or JSON .gltf + external buffers:
-# scene.export("oit_test.gltf")
 
 print(f"Wrote oit_test.glb with {len(scene.geometry)} transparent objects")

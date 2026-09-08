@@ -70,3 +70,4 @@ stages:
           const uint first_index = imageLoad(heads, pixel).r;
           out_color = sorted_color(first_index);
       }
+

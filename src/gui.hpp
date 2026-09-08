@@ -8,8 +8,11 @@
 #include <imgui/backends/imgui_impl_glfw.h>
 #include <imgui/backends/imgui_impl_opengl3.h>
 
+#include <GLFW/glfw3.h>
+
 #include "2iREN/utility/time.hpp"
-#include "2iREN/window.hpp"
+#include "2iREN/window/window.hpp"
+
 #include "app/interactive.hpp"
 #include "methods/method_kind.hpp"
 #include "methods/oit_method.hpp"
@@ -26,7 +29,7 @@ struct DebugPanelActions {
 inline auto init(const siren::Window& window) -> void {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGui_ImplGlfw_InitForOpenGL(window.handle(), true);
+    ImGui_ImplGlfw_InitForOpenGL(window.native_handle(), true);
     ImGui_ImplOpenGL3_Init("#version 460");
 
     ImGui::StyleColorsDark();

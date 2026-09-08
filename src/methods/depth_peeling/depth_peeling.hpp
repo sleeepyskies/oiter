@@ -1,22 +1,29 @@
 #pragma once
 
+#include "2iREN/math/bounded.hpp"
 #include "methods/oit_method.hpp"
 #include "utility/bake.hpp"
 
 #include "2iREN/asset/asset_server.hpp"
 #include "2iREN/asset/shader.hpp"
+#include "2iREN/graphics/query.hpp"
 
 namespace oiter {
+
 class DepthPeeling final : public OitMethod {
     struct Config {
+        using Layer = siren::BoundedU32<1u, 100u, siren::ClampBoundsPolicy>;
+
         enum Inspecting : siren::i32 {
             None         = 0,
             WriteTexture = 1,
             DepthTexture = 2,
-        } inspecting               = None;
-        siren::i32 inspected_layer = 1;
-        siren::u32 layers          = 8;
-        bool perform_query         = true;
+        } inspecting = None;
+
+        Layer inspected_layer = 1;
+        Layer layers          = 8;
+
+        bool occlusion_cull_enabled = true;
     } m_config;
 
 public:
@@ -42,8 +49,7 @@ public:
     auto render_debug_info() -> void override;
 
 private:
-    mutable siren::u32 m_last_frame_peels = 0;
-    std::unique_ptr<siren::Query> m_occlusion_query;
+    std::array<std::unique_ptr<siren::Query>, 2> m_queries;
 
     std::unique_ptr<siren::Image> m_accumulation_color;
     std::unique_ptr<siren::Image> m_write_color;
@@ -62,6 +68,6 @@ private:
     auto create_images(const siren::Extent2u extent) -> void;
     auto create_sampler() -> void;
     auto create_pipelines() -> void;
-    auto create_query() -> void;
+    auto create_queries() -> void;
 };
 } // namespace oiter

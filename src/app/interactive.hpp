@@ -3,7 +3,7 @@
 #include <memory>
 #include <string>
 
-#include "2iREN/math/point.hpp"
+#include "2iREN/math/point3.hpp"
 #include "2iREN/utility/log.hpp"
 #include "methods/method_kind.hpp"
 
