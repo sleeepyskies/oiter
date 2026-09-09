@@ -12,8 +12,14 @@ namespace oiter {
 
 class DualDepthPeeling final : public OitMethod {
     struct Config {
-        siren::i32 max_peels = 8;
-        bool perform_query   = false;
+        using Layer = siren::BoundedU32<1u, 100u, siren::ClampBoundsPolicy>;
+
+        Layer inspected_layer = 1;
+        Layer layers          = 8;
+
+        bool occlusion_query = true;
+
+        mutable siren::u32 peels_last_frame = 0;
     } m_config;
 
 public:
@@ -39,10 +45,9 @@ public:
     auto render_debug_info() -> void override;
 
 private:
-    mutable siren::u32 m_last_frame_peels = 0;
-    mutable siren::u32 m_pingpong_index   = 0;
+    mutable siren::u32 m_pingpong_index = 0;
 
-    std::unique_ptr<siren::Query> m_occlusion_query;
+    std::array<std::unique_ptr<siren::Query>, 2> m_queries;
 
     std::unique_ptr<siren::GraphicsPipeline> m_init_pipeline;
     std::unique_ptr<siren::GraphicsPipeline> m_peel_pipeline;
@@ -70,7 +75,7 @@ private:
     auto create_images(const siren::Extent2u extent) -> void;
     auto create_render_targets() -> void;
     auto create_pipelines() -> void;
-    auto create_query() -> void;
+    auto create_queries() -> void;
 
     auto read_target() const -> const siren::RenderTarget&;
     auto write_target() const -> const siren::RenderTarget&;

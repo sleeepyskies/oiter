@@ -5,6 +5,7 @@
 #include "2iREN/graphics/device.hpp"
 #include "2iREN/graphics/query.hpp"
 #include "utility/bake.hpp"
+#include "utility/imgui_extras.hpp"
 
 namespace oiter {
 
@@ -13,7 +14,7 @@ DualDepthPeeling::DualDepthPeeling(
     const siren::Extent2u extent,
     siren::AssetServer& assets
 ) : OitMethod(device, assets) {
-    create_query();
+    create_queries();
     create_sampler();
     create_images(extent);
     create_render_targets();
@@ -40,10 +41,14 @@ auto DualDepthPeeling::render(const siren::Camera& camera, const BakedScene& sce
         }
     };
 
-    // init pass
+    reset_targets();
+    m_config.peels_last_frame = 0;
+
     m_device.render_pass(
-        siren::RenderPassDescriptor{.target = read_target()},
-        [&](siren::RenderPassRecorder& pass) -> void {
+        siren::RenderPassDescriptor{
+            .target = read_target(),
+        },
+        [&](siren::RenderPassRecorder& pass) {
             pass.bind_graphics_pipeline(m_init_pipeline->handle());
             draw_scene(pass);
         }
@@ -51,51 +56,76 @@ auto DualDepthPeeling::render(const siren::Camera& camera, const BakedScene& sce
 
     m_blend_image->clear(siren::Rgba::ZERO());
 
-    for (const auto _ : siren::range(m_config.max_peels)) {
-        m_last_frame_peels++;
-        // peel pass
-        m_device.render_pass(
-            siren::RenderPassDescriptor{.target = write_target()},
-            [&](siren::RenderPassRecorder& pass) -> void {
-                const auto& read_target = this->read_target();
+    for (const auto layer : siren::range(m_config.layers)) {
+        const auto query_index     = layer % m_queries.size();
+        const auto previous_index  = 1 - query_index;
+        const auto& query          = m_queries[query_index];
+        const auto& previous_query = m_queries[previous_index];
 
+        const auto& input_target  = read_target();
+        const auto& output_target = write_target();
+
+        auto peel_target = output_target;
+
+        const bool condition_peel = m_config.occlusion_query && layer > 0;
+
+        if (condition_peel) {
+            m_device.blit_to_image(input_target.colors[1].image, output_target.colors[1].image);
+            m_device.clear_image(output_target.colors[0].image, siren::Rgba{-1.f, -1.f, 0.f, 0.f});
+            m_device.clear_image(output_target.colors[2].image, siren::Rgba::ZERO());
+            for (auto& attachment : peel_target.colors) {
+                attachment.begin_operation = siren::BeginOperation::Preserve;
+            }
+
+            m_device.begin_conditional_render(previous_query->handle());
+        }
+
+        m_device.render_pass(
+            siren::RenderPassDescriptor{
+                .target = std::move(peel_target),
+            },
+            [&](siren::RenderPassRecorder& pass) {
                 pass.bind_graphics_pipeline(m_peel_pipeline->handle());
 
-                pass.bind_sampled_image(
-                    read_target.colors[0].image, m_sampler->handle(), 0
-                ); // min max
-                pass.bind_sampled_image(
-                    read_target.colors[1].image, m_sampler->handle(), 1
-                ); // front
-                pass.bind_sampled_image(
-                    read_target.colors[2].image, m_sampler->handle(), 2
-                ); // back
+                pass.bind_sampled_image(input_target.colors[0].image, m_sampler->handle(), 0);
+                pass.bind_sampled_image(input_target.colors[1].image, m_sampler->handle(), 1);
+                pass.bind_sampled_image(input_target.colors[2].image, m_sampler->handle(), 2);
 
                 draw_scene(pass);
             }
         );
 
-        // blend pass
+        if (condition_peel) {
+            m_device.end_conditional_render();
+        }
+
         m_device.render_pass(
             siren::RenderPassDescriptor{.target = m_blend_target},
-            [this](siren::RenderPassRecorder& pass) -> void {
-                if (m_config.perform_query) {
-                    pass.begin_query(m_occlusion_query->handle());
+            [&](siren::RenderPassRecorder& pass) {
+                if (m_config.occlusion_query) {
+                    pass.begin_query(query->handle());
                 }
 
                 pass.bind_graphics_pipeline(m_blend_pipeline->handle());
-                pass.bind_sampled_image(write_target().colors[2].image, m_sampler->handle(), 0);
+                pass.bind_sampled_image(output_target.colors[2].image, m_sampler->handle(), 0);
                 pass.draw_fullscreen();
 
-                if (m_config.perform_query) {
-                    pass.end_query(m_occlusion_query->handle());
+                if (m_config.occlusion_query) {
+                    pass.end_query(query->handle());
                 }
             }
         );
 
         swap_targets();
+        m_config.peels_last_frame++;
 
-        if (m_config.perform_query) {
+        if (m_config.occlusion_query
+            && layer
+            > 0
+            && m_device.query_available(previous_query->handle())
+            && m_device.query_result(previous_query->handle())
+            == 0) {
+            break;
         }
     }
 
@@ -105,9 +135,7 @@ auto DualDepthPeeling::render(const siren::Camera& camera, const BakedScene& sce
         [this](siren::RenderPassRecorder& pass) {
             pass.bind_graphics_pipeline(m_final_pipeline->handle());
             pass.bind_sampled_image(read_target().colors[1].image, m_sampler->handle(), 0);
-            pass.bind_sampled_image(
-                m_blend_image->handle(), m_sampler->handle(), 1
-            ); // accumulated back
+            pass.bind_sampled_image(m_blend_image->handle(), m_sampler->handle(), 1);
             pass.draw_fullscreen();
         }
     );
@@ -135,11 +163,11 @@ auto DualDepthPeeling::reload_shaders() -> void {
 }
 
 void DualDepthPeeling::render_debug_info() {
-    ImGui::Text("Peels performed last frame %u", m_last_frame_peels);
-    ImGui::SliderInt("Max Peels", &m_config.max_peels, 1, 16);
-    ImGui::Checkbox("Occlusion Query", &m_config.perform_query);
+    ImGui::Text("Peels performed last frame %u", m_config.peels_last_frame);
+    m_config.peels_last_frame = 0;
 
-    m_last_frame_peels = 0;
+    ImGuiExtra::SliderBoundedU32("Layers", &m_config.layers);
+    ImGui::Checkbox("Perform Occlussion Query", &m_config.occlusion_query);
 }
 
 auto DualDepthPeeling::create_sampler() -> void {
@@ -340,10 +368,12 @@ auto DualDepthPeeling::create_pipelines() -> void {
     }
 }
 
-auto DualDepthPeeling::create_query() -> void {
-    m_occlusion_query = std::make_unique<siren::Query>(
-        m_device.make_query({.kind = siren::QueryKind::AnySamplesPassed})
-    );
+auto DualDepthPeeling::create_queries() -> void {
+    for (auto& query : m_queries) {
+        query = std::make_unique<siren::Query>(
+            m_device.make_query({.kind = siren::QueryKind::AnySamplesPassed})
+        );
+    }
 }
 
 auto DualDepthPeeling::read_target() const -> const siren::RenderTarget& {

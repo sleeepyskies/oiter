@@ -23,7 +23,9 @@ class DepthPeeling final : public OitMethod {
         Layer inspected_layer = 1;
         Layer layers          = 8;
 
-        bool occlusion_cull_enabled = true;
+        bool occlusion_query = true;
+
+        mutable siren::u32 peels_last_frame = 0;
     } m_config;
 
 public:

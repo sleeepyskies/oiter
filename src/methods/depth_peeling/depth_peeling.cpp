@@ -56,6 +56,8 @@ auto DepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) 
     m_accumulation_color->clear(siren::Rgba::ZERO());
 
     for (const auto layer : siren::range(m_config.layers)) {
+        m_config.peels_last_frame++;
+
         const auto query_index      = layer % m_queries.size();
         const auto last_query_index = 1 - query_index;
         const auto& query           = m_queries[query_index];
@@ -65,7 +67,7 @@ auto DepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) 
         const auto write_buffer_index = layer % 2;
         const auto read_buffer_index  = 1 - write_buffer_index;
 
-        if (m_config.occlusion_cull_enabled && layer > 0) {
+        if (m_config.occlusion_query && layer > 0) {
             m_device.begin_conditional_render(last_query->handle());
         }
 
@@ -86,7 +88,7 @@ auto DepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) 
             },
             [&](siren::RenderPassRecorder& pass) {
                 // first pass never discards fragments
-                if (m_config.occlusion_cull_enabled) {
+                if (m_config.occlusion_query) {
                     pass.begin_query(query->handle());
                 }
 
@@ -103,13 +105,13 @@ auto DepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) 
 
                 draw_scene(pass);
 
-                if (m_config.occlusion_cull_enabled) {
+                if (m_config.occlusion_query) {
                     pass.end_query(query->handle());
                 }
             }
         );
 
-        if (m_config.occlusion_cull_enabled && layer > 0) {
+        if (m_config.occlusion_query && layer > 0) {
             m_device.end_conditional_render();
         }
 
@@ -126,7 +128,7 @@ auto DepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) 
             }
         }
 
-        if (m_config.occlusion_cull_enabled) {
+        if (m_config.occlusion_query) {
             m_device.begin_conditional_render(query->handle());
         }
 
@@ -146,7 +148,7 @@ auto DepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) 
             }
         );
 
-        if (m_config.occlusion_cull_enabled) {
+        if (m_config.occlusion_query) {
             m_device.end_conditional_render();
 
             if (layer > 0 && m_device.query_available(last_query->handle())) {
@@ -171,8 +173,11 @@ auto DepthPeeling::reload_shaders() -> void {
 }
 
 auto DepthPeeling::render_debug_info() -> void {
+    ImGui::Text("Peels performed last frame %u", m_config.peels_last_frame);
+    m_config.peels_last_frame = 0;
+
     ImGuiExtra::SliderBoundedU32("Layers", &m_config.layers);
-    ImGui::Checkbox("Perform Occlussion Query", &m_config.occlusion_cull_enabled);
+    ImGui::Checkbox("Perform Occlussion Query", &m_config.occlusion_query);
 
     const auto select_layer = [this]() {
         ImGui::SameLine();
