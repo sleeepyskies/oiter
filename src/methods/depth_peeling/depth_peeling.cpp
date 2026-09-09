@@ -85,6 +85,7 @@ auto DepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) 
                     }
             },
             [&](siren::RenderPassRecorder& pass) {
+                // first pass never discards fragments
                 if (m_config.occlusion_cull_enabled) {
                     pass.begin_query(query->handle());
                 }
@@ -147,6 +148,14 @@ auto DepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) 
 
         if (m_config.occlusion_cull_enabled) {
             m_device.end_conditional_render();
+
+            if (layer > 0 && m_device.query_available(last_query->handle())) {
+                siren::log::trace("query result available.");
+                if (m_device.query_result(last_query->handle()) == 0) {
+                    siren::log::trace("query result: no samples passes, breaking.");
+                    break;
+                }
+            }
         }
     }
 
