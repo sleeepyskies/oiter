@@ -25,12 +25,29 @@ class Oiter(ConanFile):
         # Conan will only evaluate the root recipe, and since we have 2iREN
         # as a git submodule, we need to copy 2iREN's dependencies here
         self.requires("yaml-cpp/0.9.0")
-        self.requires("opengl/system")
-        self.requires("glfw/3.4", options={"with_wayland": False})
-        self.requires(
-            "glad/2.0.8",
-            options={
-                "gl_version": "4.6",
-                "gl_profile": "core",
-            },
-        )
+
+        if self.settings.os == "Macos":
+            self.requires("glfw/3.4")
+            self.requires("metal-cpp/26")
+
+        if self.settings.os == "Windows":
+            self.requires("opengl/system")
+            self.requires("glfw/3.4")
+            self.requires(
+                "glad/2.0.8",
+                options={
+                    "gl_version": "4.6",
+                    "gl_profile": "core",
+                },
+            )
+
+        if self.settings.os == "Linux":
+            self.requires("opengl/system")
+            self.requires("glfw/3.4", options={"with_wayland": False})
+            self.requires(
+                "glad/2.0.8",
+                options={
+                    "gl_version": "4.6",
+                    "gl_profile": "core",
+                },
+            )
