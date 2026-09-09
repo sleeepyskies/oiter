@@ -9,11 +9,18 @@
 
 namespace oiter {
 
+struct alignas(16) ScreenDoorUniforms {
+    siren::u32 size; // see ScreenDoor::Config::GridSize
+};
+
 class ScreenDoor final : public OitMethod {
 public:
     struct Config {
-        bool randomize_pattern = false;
-        siren::u32 grid_size   = 5;
+        enum GridSize {
+            TwoXTwo     = 0,
+            FourXFour   = 1,
+            EightXEight = 2,
+        } gridsize = TwoXTwo;
     } m_config;
 
     explicit ScreenDoor(
@@ -30,6 +37,8 @@ public:
 
     auto reload_shaders() -> void override;
 
+    auto render_debug_info() -> void override;
+
     [[nodiscard]]
     auto name() const noexcept -> std::string_view override {
         return "Screen Door";
@@ -43,12 +52,15 @@ public:
 private:
     auto create_images(siren::Extent2u extent) -> void;
     auto create_shaders() -> void;
+    auto create_buffer() -> void;
 
     std::unique_ptr<siren::GraphicsPipeline> m_screendoor_pipeline = nullptr;
     siren::StrongHandle<siren::ShaderAsset> m_screendoor_shader    = siren::NullHandle;
 
     std::unique_ptr<siren::Image> m_output = nullptr;
     std::unique_ptr<siren::Image> m_depth  = nullptr;
+
+    std::unique_ptr<siren::Buffer> m_ubo = nullptr;
 };
 
 } // namespace oiter

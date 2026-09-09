@@ -73,12 +73,18 @@ struct InteractiveApp::Impl {
     std::optional<MethodKind> pending_method;
 
     auto run() -> void {
-        siren::time::step();
+        auto last_update = siren::time::elapsed(); // used for fps update
+
         while (!window.should_close()) {
             siren::time::step();
-            if (std::fmod(siren::time::elapsed().miliseconds(), 500) < 1) {
+
+            auto since_update = siren::time::elapsed().miliseconds() - last_update.miliseconds();
+
+            if (since_update > 1000) {
+                last_update     = siren::time::elapsed();
                 frame_stats.fps = 1.f / static_cast<siren::f32>(siren::time::delta().seconds());
             }
+
             TimerMs full_frame_timer{[this](const siren::f64 ms) {
                 frame_stats.full_frame_ms = static_cast<siren::u32>(ms);
             }};
