@@ -1,5 +1,6 @@
 #include "interactive.hpp"
 
+#include <cmath>
 #include <optional>
 
 #include <stb/stb_image_write.h>
@@ -30,18 +31,14 @@ static auto create_swapchain(siren::Device& device, siren::Window& window) -> si
 }
 
 struct InteractiveApp::Impl {
-    Impl(
-        const InteractiveAppOptions& options,
-        InteractiveState& interactive_state,
-        FrameStats& frame_stats
-    ) :
+    Impl(const InteractiveAppOptions& options, InteractiveState& interactive_state) :
         context(siren::Context::make({.debug = true, .level = options.log_level})),
         window(context.make_window({.title = "Oiter"})), device(context.make_device()),
         assets(*device),
         renderer(*device, assets, options.scene_path, options.method, window.extent()),
         swapchain(create_swapchain(*device, window)),
         skybox("oiter://assets/textures/skybox/skybox.cubemap", *device, assets),
-        interactive_state(interactive_state), frame_stats(frame_stats) {
+        interactive_state(interactive_state), frame_stats({}) {
 
         camera.set_position(options.camera_position);
         camera.lookat(options.camera_lookat);
@@ -72,14 +69,14 @@ struct InteractiveApp::Impl {
     siren::Camera camera               = siren::Camera{{}};
     siren::CameraController controller = siren::CameraController{5.f, 0.5f};
     InteractiveState& interactive_state;
-    FrameStats& frame_stats;
+    FrameStats frame_stats;
     std::optional<MethodKind> pending_method;
 
     auto run() -> void {
         siren::time::step();
         while (!window.should_close()) {
             siren::time::step();
-            if (!(siren::time::current_frame() % 60)) {
+            if (std::fmod(siren::time::elapsed().miliseconds(), 500) < 1) {
                 frame_stats.fps = 1.f / static_cast<siren::f32>(siren::time::delta().seconds());
             }
             TimerMs full_frame_timer{[this](const siren::f64 ms) {
@@ -159,7 +156,7 @@ InteractiveApp::InteractiveApp(const InteractiveAppOptions& options) :
         .camera_position = options.camera_position,
     } {
     siren::FileSystem::mount("oiter", OITER_VFS);
-    m_impl = std::make_unique<Impl>(options, m_interactive_state, m_frame_stats);
+    m_impl = std::make_unique<Impl>(options, m_interactive_state);
 }
 
 InteractiveApp::~InteractiveApp() = default;
