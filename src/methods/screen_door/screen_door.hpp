@@ -12,7 +12,8 @@ namespace oiter {
 class ScreenDoor final : public OitMethod {
 public:
     struct Config {
-        siren::f32 threshold = 0.5;
+        bool randomize_pattern = false;
+        siren::u32 grid_size   = 5;
     } m_config;
 
     explicit ScreenDoor(
