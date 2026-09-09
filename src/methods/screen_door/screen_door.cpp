@@ -29,7 +29,7 @@ ScreenDoor::ScreenDoor(
 }
 
 auto ScreenDoor::render(const siren::Camera& camera, const BakedScene& scene) const
-    -> const siren::Image& {
+    -> siren::ImageHandle {
     update_buffers(camera, scene);
 
     auto draw_scene = [&](siren::RenderPassRecorder& pass) {
@@ -77,7 +77,7 @@ auto ScreenDoor::render(const siren::Camera& camera, const BakedScene& scene) co
         }
     );
 
-    return *m_output;
+    return m_output->handle();
 }
 
 auto ScreenDoor::resize(const siren::Extent2u extent) -> void {

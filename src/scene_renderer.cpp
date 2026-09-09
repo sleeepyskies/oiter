@@ -100,33 +100,32 @@ SceneRenderer::SceneRenderer(
         m_assets.wait_until_loaded(shaderhandle);
         auto& shader                                  = m_assets.get_unsafe(shaderhandle);
         m_format_pipelines[std::to_underlying(group)] = FormatConverter{
-            .pipeline =
-                std::make_unique<siren::GraphicsPipeline>(m_device.make_graphics_pipeline({
-                    .label  = label,
-                    .layout = siren::FULLSCREEN_VERTEX_LAYOUT,
-                    .shader = shader.shader.handle(),
-                })),
-            .shader = shaderhandle,
+            .pipeline = std::make_unique<siren::GraphicsPipeline>(m_device.make_graphics_pipeline({
+                .label  = label,
+                .layout = siren::FULLSCREEN_VERTEX_LAYOUT,
+                .shader = shader.shader.handle(),
+            })),
+            .shader   = shaderhandle,
         };
     }
 }
 
-auto SceneRenderer::render(const siren::Camera& camera) -> const siren::Image& {
-    auto& image = m_method->render(camera, m_scene);
+auto SceneRenderer::render(const siren::Camera& camera) -> siren::ImageHandle {
+    const auto imagehandle = m_method->render(camera, m_scene);
 
-    const auto format = image.descriptor().format;
+    const auto format = m_device.image_descriptor(imagehandle).format;
 
     switch (format) {
         case siren::ImageFormat::R8:
             return convert_format(
-                image,
+                imagehandle,
                 m_format_pipelines[std::to_underlying(ImageFormatGroup::SingleChannel)]
                     .pipeline->handle()
             );
 
         case siren::ImageFormat::RG32f:
             return convert_format(
-                image,
+                imagehandle,
                 m_format_pipelines[std::to_underlying(ImageFormatGroup::DualChannel)]
                     .pipeline->handle()
             );
@@ -135,7 +134,7 @@ auto SceneRenderer::render(const siren::Camera& camera) -> const siren::Image& {
         case siren::ImageFormat::sRGB8:
         case siren::ImageFormat::RGB8:
             return convert_format(
-                image,
+                imagehandle,
                 m_format_pipelines[std::to_underlying(ImageFormatGroup::TripleChannel)]
                     .pipeline->handle()
             );
@@ -143,14 +142,14 @@ auto SceneRenderer::render(const siren::Camera& camera) -> const siren::Image& {
         case siren::ImageFormat::Depth32f:
         case siren::ImageFormat::Depth24Stencil8:
             return convert_format(
-                image,
+                imagehandle,
                 m_format_pipelines[std::to_underlying(ImageFormatGroup::DepthChannel)]
                     .pipeline->handle()
             );
 
         case siren::ImageFormat::R32UI:
             return convert_format(
-                image,
+                imagehandle,
                 m_format_pipelines[std::to_underlying(ImageFormatGroup::UnsignedIntChannel)]
                     .pipeline->handle()
             );
@@ -162,13 +161,13 @@ auto SceneRenderer::render(const siren::Camera& camera) -> const siren::Image& {
         default: PANIC("Format {} is not supported for output!", format);
     }
 
-    return image;
+    return imagehandle;
 }
 
 auto SceneRenderer::convert_format(
-    const siren::Image& image,
-    siren::GraphicsPipelineHandle pipeline_handle
-) -> const siren::Image& {
+    const siren::ImageHandle imagehandle,
+    const siren::GraphicsPipelineHandle pipeline_handle
+) -> siren::ImageHandle {
     m_device.render_pass(
         siren::RenderPassDescriptor{
             .label = "Convert Format Pass",
@@ -183,12 +182,12 @@ auto SceneRenderer::convert_format(
         },
         [&](siren::RenderPassRecorder& pass) {
             pass.bind_graphics_pipeline(pipeline_handle);
-            pass.bind_sampled_image(image.handle(), m_sampler->handle(), 0);
+            pass.bind_sampled_image(imagehandle, m_sampler->handle(), 0);
             pass.draw_fullscreen();
         }
     );
 
-    return *m_output_image;
+    return m_output_image->handle();
 }
 
 auto SceneRenderer::create_images() -> void {

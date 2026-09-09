@@ -1,5 +1,7 @@
 #pragma once
 
+#include "2iREN/graphics/fwd.hpp"
+#include "2iREN/graphics/image.hpp"
 #include "2iREN/math/bounded.hpp"
 #include "methods/oit_method.hpp"
 #include "utility/bake.hpp"
@@ -33,7 +35,7 @@ public:
 
     [[nodiscard]]
     auto render(const siren::Camera& camera, const BakedScene& scene) const
-        -> const siren::Image& override;
+        -> siren::ImageHandle override;
 
     auto resize(const siren::Extent2u extent) -> void override;
     auto reload_shaders() -> void override;

@@ -42,7 +42,8 @@ Skybox::Skybox(const std::string_view path, siren::Device& device, siren::AssetS
     create_resources();
 }
 
-auto Skybox::render_behind(const siren::Image& image, const siren::Camera& camera) const -> void {
+auto Skybox::render_behind(const siren::ImageHandle image, const siren::Camera& camera) const
+    -> void {
     const auto bufferdata = siren::ByteBuffer{Uniforms{
         .projection_view = camera.projection_view(),
         .camera_position = camera.position(),
@@ -60,7 +61,7 @@ auto Skybox::render_behind(const siren::Image& image, const siren::Camera& camer
                     .colors =
                         {
                             {
-                                .image           = image.handle(),
+                                .image           = image,
                                 .begin_operation = siren::BeginOperation::Preserve,
                             },
                         },

@@ -8,6 +8,7 @@
 #include "2iREN/asset/asset_server.hpp"
 #include "2iREN/asset/gltf.hpp"
 #include "2iREN/asset/shader.hpp"
+#include "2iREN/graphics/fwd.hpp"
 #include "2iREN/graphics/image.hpp"
 #include "2iREN/graphics/sampler.hpp"
 #include "2iREN/math/extent.hpp"
@@ -29,7 +30,7 @@ public:
     );
 
     [[nodiscard]]
-    auto render(const siren::Camera& camera) -> const siren::Image&;
+    auto render(const siren::Camera& camera) -> siren::ImageHandle;
 
     [[nodiscard]]
     auto method() const noexcept -> OitMethod&;
@@ -39,8 +40,10 @@ public:
     auto reload_shaders() -> void;
 
 private:
-    auto convert_format(const siren::Image& image, siren::GraphicsPipelineHandle pipeline_handle)
-        -> const siren::Image&;
+    auto convert_format(
+        const siren::ImageHandle image,
+        siren::GraphicsPipelineHandle pipeline_handle
+    ) -> siren::ImageHandle;
     auto create_images() -> void;
 
 private:

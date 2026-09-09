@@ -14,7 +14,6 @@ class DualDepthPeeling final : public OitMethod {
     struct Config {
         using Layer = siren::BoundedU32<1u, 100u, siren::ClampBoundsPolicy>;
 
-        Layer inspected_layer = 1;
         Layer layers          = 8;
 
         bool occlusion_query = true;
@@ -31,7 +30,7 @@ public:
 
     [[nodiscard]]
     auto render(const siren::Camera& camera, const BakedScene& scene) const
-        -> const siren::Image& override;
+        -> siren::ImageHandle override;
     [[nodiscard]]
     auto name() const noexcept -> std::string_view override {
         return "Dual Depth Peeling";
@@ -72,7 +71,7 @@ private:
 
 private:
     auto create_sampler() -> void;
-    auto create_images(const siren::Extent2u extent) -> void;
+    auto create_images(siren::Extent2u extent) -> void;
     auto create_render_targets() -> void;
     auto create_pipelines() -> void;
     auto create_queries() -> void;

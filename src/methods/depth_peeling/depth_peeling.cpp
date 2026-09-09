@@ -6,6 +6,7 @@
 #include "2iREN/asset/asset_server.hpp"
 #include "2iREN/core/base.hpp"
 
+#include "2iREN/math/bounded.hpp"
 #include "utility/imgui_extras.hpp"
 
 namespace oiter {
@@ -22,7 +23,7 @@ DepthPeeling::DepthPeeling(
 }
 
 auto DepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) const
-    -> const siren::Image& {
+    -> siren::ImageHandle {
     update_buffers(camera, scene);
 
     auto draw_scene = [&](siren::RenderPassRecorder& pass) {
@@ -119,10 +120,10 @@ auto DepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) 
         if (m_config.inspected_layer.get() - 1u == layer) {
             switch (m_config.inspecting) {
                 case Config::DepthTexture: {
-                    return *m_depths[write_buffer_index];
+                    return m_depths[write_buffer_index]->handle();
                 }
                 case Config::WriteTexture: {
-                    return *m_write_color;
+                    return m_write_color->handle();
                 }
                 default: break;
             }
@@ -161,7 +162,7 @@ auto DepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) 
         }
     }
 
-    return *m_accumulation_color;
+    return m_accumulation_color->handle();
 }
 
 auto DepthPeeling::resize(const siren::Extent2u extent) -> void {
@@ -182,7 +183,10 @@ auto DepthPeeling::render_debug_info() -> void {
     const auto select_layer = [this]() {
         ImGui::SameLine();
         ImGui::SetNextItemWidth(100.0f);
-        ImGuiExtra::SliderBoundedU32("##inspected_layer", &m_config.inspected_layer);
+        auto val = m_config.inspected_layer.get();
+        if (ImGuiExtra::SliderUint("##inspected_layer", &val, 1, m_config.layers.get())) {
+            m_config.inspected_layer = val;
+        };
     };
 
     siren::i32* inspecting = (siren::i32*)(&m_config.inspecting);

@@ -1,6 +1,5 @@
 #include "interactive.hpp"
 
-#include <cmath>
 #include <optional>
 
 #include <stb/stb_image_write.h>
@@ -127,11 +126,11 @@ struct InteractiveApp::Impl {
         TimerMs oit_render_timer{[this](const siren::f64 ms) {
             frame_stats.oit_render_ms = static_cast<siren::u32>(ms);
         }};
-        const auto& image = renderer.render(camera);
+        const auto imagehandle = renderer.render(camera);
         if (interactive_state.skybox_visible) {
-            skybox.render_behind(image, camera);
+            skybox.render_behind(imagehandle, camera);
         }
-        device->blit_to_image(image.handle(), swapchain.next_image());
+        device->blit_to_image(imagehandle, swapchain.next_image());
     }
 
     auto draw_gui() -> void {

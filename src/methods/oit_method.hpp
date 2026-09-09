@@ -48,8 +48,9 @@ public:
     /// @param camera The camera to render the scene from.
     /// @param scene The scene to render.
     /// @return An image of the final rendered scene.
-    [[nodiscard]] virtual auto render(const siren::Camera& camera, const BakedScene& scene) const
-        -> const siren::Image& = 0;
+    [[nodiscard]]
+    virtual auto render(const siren::Camera& camera, const BakedScene& scene) const
+        -> siren::ImageHandle = 0;
 
     /// @brief Initiates a resize of the OIT method. The OIT method should reconstruct all sized
     /// resources.
@@ -60,15 +61,16 @@ public:
     virtual auto reload_shaders() -> void = 0;
 
     /// @brief Returns the name of this method.
-    [[nodiscard]] virtual auto name() const noexcept -> std::string_view = 0;
+    [[nodiscard]]
+    virtual auto name() const noexcept -> std::string_view = 0;
 
     /// @brief Can be optionally implemented to display custom debug information.
     ///
     /// Implementations of this function should render using ImGui, which will be displayed
     /// on the debug panel. This can be toggled by pressing F1.
-    virtual auto render_debug_info() -> void {}
+    virtual auto render_debug_info() -> void { }
 
-    /// @brief Retuns the kind of this method.
+    /// @brief Returns the kind of this method.
     [[nodiscard]]
     virtual auto kind() const noexcept -> MethodKind = 0;
 
@@ -93,7 +95,8 @@ protected:
     auto update_buffers(const siren::Camera& camera, const BakedScene& scene) const -> void;
 
     /// @brief Returns the alignment size of the MeshUniforms buffer.
-    [[nodiscard]] auto mesh_uniforms_alignment() const -> siren::usize {
+    [[nodiscard]]
+    auto mesh_uniforms_alignment() const -> siren::usize {
         return siren::align_up(
             sizeof(MeshUniforms), m_device.limits().uniform_buffer_offset_alignment
         );
@@ -101,7 +104,8 @@ protected:
 
     /// @brief Simple helper function to reduce code duplication for creating images. Creates a
     /// basic 2D Image.
-    [[nodiscard]] auto create_standard_image(
+    [[nodiscard]]
+    auto create_standard_image(
         const siren::Extent2u extent,
         const std::string& label,
         const siren::ImageFormat image_format

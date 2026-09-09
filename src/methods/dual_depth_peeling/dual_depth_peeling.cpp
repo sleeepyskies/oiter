@@ -22,7 +22,7 @@ DualDepthPeeling::DualDepthPeeling(
 }
 
 auto DualDepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) const
-    -> const siren::Image& {
+    -> siren::ImageHandle {
     update_buffers(camera, scene);
 
     const auto draw_scene = [&](siren::RenderPassRecorder& pass) {
@@ -42,8 +42,8 @@ auto DualDepthPeeling::render(const siren::Camera& camera, const BakedScene& sce
     };
 
     reset_targets();
-    m_config.peels_last_frame = 0;
 
+    // init pass
     m_device.render_pass(
         siren::RenderPassDescriptor{
             .target = read_target(),
@@ -57,6 +57,8 @@ auto DualDepthPeeling::render(const siren::Camera& camera, const BakedScene& sce
     m_blend_image->clear(siren::Rgba::ZERO());
 
     for (const auto layer : siren::range(m_config.layers)) {
+        m_config.peels_last_frame++;
+
         const auto query_index     = layer % m_queries.size();
         const auto previous_index  = 1 - query_index;
         const auto& query          = m_queries[query_index];
@@ -69,6 +71,8 @@ auto DualDepthPeeling::render(const siren::Camera& camera, const BakedScene& sce
 
         const bool condition_peel = m_config.occlusion_query && layer > 0;
 
+        // handle carry over, since if we skip a peel, the next peel will get
+        // empty input. kinda messy tho
         if (condition_peel) {
             m_device.blit_to_image(input_target.colors[1].image, output_target.colors[1].image);
             m_device.clear_image(output_target.colors[0].image, siren::Rgba{-1.f, -1.f, 0.f, 0.f});
@@ -80,10 +84,9 @@ auto DualDepthPeeling::render(const siren::Camera& camera, const BakedScene& sce
             m_device.begin_conditional_render(previous_query->handle());
         }
 
+        // peel pass
         m_device.render_pass(
-            siren::RenderPassDescriptor{
-                .target = std::move(peel_target),
-            },
+            siren::RenderPassDescriptor{.target = std::move(peel_target)},
             [&](siren::RenderPassRecorder& pass) {
                 pass.bind_graphics_pipeline(m_peel_pipeline->handle());
 
@@ -99,6 +102,7 @@ auto DualDepthPeeling::render(const siren::Camera& camera, const BakedScene& sce
             m_device.end_conditional_render();
         }
 
+        // blend pass
         m_device.render_pass(
             siren::RenderPassDescriptor{.target = m_blend_target},
             [&](siren::RenderPassRecorder& pass) {
@@ -117,14 +121,10 @@ auto DualDepthPeeling::render(const siren::Camera& camera, const BakedScene& sce
         );
 
         swap_targets();
-        m_config.peels_last_frame++;
 
-        if (m_config.occlusion_query
-            && layer
-            > 0
+        if (condition_peel
             && m_device.query_available(previous_query->handle())
-            && m_device.query_result(previous_query->handle())
-            == 0) {
+            && m_device.query_result(previous_query->handle())) {
             break;
         }
     }
@@ -142,7 +142,7 @@ auto DualDepthPeeling::render(const siren::Camera& camera, const BakedScene& sce
 
     reset_targets();
 
-    return *m_final_image;
+    return m_final_image->handle();
 }
 
 auto DualDepthPeeling::resize(const siren::Extent2u extent) -> void {
@@ -151,14 +151,6 @@ auto DualDepthPeeling::resize(const siren::Extent2u extent) -> void {
 }
 
 auto DualDepthPeeling::reload_shaders() -> void {
-    m_init_pipeline  = nullptr;
-    m_peel_pipeline  = nullptr;
-    m_blend_pipeline = nullptr;
-    m_final_pipeline = nullptr;
-    m_init_shader    = siren::NullHandle;
-    m_peel_shader    = siren::NullHandle;
-    m_blend_shader   = siren::NullHandle;
-    m_final_shader   = siren::NullHandle;
     create_pipelines();
 }
 
@@ -167,7 +159,7 @@ void DualDepthPeeling::render_debug_info() {
     m_config.peels_last_frame = 0;
 
     ImGuiExtra::SliderBoundedU32("Layers", &m_config.layers);
-    ImGui::Checkbox("Perform Occlussion Query", &m_config.occlusion_query);
+    ImGui::Checkbox("Perform Occlusion Query", &m_config.occlusion_query);
 }
 
 auto DualDepthPeeling::create_sampler() -> void {
@@ -274,6 +266,15 @@ auto DualDepthPeeling::create_render_targets() -> void {
 }
 
 auto DualDepthPeeling::create_pipelines() -> void {
+    m_init_pipeline  = nullptr;
+    m_peel_pipeline  = nullptr;
+    m_blend_pipeline = nullptr;
+    m_final_pipeline = nullptr;
+    m_init_shader    = siren::NullHandle;
+    m_peel_shader    = siren::NullHandle;
+    m_blend_shader   = siren::NullHandle;
+    m_final_shader   = siren::NullHandle;
+
     {
         m_init_shader = m_assets.load<siren::ShaderAsset>(
             "oiter://assets/shaders/dual_depth_peeling/init.sshg"

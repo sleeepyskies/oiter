@@ -31,7 +31,7 @@ public:
 
     [[nodiscard]]
     auto render(const siren::Camera& camera, const BakedScene& scene) const
-        -> const siren::Image& override;
+        -> siren::ImageHandle override;
 
     auto resize(const siren::Extent2u extent) -> void override;
 

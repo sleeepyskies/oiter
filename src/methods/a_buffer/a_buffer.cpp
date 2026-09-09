@@ -15,7 +15,7 @@ ABuffer::ABuffer(siren::Device& device, const siren::Extent2u extent, siren::Ass
 }
 
 auto ABuffer::render(const siren::Camera& camera, const BakedScene& scene) const
-    -> const siren::Image& {
+    -> siren::ImageHandle {
     update_buffers(camera, scene);
 
     auto draw_scene = [&](siren::RenderPassRecorder& pass) {
@@ -52,7 +52,7 @@ auto ABuffer::render(const siren::Camera& camera, const BakedScene& scene) const
     );
 
     if (m_config.inspecting == Config::ListHead) {
-        return *m_list_head;
+        return m_list_head->handle();
     }
 
     m_device.render_pass(
@@ -78,7 +78,7 @@ auto ABuffer::render(const siren::Camera& camera, const BakedScene& scene) const
         }
     );
 
-    return *m_output;
+    return m_output->handle();
 }
 
 auto ABuffer::resize(const siren::Extent2u extent) -> void {

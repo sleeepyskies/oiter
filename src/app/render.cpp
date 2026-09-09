@@ -49,8 +49,8 @@ struct RenderApp::Impl {
     std::string output_path;
 
     auto run() -> void {
-        auto& image                 = renderer.render(camera);
-        const auto image_descriptor = image.descriptor();
+        const auto imagehandle      = renderer.render(camera);
+        const auto image_descriptor = device->image_descriptor(imagehandle);
 
         const auto sampler = device->make_sampler({});
         const auto output  = device->make_image({
@@ -87,7 +87,7 @@ struct RenderApp::Impl {
             },
             [&](siren::RenderPassRecorder& pass) {
                 pass.bind_graphics_pipeline(pipeline.handle());
-                pass.bind_sampled_image(image.handle(), sampler.handle(), 0);
+                pass.bind_sampled_image(imagehandle, sampler.handle(), 0);
                 pass.draw_fullscreen();
             }
         );
