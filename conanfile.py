@@ -11,7 +11,8 @@ class Oiter(ConanFile):
         cmake_layout(self)
 
     def generate(self):
-        CMakeDeps(self).generate()
+        deps = CMakeDeps(self)
+        deps.generate()
 
         tc = CMakeToolchain(self)
         tc.generate()
@@ -24,10 +25,13 @@ class Oiter(ConanFile):
         # 2iREN dependencies
         # Conan will only evaluate the root recipe, and since we have 2iREN
         # as a git submodule, we need to copy 2iREN's dependencies here
+        self.requires("cgltf/1.15")
         self.requires("yaml-cpp/0.9.0")
+        self.requires("stb/cci.20240531")
 
         if self.settings.os == "Macos":
             self.requires("glfw/3.4")
+            self.requires("opengl/system")
             self.requires("metal-cpp/26")
 
         if self.settings.os == "Windows":

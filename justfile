@@ -2,8 +2,8 @@ set default-list
 
 _configure type:
     conan install .                                     \
-        --output-folder=build                           \
         --build=missing                                 \
+        -s compiler.cppstd=23                           \
         -s build_type={{ capitalize(type) }}            \
         -c tools.cmake.cmaketoolchain:generator=Ninja
 
@@ -26,11 +26,11 @@ build-debug: (_build "debug")
 
 # Starts the Oiter interactive mode.
 interactive *args: build
-    ./build/build/Release/oiter interactive {{ args }}
+    ./build/Release/oiter interactive {{ args }}
 
 # Runs the Oiter render mode.
 render *args: build
-    ./build/build/Release/oiter render {{ args }}
+    ./build/Release/oiter render {{ args }}
 
 # Runs the flip metric.
 flip: build
