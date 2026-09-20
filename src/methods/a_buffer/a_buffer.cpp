@@ -6,6 +6,8 @@
 #include "2iREN/container/byte_buffer.hpp"
 #include "2iREN/graphics/buffer.hpp"
 #include "2iREN/graphics/commands.hpp"
+#include "2iREN/graphics/graphics_pipeline.hpp"
+#include "2iREN/graphics/types.hpp"
 #include "2iREN/scene/camera.hpp"
 
 using namespace siren;
@@ -78,13 +80,12 @@ auto ABuffer::render(
                                 .clear_color     = Rgba::ZERO(),
                             },
                         },
-                    .depth_stencil = std::nullopt,
                 },
         },
         [this](RenderCommandEncoder& pass) {
             pass.bind_graphics_pipeline(m_blend_pipeline->handle());
-            pass.bind_storage_image(m_list_head->handle(), AccessKind::ReadWrite, 0);
-            pass.bind_shader_storage_buffer(m_ssbo->handle(), 0);
+            pass.bind_image(m_list_head->handle(), AccessKind::ReadWrite, 0);
+            pass.bind_storage_buffer(m_ssbo->handle(), 0);
             pass.draw_arrays(0, 3);
         }
     );
@@ -127,16 +128,17 @@ auto ABuffer::create_buffers(const Extent2u extent) -> void {
         .label        = "A Buffer SSBO",
         .size         = desired_size,
         .usage        = BufferFlags::from(BufferFlag::Storage),
-        .memory_usage = BufferMemoryUsage::CpuAndGpu,
+        .memory_usage = MemoryUsage::CpuAndGpu,
     }));
 }
 
 auto ABuffer::create_images(const Extent2u extent) -> void {
     m_list_head = std::make_unique<Image>(m_device.make_image({
-        .label  = "A-Buffer List Head Image",
-        .format = ImageFormat::R32UI,
-        .extent = extent.to_extent3(),
-        .flags  = ImageFlags::from(ImageFlag::Shared, ImageFlag::ShaderRead),
+        .label        = "A-Buffer List Head Image",
+        .format       = ImageFormat::R32UI,
+        .extent       = extent.to_extent3(),
+        .memory_usage = MemoryUsage::CpuAndGpu,
+        .flags        = ImageFlags::from(ImageFlag::ShaderRead),
     }));
 
     m_output = std::make_unique<Image>(m_device.make_image({
@@ -153,14 +155,12 @@ auto ABuffer::create_pipelines() -> void {
         m_gather_shader = m_assets.load<ShaderAsset>("oiter://assets/shaders/a_buffer/gather.sshg");
         m_assets.wait_until_loaded(m_gather_shader);
         m_gather_pipeline = std::make_unique<GraphicsPipeline>(m_device.make_graphics_pipeline({
-            .label             = "A-Buffer Gather Pipeline",
-            .layout            = DEFAULT_VERTEX_LAYOUT,
-            .shader            = m_assets.get_unsafe(m_gather_shader).shader.handle(),
-            .topology          = PrimitiveTopology::Triangles,
-            .alpha_mode        = AlphaMode::Opaque,
-            .back_face_culling = false,
-            .depth_test        = false,
-            .depth_write       = false,
+            .label         = "A-Buffer Gather Pipeline",
+            .shader        = m_assets.get_unsafe(m_gather_shader).shader.handle(),
+            .layout        = DEFAULT_VERTEX_LAYOUT,
+            .colors        = {},
+            .depth_stencil = std::nullopt,
+            .cull_mode     = CullMode::None,
         }));
     }
 
@@ -169,14 +169,17 @@ auto ABuffer::create_pipelines() -> void {
         m_blend_shader = m_assets.load<ShaderAsset>("oiter://assets/shaders/a_buffer/blend.sshg");
         m_assets.wait_until_loaded(m_blend_shader);
         m_blend_pipeline = std::make_unique<GraphicsPipeline>(m_device.make_graphics_pipeline({
-            .label             = "A-Buffer Blend Pipeline",
-            .layout            = FULLSCREEN_VERTEX_LAYOUT,
-            .shader            = m_assets.get_unsafe(m_blend_shader).shader.handle(),
-            .topology          = PrimitiveTopology::Triangles,
-            .alpha_mode        = AlphaMode::Opaque,
-            .back_face_culling = false,
-            .depth_test        = false,
-            .depth_write       = false,
+            .label  = "A-Buffer Blend Pipeline",
+            .shader = m_assets.get_unsafe(m_blend_shader).shader.handle(),
+            .layout = FULLSCREEN_VERTEX_LAYOUT,
+            .colors =
+                ColorAttachmentDescriptors{
+                    ColorAttachmentDescriptor{
+                        .format     = ImageFormat::RGBA8,
+                        .alpha_mode = AlphaMode::Opaque,
+                    },
+                },
+            .cull_mode = CullMode::None,
         }));
     }
 }

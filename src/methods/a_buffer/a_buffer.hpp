@@ -1,8 +1,8 @@
 #pragma once
 
 #include "2iREN/asset/shader.hpp"
-
 #include "2iREN/math/extent.hpp"
+
 #include "methods/oit_method.hpp"
 
 namespace oiter {

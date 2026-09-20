@@ -9,6 +9,7 @@
 #include "2iREN/asset/asset_server.hpp"
 #include "2iREN/asset/shader.hpp"
 #include "2iREN/core/context.hpp"
+#include "2iREN/graphics/buffer.hpp"
 #include "2iREN/graphics/commands.hpp"
 #include "2iREN/graphics/graphics_pipeline.hpp"
 #include "2iREN/scene/camera.hpp"
@@ -99,13 +100,19 @@ struct RenderApp::Impl {
             },
             [&](RenderCommandEncoder& pass) {
                 pass.bind_graphics_pipeline(pipeline.handle());
-                pass.bind_sampler(sampler.handle());
+                pass.bind_sampler(sampler.handle(), 0);
                 pass.bind_image(imagehandle, 0);
                 pass.draw_arrays(0, 3);
             }
         );
 
-        const auto pixels      = device->read_image(output.handle());
+        auto staging = device->make_buffer({.size = image_descriptor.extent.area()});
+        cmds->copy_image_to_buffer(output.handle(), staging.handle(), 0);
+
+        device->submit(std::move(cmds));
+
+        const auto pixels = device->read_buffer(staging.handle());
+
         const auto& descriptor = output.descriptor();
         std::optional<Path> physical_output;
         if (output_path.find("://") != std::string::npos) {
