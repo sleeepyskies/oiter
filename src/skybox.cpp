@@ -31,9 +31,7 @@ const auto cube_indices = siren::ByteBuffer::make<siren::i32>({
 });
 // clang-format on
 
-const siren::Layout cube_layout = siren::LayoutBuilder::create()
-                                      .add(siren::Attribute::Position, 3, siren::DataType::Float32)
-                                      .finish();
+const auto cube_layout = siren::LayoutBuilder::make().add(siren::DataType::Float32, 3).finish();
 
 } // namespace
 

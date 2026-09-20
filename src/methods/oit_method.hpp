@@ -45,12 +45,16 @@ public:
     virtual ~OitMethod() = default;
 
     /// @brief The main render function of the OIT method.
+    /// @param cmds The command buffer to rende commands into.
     /// @param camera The camera to render the scene from.
     /// @param scene The scene to render.
     /// @return An image of the final rendered scene.
     [[nodiscard]]
-    virtual auto render(const siren::Camera& camera, const BakedScene& scene) const
-        -> siren::ImageHandle = 0;
+    virtual auto render(
+        siren::CommandBuffer& cmds,
+        const siren::Camera& camera,
+        const BakedScene& scene
+    ) const -> siren::ImageHandle = 0;
 
     /// @brief Initiates a resize of the OIT method. The OIT method should reconstruct all sized
     /// resources.
@@ -81,9 +85,6 @@ protected:
     /// @brief Cached reference to the @ref AssetServer.
     siren::AssetServer& m_assets;
 
-    /// @brief Whether scene buffers need to be updated.
-    mutable bool m_scene_updated = true;
-
     /// @brief Buffer containing scene wide data.
     std::unique_ptr<siren::Buffer> m_scene_buffer;
 
@@ -101,15 +102,6 @@ protected:
             sizeof(MeshUniforms), m_device.limits().uniform_buffer_offset_alignment
         );
     }
-
-    /// @brief Simple helper function to reduce code duplication for creating images. Creates a
-    /// basic 2D Image.
-    [[nodiscard]]
-    auto create_standard_image(
-        const siren::Extent2u extent,
-        const std::string& label,
-        const siren::ImageFormat image_format
-    ) const -> std::unique_ptr<siren::Image>;
 
 private:
     /// @brief Creates uniform buffers for the scene. This involves global scene data as well as per

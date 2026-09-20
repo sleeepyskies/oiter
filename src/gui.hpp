@@ -90,7 +90,7 @@ inline auto end_frame() -> void {
             "Screen Door", &method, std::to_underlying(oiter::MethodKind::ScreenDoor)
         );
 
-        if (method != std::to_underlying(oit_method.kind().value)) {
+        if (method != (siren::i32)std::to_underlying(oit_method.kind().value)) {
             actions.oit_method = static_cast<oiter::MethodKind::Value>(method);
         }
     }
@@ -107,7 +107,6 @@ inline auto end_frame() -> void {
         ImGui::Separator();
 
         ImGui::Text("Bind Graphics Pipeline: %u", statistics.count_bind_graphics_pipeline);
-        ImGui::Text("Set Viewport: %u", statistics.count_set_viewport);
         ImGui::Text("Bind Vertex Buffer: %u", statistics.count_bind_vertex_buffer);
         ImGui::Text("Bind Index Buffer: %u", statistics.count_bind_index_buffer);
         ImGui::Text("Bind Uniform Buffer: %u", statistics.count_bind_uniform_buffer);

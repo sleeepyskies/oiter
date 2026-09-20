@@ -1,34 +1,32 @@
 #include "oit_method.hpp"
 
 #include "2iREN/asset/asset_server.hpp"
+#include "2iREN/container/byte_buffer.hpp"
+#include "2iREN/graphics/buffer.hpp"
 #include "2iREN/graphics/device.hpp"
 #include "2iREN/math/extent.hpp"
-#include "2iREN/utility/byte_buffer.hpp"
 
 namespace oiter {
-OitMethod::OitMethod(siren::Device& device, siren::AssetServer& assets) :
-    m_device(device), m_assets(assets) {
+
+using namespace siren;
+
+OitMethod::OitMethod(Device& device, AssetServer& assets) : m_device(device), m_assets(assets) {
     create_buffers();
 }
 
-auto OitMethod::update_buffers(const siren::Camera& camera, const BakedScene& scene) const -> void {
-    const auto scenebuffer = siren::ByteBuffer{SceneUniforms{
+auto OitMethod::update_buffers(const Camera& camera, const BakedScene& scene) const -> void {
+    const auto scenebuffer = ByteBuffer{SceneUniforms{
         .projection_view = camera.projection_view(),
         .camera_position = camera.position(),
     }};
     m_scene_buffer->upload(scenebuffer.view());
 
-    if (!m_scene_updated) {
-        return;
-    }
-
-    m_scene_updated = false;
     ASSERT(scene.opaque.size() + scene.transparent.size() <= MAX_MESHES);
 
     const auto alignment =
-        siren::align_up(sizeof(MeshUniforms), m_device.limits().uniform_buffer_offset_alignment);
+        align_up(sizeof(MeshUniforms), m_device.limits().uniform_buffer_offset_alignment);
 
-    siren::ByteBuffer buffer;
+    ByteBuffer buffer;
 
     const auto append_meshes = [&](const auto& surfaces) {
         for (const auto& surface : surfaces) {
@@ -47,33 +45,20 @@ auto OitMethod::update_buffers(const siren::Camera& camera, const BakedScene& sc
     m_mesh_buffer->upload(buffer.view());
 }
 
-auto OitMethod::create_standard_image(
-    const siren::Extent2u extent,
-    const std::string& label,
-    const siren::ImageFormat image_format
-) const -> std::unique_ptr<siren::Image> {
-    return std::make_unique<siren::Image>(m_device.make_image({
-        .label         = label,
-        .format        = image_format,
-        .extent        = extent.to_extent3(),
-        .dimension     = siren::ImageDimension::D2,
-        .mipmap_levels = 1,
-    }));
-}
-
 auto OitMethod::create_buffers() -> void {
-    m_scene_buffer = std::make_unique<siren::Buffer>(m_device.make_buffer({
-        .label = "scene uniforms",
-        .size  = sizeof(SceneUniforms),
-        .usage = siren::BufferUsage::Static,
+    m_scene_buffer = std::make_unique<Buffer>(m_device.make_buffer({
+        .label        = "scene uniforms",
+        .size         = sizeof(SceneUniforms),
+        .usage        = BufferFlags::from(BufferFlag::Uniform),
+        .memory_usage = BufferMemoryUsage::CpuAndGpu,
     }));
 
-    m_mesh_buffer = std::make_unique<siren::Buffer>(m_device.make_buffer({
+    m_mesh_buffer = std::make_unique<Buffer>(m_device.make_buffer({
         .label = "mesh uniforms",
-        .size =
-            siren::align_up(sizeof(MeshUniforms), m_device.limits().uniform_buffer_offset_alignment)
+        .size  = align_up(sizeof(MeshUniforms), m_device.limits().uniform_buffer_offset_alignment)
             * MAX_MESHES,
-        .usage = siren::BufferUsage::Static,
+        .usage        = BufferFlags::from(BufferFlag::Uniform),
+        .memory_usage = BufferMemoryUsage::CpuAndGpu,
     }));
 }
 } // namespace oiter

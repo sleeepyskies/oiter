@@ -35,8 +35,11 @@ public:
     ABuffer(siren::Device& device, siren::Extent2u extent, siren::AssetServer& assets);
 
     [[nodiscard]]
-    auto render(const siren::Camera& camera, const BakedScene& scene) const
-        -> siren::ImageHandle override;
+    auto render(
+        siren::CommandBuffer& cmds,
+        const siren::Camera& camera,
+        const BakedScene& scene
+    ) const -> siren::ImageHandle override;
 
     auto resize(const siren::Extent2u extent) -> void override;
     auto reload_shaders() -> void override;

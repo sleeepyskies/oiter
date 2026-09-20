@@ -4,48 +4,50 @@
 #include <optional>
 #include <stdexcept>
 
-#include <stb/stb_image_write.h>
+#include <stb_image_write.h>
 
 #include "2iREN/asset/asset_server.hpp"
 #include "2iREN/asset/shader.hpp"
 #include "2iREN/core/context.hpp"
+#include "2iREN/graphics/commands.hpp"
+#include "2iREN/graphics/graphics_pipeline.hpp"
 #include "2iREN/scene/camera.hpp"
 #include "2iREN/utility/filesystem.hpp"
 #include "2iREN/window/window.hpp"
 
 #include "scene_renderer.hpp"
 
+using namespace siren;
+
 namespace oiter {
 
 struct RenderApp::Impl {
     Impl(const RenderAppOptions& options) :
-        context(siren::Context::make({.debug = true, .level = options.log_level})),
-        window(context.make_window({
-            .title       = "Oiter",
-            .width       = options.dimensions.x,
-            .height      = options.dimensions.y,
-            .decorated   = false,
-            .resizable   = false,
-            .transparent = false,
-            .mode        = siren::WindowMode::Normal,
-        })),
+        context(Context::make({.level = options.log_level})), window(context.make_window({
+                                                                  .title     = "Oiter",
+                                                                  .width     = options.dimensions.x,
+                                                                  .height    = options.dimensions.y,
+                                                                  .decorated = false,
+                                                                  .resizable = false,
+                                                                  .transparent = false,
+                                                                  .mode        = WindowMode::Normal,
+                                                              })),
         device(context.make_device()), assets(*device),
         renderer(*device, assets, options.scene_path, options.method, options.dimensions),
         output_path(options.output_path) {
         camera.set_position(options.camera_position);
         camera.lookat(options.camera_lookat);
         camera.set_aspect(
-            static_cast<siren::f32>(options.dimensions.x)
-            / static_cast<siren::f32>(options.dimensions.y)
+            static_cast<f32>(options.dimensions.x) / static_cast<f32>(options.dimensions.y)
         );
     }
 
-    siren::Context context;
-    siren::Window window;
-    std::unique_ptr<siren::Device> device;
-    siren::AssetServer assets;
+    Context context;
+    Window window;
+    std::unique_ptr<Device> device;
+    AssetServer assets;
     SceneRenderer renderer;
-    siren::Camera camera = siren::Camera{{}};
+    Camera camera = Camera{{}};
     std::string output_path;
 
     auto run() -> void {
@@ -55,48 +57,59 @@ struct RenderApp::Impl {
         const auto sampler = device->make_sampler({});
         const auto output  = device->make_image({
             .label         = "Rendered Image",
-            .format        = siren::ImageFormat::sRGBA8,
+            .format        = ImageFormat::sRGBA8,
             .extent        = image_descriptor.extent,
-            .dimension     = siren::ImageDimension::D2,
+            .dimension     = ImageDimension::D2,
             .mipmap_levels = 1,
+            .flags         = ImageFlags::from(ImageFlag::RenderAttachment),
         });
 
         const auto shader_handle =
-            assets.load<siren::ShaderAsset>("oiter://assets/shaders/unpremultiply.sshg");
+            assets.load<ShaderAsset>("oiter://assets/shaders/unpremultiply.sshg");
         assets.wait_until_loaded(shader_handle);
 
         const auto pipeline = device->make_graphics_pipeline({
-            .label  = "Image Output Pipeline",
-            .layout = siren::FULLSCREEN_VERTEX_LAYOUT,
-            .shader = assets.get_unsafe(shader_handle).shader.handle(),
+            .label         = "Image Output Pipeline",
+            .shader        = assets.get_unsafe(shader_handle).shader.handle(),
+            .layout        = FULLSCREEN_VERTEX_LAYOUT,
+            .topology      = PrimitiveTopology::Triangles,
+            .colors        = {},
+            .depth_stencil = std::nullopt,
+            .cull_mode     = CullMode::None,
         });
 
-        device->render_pass(
+        auto cmds = device->make_command_buffer();
+
+        cmds->render_pass(
             {
                 .label = "Unpremultiply and Encode sRGBA",
                 .target =
                     {
-                        .colors        = {{
-                            .image           = output.handle(),
-                            .begin_operation = siren::BeginOperation::Clear,
-                            .clear_color     = siren::Rgba::ZERO(),
-                        }},
+                        .colors =
+                            RenderPassColorAttachments{
+                                RenderPassColorAttachment{
+                                    .image           = output.handle(),
+                                    .clear_color     = Rgba::ZERO(),
+                                    .begin_operation = BeginOperation::Clear,
+                                    .end_operation   = EndOperation::Store,
+                                },
+                            },
                         .depth_stencil = std::nullopt,
-                        .is_srgb       = true,
                     },
             },
-            [&](siren::RenderPassRecorder& pass) {
+            [&](RenderCommandEncoder& pass) {
                 pass.bind_graphics_pipeline(pipeline.handle());
-                pass.bind_sampled_image(imagehandle, sampler.handle(), 0);
-                pass.draw_fullscreen();
+                pass.bind_sampler(sampler.handle());
+                pass.bind_image(imagehandle, 0);
+                pass.draw_arrays(0, 3);
             }
         );
 
         const auto pixels      = device->read_image(output.handle());
         const auto& descriptor = output.descriptor();
-        std::optional<siren::Path> physical_output;
+        std::optional<Path> physical_output;
         if (output_path.find("://") != std::string::npos) {
-            physical_output = siren::FileSystem::to_physical(output_path);
+            physical_output = FileSystem::to_physical(output_path);
         } else {
             physical_output = std::filesystem::absolute(output_path);
         }
@@ -120,7 +133,7 @@ RenderApp::RenderApp(const RenderAppOptions& options) {
         throw std::invalid_argument("Render dimensions must be greater than zero");
     }
 
-    siren::FileSystem::mount("oiter", OITER_VFS);
+    FileSystem::mount("oiter", OITER_VFS);
     m_impl = std::make_unique<RenderApp::Impl>(options);
 }
 

@@ -34,7 +34,6 @@ static auto bake_node(
                     break;
 
                 case siren::AlphaMode::Opaque:
-                case siren::AlphaMode::Mask:
                     scene.opaque.emplace_back(std::move(baked_surface));
                     break;
             }

@@ -5,12 +5,12 @@
 
 #include "2iREN/asset/asset_server.hpp"
 
+#include "2iREN/graphics/commands.hpp"
 #include "2iREN/graphics/fwd.hpp"
 #include "2iREN/graphics/graphics_pipeline.hpp"
 #include "2iREN/graphics/image.hpp"
 #include "2iREN/graphics/layout.hpp"
-#include "2iREN/graphics/render_command.hpp"
-#include "2iREN/graphics/render_target.hpp"
+
 #include "methods/a_buffer/a_buffer.hpp"
 #include "methods/depth_peeling/depth_peeling.hpp"
 #include "methods/dual_depth_peeling/dual_depth_peeling.hpp"
@@ -19,12 +19,14 @@
 #include "methods/screen_door/screen_door.hpp"
 #include "utility/bake.hpp"
 
+using namespace siren;
+
 namespace {
 auto create_method(
     const oiter::MethodKind kind,
-    siren::Device& device,
-    siren::AssetServer& assets,
-    const siren::Extent2u extent
+    Device& device,
+    AssetServer& assets,
+    const Extent2u extent
 ) -> std::unique_ptr<oiter::OitMethod> {
     switch (kind) {
         case oiter::MethodKind::DepthPeeling:
@@ -42,22 +44,22 @@ auto create_method(
 
 namespace oiter {
 SceneRenderer::SceneRenderer(
-    siren::Device& device,
-    siren::AssetServer& assets,
+    Device& device,
+    AssetServer& assets,
     const std::string& scene_path,
     const MethodKind kind,
-    const siren::Extent2u extent
+    const Extent2u extent
 ) :
-    m_device(device), m_assets(assets), m_method(create_method(kind, device, assets, extent)),
-    m_extent(extent) {
+    m_device(device), m_assets(assets), m_extent(extent),
+    m_method(create_method(kind, device, assets, extent)) {
     // samplers
-    m_sampler = std::make_unique<siren::Sampler>(m_device.make_sampler({}));
+    m_sampler = std::make_unique<Sampler>(m_device.make_sampler({}));
 
     // images
     create_images();
 
     // scene
-    m_scene_asset = m_assets.load<siren::Gltf>(scene_path);
+    m_scene_asset = m_assets.load<Gltf>(scene_path);
     m_assets.wait_until_loaded(m_scene_asset);
     m_scene = bake_scene(m_scene_asset, m_assets);
 
@@ -96,67 +98,62 @@ SceneRenderer::SceneRenderer(
     };
 
     for (const auto& [path, label, group] : infos) {
-        auto shaderhandle = m_assets.load<siren::ShaderAsset>(path);
+        auto shaderhandle = m_assets.load<ShaderAsset>(path);
         m_assets.wait_until_loaded(shaderhandle);
         auto& shader                                  = m_assets.get_unsafe(shaderhandle);
         m_format_pipelines[std::to_underlying(group)] = FormatConverter{
-            .pipeline = std::make_unique<siren::GraphicsPipeline>(m_device.make_graphics_pipeline({
-                .label  = label,
-                .layout = siren::FULLSCREEN_VERTEX_LAYOUT,
-                .shader = shader.shader.handle(),
+            .pipeline = std::make_unique<GraphicsPipeline>(m_device.make_graphics_pipeline({
+                .label         = label,
+                .shader        = shader.shader.handle(),
+                .layout        = FULLSCREEN_VERTEX_LAYOUT,
+                .topology      = PrimitiveTopology::Triangles,
+                .colors        = {},
+                .depth_stencil = std::nullopt,
+                .cull_mode     = CullMode::None,
             })),
             .shader   = shaderhandle,
         };
     }
 }
 
-auto SceneRenderer::render(const siren::Camera& camera) -> siren::ImageHandle {
+auto SceneRenderer::render(const Camera& camera) -> ImageHandle {
     const auto imagehandle = m_method->render(camera, m_scene);
 
     const auto format = m_device.image_descriptor(imagehandle).format;
 
     switch (format) {
-        case siren::ImageFormat::R8:
+        case ImageFormat::R8:
             return convert_format(
                 imagehandle,
                 m_format_pipelines[std::to_underlying(ImageFormatGroup::SingleChannel)]
                     .pipeline->handle()
             );
 
-        case siren::ImageFormat::RG32f:
+        case ImageFormat::RG32f:
             return convert_format(
                 imagehandle,
                 m_format_pipelines[std::to_underlying(ImageFormatGroup::DualChannel)]
                     .pipeline->handle()
             );
 
-        case siren::ImageFormat::RGB16f: // TODO: <- maybe we want a shader for this one
-        case siren::ImageFormat::sRGB8:
-        case siren::ImageFormat::RGB8:
-            return convert_format(
-                imagehandle,
-                m_format_pipelines[std::to_underlying(ImageFormatGroup::TripleChannel)]
-                    .pipeline->handle()
-            );
-
-        case siren::ImageFormat::Depth32f:
-        case siren::ImageFormat::Depth24Stencil8:
+        case ImageFormat::Depth32f:
+        case ImageFormat::Depth24Stencil8:
             return convert_format(
                 imagehandle,
                 m_format_pipelines[std::to_underlying(ImageFormatGroup::DepthChannel)]
                     .pipeline->handle()
             );
 
-        case siren::ImageFormat::R32UI:
+        case ImageFormat::R32UI:
             return convert_format(
                 imagehandle,
                 m_format_pipelines[std::to_underlying(ImageFormatGroup::UnsignedIntChannel)]
                     .pipeline->handle()
             );
 
-        case siren::ImageFormat::RGBA16f:
-        case siren::ImageFormat::sRGBA8:
-        case siren::ImageFormat::RGBA8: break; // format is already fine :D
+        case ImageFormat::RGBA16f:
+        case ImageFormat::sRGBA8:
+        case ImageFormat::RGBA8: break; // format is already fine :D
 
         default: PANIC("Format {} is not supported for output!", format);
     }
@@ -165,25 +162,32 @@ auto SceneRenderer::render(const siren::Camera& camera) -> siren::ImageHandle {
 }
 
 auto SceneRenderer::convert_format(
-    const siren::ImageHandle imagehandle,
-    const siren::GraphicsPipelineHandle pipeline_handle
-) -> siren::ImageHandle {
-    m_device.render_pass(
-        siren::RenderPassDescriptor{
+    const ImageHandle imagehandle,
+    const GraphicsPipelineHandle pipeline_handle
+) -> ImageHandle {
+    auto cmds = m_device.make_command_buffer();
+    cmds->render_pass(
+        RenderPassDescriptor{
             .label = "Convert Format Pass",
             .target =
-                siren::RenderTarget{
-                    .colors = {siren::ColorAttachment{
-                        .image           = m_output_image->handle(),
-                        .begin_operation = siren::BeginOperation::Clear,
-                        .clear_color     = siren::Rgba::ZERO(),
-                    }}
+                RenderTarget{
+                    .colors =
+                        RenderPassColorAttachments{
+                            RenderPassColorAttachment{
+                                .image           = m_output_image->handle(),
+                                .clear_color     = Rgba::ZERO(),
+                                .begin_operation = BeginOperation::Clear,
+                                .end_operation   = EndOperation::Store,
+                            },
+                        },
+                    .depth_stencil = std::nullopt,
                 },
         },
-        [&](siren::RenderPassRecorder& pass) {
+        [&](RenderCommandEncoder& pass) {
             pass.bind_graphics_pipeline(pipeline_handle);
-            pass.bind_sampled_image(imagehandle, m_sampler->handle(), 0);
-            pass.draw_fullscreen();
+            pass.bind_sampler(m_sampler->handle());
+            pass.bind_image(imagehandle, 0);
+            pass.draw_arrays(0, 3);
         }
     );
 
@@ -191,12 +195,13 @@ auto SceneRenderer::convert_format(
 }
 
 auto SceneRenderer::create_images() -> void {
-    m_output_image = std::make_unique<siren::Image>(m_device.make_image({
+    m_output_image = std::make_unique<Image>(m_device.make_image({
         .label         = "SceneRenderer Output Image",
-        .format        = siren::ImageFormat::RGBA8,
+        .format        = ImageFormat::RGBA8,
         .extent        = m_extent.to_extent3(),
-        .dimension     = siren::ImageDimension::D2,
+        .dimension     = ImageDimension::D2,
         .mipmap_levels = 1,
+        .flags         = ImageFlags::from(ImageFlag::RenderAttachment),
     }));
 }
 
@@ -208,7 +213,7 @@ auto SceneRenderer::set_method(const MethodKind kind) -> void {
     m_method = create_method(kind, m_device, m_assets, m_extent);
 }
 
-auto SceneRenderer::resize(const siren::Extent2u extent) -> void {
+auto SceneRenderer::resize(const Extent2u extent) -> void {
     m_extent = extent;
     m_method->resize(extent);
     create_images();

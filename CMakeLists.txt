@@ -29,6 +29,23 @@ add_executable(oiter
 
 )
 
+target_compile_options(oiter PRIVATE
+        -Wall
+        -Wextra
+        -pedantic
+        -Werror
+        -Wconversion-null
+        -Wmissing-declarations
+        -Woverlength-strings
+        -Wpointer-arith
+        -Wunused-local-typedefs
+        -Wunused-result
+        -Wvarargs
+        -Wvla
+        -Wwrite-strings
+        -Wmissing-field-initializers
+)
+
 target_compile_features(oiter PRIVATE cxx_std_23)
 set_target_properties(oiter PROPERTIES
         CXX_STANDARD_REQUIRED ON

@@ -2,7 +2,7 @@
 
 #include <optional>
 
-#include <stb/stb_image_write.h>
+#include <stb_image_write.h>
 
 #include "2iREN/core/context.hpp"
 #include "2iREN/graphics/device.hpp"
@@ -23,15 +23,23 @@
 #define OITER_VFS "."
 #endif
 
+using namespace siren;
+
 namespace oiter {
 
-static auto create_swapchain(siren::Device& device, siren::Window& window) -> siren::Swapchain {
-    return device.make_swapchain(window, {.label = std::nullopt, .vsync = false});
+static auto create_swapchain(Device& device, Window& window) -> Swapchain {
+    return device.make_swapchain(
+        window,
+        {
+            .extent = window.framebuffer_extent(),
+            .vsync  = false,
+        }
+    );
 }
 
 struct InteractiveApp::Impl {
     Impl(const InteractiveAppOptions& options, InteractiveState& interactive_state) :
-        context(siren::Context::make({.debug = true, .level = options.log_level})),
+        context(Context::make({.level = options.log_level})),
         window(context.make_window({.title = "Oiter"})), device(context.make_device()),
         assets(*device),
         renderer(*device, assets, options.scene_path, options.method, window.extent()),
@@ -45,11 +53,9 @@ struct InteractiveApp::Impl {
 
         gui::init(window);
 
-        window.on_resize([this](const siren::Extent2u extent) {
-            camera.set_aspect(
-                static_cast<siren::f32>(extent.x) / static_cast<siren::f32>(extent.y)
-            );
-            swapchain = create_swapchain(*device, window);
+        window.on_resize([this](const Extent2u extent) {
+            camera.set_aspect(static_cast<f32>(extent.x) / static_cast<f32>(extent.y));
+            swapchain.update({.extent = extent});
             renderer.resize(extent);
         });
     }
@@ -58,34 +64,34 @@ struct InteractiveApp::Impl {
         gui::shutdown();
     }
 
-    siren::Context context;
-    siren::Window window;
-    std::unique_ptr<siren::Device> device;
-    siren::AssetServer assets;
+    Context context;
+    Window window;
+    std::unique_ptr<Device> device;
+    AssetServer assets;
     SceneRenderer renderer;
-    siren::Swapchain swapchain;
+    Swapchain swapchain;
     Skybox skybox;
-    siren::Camera camera               = siren::Camera{{}};
-    siren::CameraController controller = siren::CameraController{5.f, 0.5f};
+    Camera camera               = Camera{{}};
+    CameraController controller = CameraController{5.f, 0.5f};
     InteractiveState& interactive_state;
     FrameStats frame_stats;
     std::optional<MethodKind> pending_method;
 
     auto run() -> void {
-        auto last_update = siren::time::elapsed(); // used for fps update
+        auto last_update = time::elapsed(); // used for fps update
 
         while (!window.should_close()) {
-            siren::time::step();
+            time::step();
 
-            auto since_update = siren::time::elapsed().miliseconds() - last_update.miliseconds();
+            auto since_update = time::elapsed().miliseconds() - last_update.miliseconds();
 
             if (since_update > 1000) {
-                last_update     = siren::time::elapsed();
-                frame_stats.fps = 1.f / static_cast<siren::f32>(siren::time::delta().seconds());
+                last_update     = time::elapsed();
+                frame_stats.fps = 1.f / static_cast<f32>(time::delta().seconds());
             }
 
-            TimerMs full_frame_timer{[this](const siren::f64 ms) {
-                frame_stats.full_frame_ms = static_cast<siren::u32>(ms);
+            TimerMs full_frame_timer{[this](const f64 ms) {
+                frame_stats.full_frame_ms = static_cast<u32>(ms);
             }};
 
             handle_input();
@@ -104,27 +110,25 @@ struct InteractiveApp::Impl {
         }
 
         if (!ImGui::GetIO().WantCaptureKeyboard) {
-            controller.process_movement(
-                camera, window.input().keyboard(), siren::time::delta().seconds()
-            );
+            controller.process_movement(camera, window.input().keyboard(), time::delta().seconds());
         }
 
-        if (window.input().keyboard().just_pressed(siren::Key::F1)) {
+        if (window.input().keyboard().just_pressed(Key::F1)) {
             interactive_state.debug_menu_visible = !interactive_state.debug_menu_visible;
         }
 
-        if (window.input().keyboard().just_pressed(siren::Key::F2)) {
+        if (window.input().keyboard().just_pressed(Key::F2)) {
             renderer.reload_shaders();
         }
 
-        if (window.input().keyboard().just_pressed(siren::Key::F3)) {
+        if (window.input().keyboard().just_pressed(Key::F3)) {
             interactive_state.skybox_visible = !interactive_state.skybox_visible;
         }
     }
 
     auto draw_scene() -> void {
-        TimerMs oit_render_timer{[this](const siren::f64 ms) {
-            frame_stats.oit_render_ms = static_cast<siren::u32>(ms);
+        TimerMs oit_render_timer{[this](const f64 ms) {
+            frame_stats.oit_render_ms = static_cast<u32>(ms);
         }};
         const auto imagehandle = renderer.render(camera);
         if (interactive_state.skybox_visible) {
@@ -138,9 +142,6 @@ struct InteractiveApp::Impl {
             if (!interactive_state.debug_menu_visible) {
                 return;
             }
-
-            const auto actions =
-                gui::render_debug(device->statistics(), frame_stats, renderer.method());
 
             if (actions.oit_method) {
                 pending_method = actions.oit_method;
@@ -160,7 +161,7 @@ InteractiveApp::InteractiveApp(const InteractiveAppOptions& options) :
         .oit_method      = options.method,
         .camera_position = options.camera_position,
     } {
-    siren::FileSystem::mount("oiter", OITER_VFS);
+    FileSystem::mount("oiter", OITER_VFS);
     m_impl = std::make_unique<Impl>(options, m_interactive_state);
 }
 
