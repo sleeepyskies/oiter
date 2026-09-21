@@ -34,12 +34,12 @@ class ABuffer final : public OitMethod {
 public:
     ABuffer(siren::Device& device, siren::Extent2 extent, siren::AssetServer& assets);
 
-    [[nodiscard]]
     auto render(
         siren::CommandBuffer& cmds,
+        siren::ImageHandle output,
         const siren::Camera& camera,
         const BakedScene& scene
-    ) const -> siren::ImageHandle override;
+    ) const -> void override;
 
     auto resize(const siren::Extent2 extent) -> void override;
     auto reload_shaders() -> void override;
@@ -62,9 +62,8 @@ private:
 
     // should store per pixel, its corresponding entry in the SSBO
     std::unique_ptr<siren::Image> m_list_head = nullptr;
-    std::unique_ptr<siren::Image> m_output    = nullptr;
 
-    std::unique_ptr<siren::Buffer> m_ssbo = nullptr;
+    std::unique_ptr<siren::Buffer> m_storage_buffer = nullptr;
 
     siren::StrongHandle<siren::ShaderAsset> m_gather_shader = siren::NullHandle;
     siren::StrongHandle<siren::ShaderAsset> m_blend_shader  = siren::NullHandle;

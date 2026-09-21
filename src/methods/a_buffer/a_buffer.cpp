@@ -1,6 +1,7 @@
 #include "a_buffer.hpp"
 
 #include <imgui.h>
+#include <limits>
 
 #include "2iREN/asset/asset_server.hpp"
 #include "2iREN/container/byte_buffer.hpp"
@@ -9,6 +10,7 @@
 #include "2iREN/graphics/graphics_pipeline.hpp"
 #include "2iREN/graphics/types.hpp"
 #include "2iREN/scene/camera.hpp"
+#include "methods/oit_method.hpp"
 
 using namespace siren;
 
@@ -23,34 +25,23 @@ ABuffer::ABuffer(Device& device, const Extent2 extent, AssetServer& assets) :
 
 auto ABuffer::render(
     siren::CommandBuffer& cmds,
-    const Camera& camera,
+    siren::ImageHandle output,
+    const siren::Camera& camera,
     const BakedScene& scene
-) const -> ImageHandle {
+) const -> void {
     update_buffers(camera, scene);
 
-    auto draw_scene = [&](RenderCommandEncoder& pass) {
-        pass.bind_uniform_buffer(m_scene_buffer->handle(), 0, 0);
+    {
+        // reset the counter each frame
+        const auto ssbodata = ByteBuffer::make({0});
+        m_storage_buffer->upload(ssbodata.view());
 
-        for (u32 i = 0; i < scene.transparent.size(); i++) {
-            const auto& surface = scene.transparent[i];
-
-            pass.bind_uniform_buffer_range(
-                m_mesh_buffer->handle(),
-                1,
-                mesh_uniforms_alignment() * (scene.opaque.size() + i),
-                sizeof(MeshUniforms)
-            );
-            pass.bind_vertex_buffer(surface.vertex.buffer.handle(), 0, 0);
-            pass.bind_index_buffer(surface.index.buffer.handle(), surface.index.format);
-            pass.draw_indexed(surface.index.count, 0);
-        }
-    };
-
-    // reset the counter each frame
-    const auto ssbodata = ByteBuffer::make({0});
-    m_ssbo->upload(ssbodata.view());
-    // reset the list heads each frame using 0xFFFFFFFF
-    m_list_head->clear(std::numeric_limits<u32>::max());
+        // reset the list heads each frame using 0xFFFFFFFF
+        auto staging = m_device.make_buffer({.size = m_list_head->descriptor().extent.volume()});
+        cmds.write_buffer(m_storage_buffer->handle(), 0, ssbodata.view());
+        cmds.fill_buffer(staging.handle(), std::numeric_limits<u8>::max());
+        cmds.copy_buffer_to_image(staging.handle(), 0, m_list_head->handle());
+    }
 
     cmds.render_pass(
         // we don't actually write to any output directly, we just manipulate the list_head and the
@@ -58,14 +49,33 @@ auto ABuffer::render(
         {.target = {}},
         [&](RenderCommandEncoder& pass) {
             pass.bind_graphics_pipeline(m_gather_pipeline->handle());
-            pass.bind_storage_image(m_list_head->handle(), AccessKind::ReadWrite, 0);
-            pass.bind_shader_storage_buffer(m_ssbo->handle(), 0);
-            draw_scene(pass);
+
+            pass.bind_image(m_list_head->handle(), Slot{0});
+
+            pass.bind_storage_buffer(m_storage_buffer->handle(), Slot{0});
+            pass.bind_uniform_buffer(m_scene_buffer->handle(), Slot{1});
+
+            for (u32 i = 0; i < scene.transparent.size(); i++) {
+                const auto& surface = scene.transparent[i];
+
+                const auto rstart = mesh_uniforms_alignment() * (scene.opaque.size() + i);
+
+                pass.bind_uniform_buffer(
+                    m_mesh_buffer->handle(),
+                    Slot{2},
+                    Range<usize>::make(rstart, rstart + sizeof(MeshUniforms))
+                );
+
+                pass.bind_vertex_buffer(surface.vertex.buffer.handle(), Slot{3});
+                pass.bind_index_buffer(surface.index.buffer.handle(), surface.index.type);
+                pass.draw_indexed(surface.index.count);
+            }
         }
     );
 
     if (m_config.inspecting == Config::ListHead) {
-        return m_list_head->handle();
+        // FIXME: how should we handle this case?
+        // return m_list_head->handle();
     }
 
     cmds.render_pass(
@@ -73,24 +83,21 @@ auto ABuffer::render(
             .target =
                 RenderTarget{
                     .colors =
-                        {
-                            ColorAttachment{
-                                .image           = m_output->handle(),
-                                .begin_operation = BeginOperation::Clear,
-                                .clear_color     = Rgba::ZERO(),
+                        TargetColorAttachments{
+                            TargetColorAttachment{
+                                .image       = output,
+                                .clear_color = Rgba::ZERO(),
                             },
                         },
                 },
         },
         [this](RenderCommandEncoder& pass) {
             pass.bind_graphics_pipeline(m_blend_pipeline->handle());
-            pass.bind_image(m_list_head->handle(), AccessKind::ReadWrite, 0);
-            pass.bind_storage_buffer(m_ssbo->handle(), 0);
-            pass.draw_arrays(0, 3);
+            pass.bind_image(m_list_head->handle(), Slot{0});
+            pass.bind_storage_buffer(m_storage_buffer->handle(), Slot{0});
+            pass.draw(3);
         }
     );
-
-    return m_output->handle();
 }
 
 auto ABuffer::resize(const Extent2 extent) -> void {
@@ -124,7 +131,7 @@ auto ABuffer::create_buffers(const Extent2 extent) -> void {
 
     ASSERT(max_ssbo_size > desired_size);
 
-    m_ssbo = std::make_unique<Buffer>(m_device.make_buffer({
+    m_storage_buffer = std::make_unique<Buffer>(m_device.make_buffer({
         .label        = "A Buffer SSBO",
         .size         = desired_size,
         .usage        = BufferFlags::from(BufferFlag::Storage),
@@ -138,14 +145,7 @@ auto ABuffer::create_images(const Extent2 extent) -> void {
         .format       = ImageFormat::R32UI,
         .extent       = extent.to_extent3(),
         .memory_usage = MemoryUsage::CpuAndGpu,
-        .flags        = ImageFlags::from(ImageFlag::ShaderRead),
-    }));
-
-    m_output = std::make_unique<Image>(m_device.make_image({
-        .label  = "A-Buffer Output Image",
-        .format = ImageFormat::RGBA8,
-        .extent = extent.to_extent3(),
-        .flags  = ImageFlags::from(ImageFlag::RenderAttachment),
+        .flags        = ImageFlags::from(ImageFlag::ShaderRead, ImageFlag::ShaderWrite),
     }));
 }
 
