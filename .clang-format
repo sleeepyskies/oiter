@@ -2,22 +2,27 @@ Language: Cpp
 BasedOnStyle: LLVM
 AccessModifierOffset: -4
 AlignAfterOpenBracket: BlockIndent
-AlignConsecutiveAssignments: true
-AlignConsecutiveDeclarations: false
-AlignOperands: false
+AlignConsecutiveAssignments: AcrossComments
+AlignConsecutiveDeclarations: None
+AlignOperands: DontAlign
 AlignTrailingComments: true
+AllowAllArgumentsOnNextLine: false
 AllowShortCaseLabelsOnASingleLine: true
 AllowShortFunctionsOnASingleLine: Empty
 AlwaysBreakTemplateDeclarations: Yes
 BreakAfterReturnType: None
+BreakAfterOpenBracketFunction: true
+BreakBeforeCloseBracketFunction: true
 PenaltyReturnTypeOnItsOwnLine: 100000
-BinPackArguments: false
 AllowAllParametersOfDeclarationOnNextLine: false
-BinPackParameters: false
+PackParameters:
+  BinPack: OnePerLine
+PackArguments:
+  BinPack: OnePerLine
 BraceWrapping:
   AfterCaseLabel: false
   AfterClass: false
-  AfterControlStatement: false
+  AfterControlStatement: Never
   AfterEnum: false
   AfterFunction: false
   AfterNamespace: false
@@ -36,29 +41,28 @@ BreakBinaryOperations: OnePerLine
 BreakBeforeBinaryOperators: NonAssignment
 BreakConstructorInitializers: AfterColon
 BreakConstructorInitializersBeforeComma: false
-ColumnLimit: 100 
+ColumnLimit: 100
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 ContinuationIndentWidth: 4
 Cpp11BracedListStyle: true
 IndentWrappedFunctionNames: false
 IncludeCategories:
-  - Regex: '^<.*'
+  - Regex: "^<.*"
     Priority: 1
   - Regex: '^".*'
     Priority: 2
-  - Regex: '.*'
+  - Regex: ".*"
     Priority: 3
-IncludeIsMainRegex: '([-_](test|unittest))?$'
+IncludeIsMainRegex: "([-_](test|unittest))?$"
 IndentCaseLabels: true
 IndentWidth: 4
 InsertNewlineAtEOF: true
-MacroBlockBegin: ''
-MacroBlockEnd: ''
+MacroBlockBegin: ""
+MacroBlockEnd: ""
 PointerAlignment: Left
-SpaceInEmptyParentheses: false
-SpacesInAngles: false
+SpacesInAngles: Never
 SpaceInEmptyBraces: Always
 SpacesInConditionalStatement: false
 SpacesInCStyleCastParentheses: false
-SpacesInParentheses: false
 TabWidth: 4
+PenaltyBreakAssignment: 1000

@@ -14,7 +14,7 @@ class DualDepthPeeling final : public OitMethod {
     struct Config {
         using Layer = siren::BoundedU32<1u, 100u, siren::ClampBoundsPolicy>;
 
-        Layer layers          = 8;
+        Layer layers = 8;
 
         bool occlusion_query = true;
 
@@ -24,7 +24,7 @@ class DualDepthPeeling final : public OitMethod {
 public:
     explicit DualDepthPeeling(
         siren::Device& device,
-        const siren::Extent2u extent,
+        const siren::Extent2 extent,
         siren::AssetServer& assets
     );
 
@@ -39,7 +39,7 @@ public:
     auto kind() const noexcept -> MethodKind override {
         return MethodKind::DualDepthPeeling;
     }
-    auto resize(const siren::Extent2u extent) -> void override;
+    auto resize(const siren::Extent2 extent) -> void override;
     auto reload_shaders() -> void override;
     auto render_debug_info() -> void override;
 
@@ -71,7 +71,7 @@ private:
 
 private:
     auto create_sampler() -> void;
-    auto create_images(siren::Extent2u extent) -> void;
+    auto create_images(siren::Extent2 extent) -> void;
     auto create_render_targets() -> void;
     auto create_pipelines() -> void;
     auto create_queries() -> void;

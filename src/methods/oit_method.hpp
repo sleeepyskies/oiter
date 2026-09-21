@@ -1,7 +1,6 @@
 #pragma once
 
 #include "2iREN/graphics/device.hpp"
-#include "2iREN/graphics/image.hpp"
 #include "2iREN/math/extent.hpp"
 #include "2iREN/scene/camera.hpp"
 
@@ -46,20 +45,21 @@ public:
 
     /// @brief The main render function of the OIT method.
     /// @param cmds The command buffer to rende commands into.
+    /// @param output The target output image.
     /// @param camera The camera to render the scene from.
     /// @param scene The scene to render.
     /// @return An image of the final rendered scene.
-    [[nodiscard]]
     virtual auto render(
         siren::CommandBuffer& cmds,
+        siren::ImageHandle output,
         const siren::Camera& camera,
         const BakedScene& scene
-    ) const -> siren::ImageHandle = 0;
+    ) const -> void = 0;
 
     /// @brief Initiates a resize of the OIT method. The OIT method should reconstruct all sized
     /// resources.
     /// @param extent The new size.
-    virtual auto resize(const siren::Extent2u extent) -> void = 0;
+    virtual auto resize(const siren::Extent2 extent) -> void = 0;
 
     /// @brief Reloads all shaders.
     virtual auto reload_shaders() -> void = 0;
@@ -99,7 +99,8 @@ protected:
     [[nodiscard]]
     auto mesh_uniforms_alignment() const -> siren::usize {
         return siren::align_up(
-            sizeof(MeshUniforms), m_device.limits().uniform_buffer_offset_alignment
+            sizeof(MeshUniforms),
+            m_device.limits().uniform_buffer_offset_alignment
         );
     }
 

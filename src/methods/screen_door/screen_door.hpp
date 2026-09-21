@@ -25,7 +25,7 @@ public:
 
     explicit ScreenDoor(
         siren::Device& device,
-        const siren::Extent2u extent,
+        const siren::Extent2 extent,
         siren::AssetServer& assets
     );
 
@@ -33,7 +33,7 @@ public:
     auto render(const siren::Camera& camera, const BakedScene& scene) const
         -> siren::ImageHandle override;
 
-    auto resize(const siren::Extent2u extent) -> void override;
+    auto resize(const siren::Extent2 extent) -> void override;
 
     auto reload_shaders() -> void override;
 
@@ -50,7 +50,7 @@ public:
     }
 
 private:
-    auto create_images(siren::Extent2u extent) -> void;
+    auto create_images(siren::Extent2 extent) -> void;
     auto create_shaders() -> void;
     auto create_buffer() -> void;
 

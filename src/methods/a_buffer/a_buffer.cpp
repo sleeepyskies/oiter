@@ -14,7 +14,7 @@ using namespace siren;
 
 namespace oiter {
 
-ABuffer::ABuffer(Device& device, const Extent2u extent, AssetServer& assets) :
+ABuffer::ABuffer(Device& device, const Extent2 extent, AssetServer& assets) :
     OitMethod(device, assets) {
     create_buffers(extent);
     create_images(extent);
@@ -93,7 +93,7 @@ auto ABuffer::render(
     return m_output->handle();
 }
 
-auto ABuffer::resize(const Extent2u extent) -> void {
+auto ABuffer::resize(const Extent2 extent) -> void {
     create_buffers(extent);
     create_images(extent);
 }
@@ -117,10 +117,10 @@ auto ABuffer::render_debug_info() -> void {
     }
 }
 
-auto ABuffer::create_buffers(const Extent2u extent) -> void {
+auto ABuffer::create_buffers(const Extent2 extent) -> void {
     const auto max_ssbo_size = m_device.limits().max_shader_storage_block_size;
-    const auto desired_size =
-        sizeof(u32) + (k_list_length * extent.x * extent.y * sizeof(ABufferNode));
+    const auto desired_size  = sizeof(u32)
+        + (k_list_length * extent.x * extent.y * sizeof(ABufferNode));
 
     ASSERT(max_ssbo_size > desired_size);
 
@@ -132,7 +132,7 @@ auto ABuffer::create_buffers(const Extent2u extent) -> void {
     }));
 }
 
-auto ABuffer::create_images(const Extent2u extent) -> void {
+auto ABuffer::create_images(const Extent2 extent) -> void {
     m_list_head = std::make_unique<Image>(m_device.make_image({
         .label        = "A-Buffer List Head Image",
         .format       = ImageFormat::R32UI,

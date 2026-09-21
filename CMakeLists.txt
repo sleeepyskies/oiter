@@ -10,49 +10,51 @@ set(SIREN_SINGLE_THREADED ON CACHE BOOL "Compile 2iREN without multithreading")
 
 add_subdirectory(2iREN)
 
-add_executable(oiter
-        src/main.cpp
-        src/cli.cpp
-        src/skybox.cpp
-        src/scene_renderer.cpp
+add_executable(oiter)
 
-        src/app/interactive.cpp
-        src/app/render.cpp
+include(cmake/platform.cmake)
+include(cmake/dependencies.cmake)
 
-        src/utility/bake.cpp
+target_sources(oiter PRIVATE
+    src/main.cpp
+    src/cli.cpp
+    src/skybox.cpp
+    src/scene_renderer.cpp
 
-        src/methods/oit_method.cpp
-        src/methods/depth_peeling/depth_peeling.cpp
-        src/methods/dual_depth_peeling/dual_depth_peeling.cpp
-        src/methods/a_buffer/a_buffer.cpp
-        src/methods/screen_door/screen_door.cpp
+    src/app/interactive.cpp
+    src/app/render.cpp
 
+    src/utility/bake.cpp
+
+    src/methods/oit_method.cpp
+    src/methods/depth_peeling/depth_peeling.cpp
+    src/methods/dual_depth_peeling/dual_depth_peeling.cpp
+    src/methods/a_buffer/a_buffer.cpp
+    src/methods/screen_door/screen_door.cpp
 )
 
 target_compile_options(oiter PRIVATE
-        -Wall
-        -Wextra
-        -pedantic
-        -Werror
-        -Wconversion-null
-        -Wmissing-declarations
-        -Woverlength-strings
-        -Wpointer-arith
-        -Wunused-local-typedefs
-        -Wunused-result
-        -Wvarargs
-        -Wvla
-        -Wwrite-strings
-        -Wmissing-field-initializers
+    -Wall
+    -Wextra
+    -pedantic
+    -Werror
+    -Wconversion-null
+    -Wmissing-declarations
+    -Woverlength-strings
+    -Wpointer-arith
+    -Wunused-local-typedefs
+    -Wunused-result
+    -Wvarargs
+    -Wvla
+    -Wwrite-strings
+    -Wmissing-field-initializers
 )
 
 target_compile_features(oiter PRIVATE cxx_std_23)
 set_target_properties(oiter PROPERTIES
-        CXX_STANDARD_REQUIRED ON
-        CXX_EXTENSIONS OFF
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF
 )
-
-include(dependencies.cmake)
 
 target_include_directories(
     oiter

@@ -17,7 +17,7 @@ struct RenderAppOptions {
     MethodKind method              = MethodKind::default_kind();
     siren::Point3f camera_position = siren::Point3f{0.f, 0.f, 0.f};
     siren::Point3f camera_lookat   = siren::Point3f{1.f, 0.f, 0.f};
-    siren::Extent2u dimensions     = siren::Extent2u{1280, 720};
+    siren::Extent2 dimensions      = siren::Extent2{1280, 720};
     std::string output_path        = "./out.png";
 };
 

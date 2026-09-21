@@ -26,7 +26,7 @@ auto create_method(
     const oiter::MethodKind kind,
     Device& device,
     AssetServer& assets,
-    const Extent2u extent
+    const Extent2 extent
 ) -> std::unique_ptr<oiter::OitMethod> {
     switch (kind) {
         case oiter::MethodKind::DepthPeeling:
@@ -48,7 +48,7 @@ SceneRenderer::SceneRenderer(
     AssetServer& assets,
     const std::string& scene_path,
     const MethodKind kind,
-    const Extent2u extent
+    const Extent2 extent
 ) :
     m_device(device), m_assets(assets), m_extent(extent),
     m_method(create_method(kind, device, assets, extent)) {
@@ -116,37 +116,42 @@ SceneRenderer::SceneRenderer(
     }
 }
 
-auto SceneRenderer::render(const Camera& camera) -> ImageHandle {
-    const auto imagehandle = m_method->render(camera, m_scene);
+auto SceneRenderer::render(
+    siren::CommandBuffer& cmds,
+    const siren::ImageHandle output,
+    const siren::Camera& camera
+) -> void {
+    m_method->render(cmds, output, camera, m_scene);
 
-    const auto format = m_device.image_descriptor(imagehandle).format;
+    const auto format = m_device.image_descriptor(output).format;
 
+    // TODO: use texture views here instead?
     switch (format) {
         case ImageFormat::R8:
-            return convert_format(
-                imagehandle,
+            convert_format(
+                output,
                 m_format_pipelines[std::to_underlying(ImageFormatGroup::SingleChannel)]
                     .pipeline->handle()
             );
 
         case ImageFormat::RG32f:
-            return convert_format(
-                imagehandle,
+            convert_format(
+                output,
                 m_format_pipelines[std::to_underlying(ImageFormatGroup::DualChannel)]
                     .pipeline->handle()
             );
 
         case ImageFormat::Depth32f:
         case ImageFormat::Depth24Stencil8:
-            return convert_format(
-                imagehandle,
+            convert_format(
+                output,
                 m_format_pipelines[std::to_underlying(ImageFormatGroup::DepthChannel)]
                     .pipeline->handle()
             );
 
         case ImageFormat::R32UI:
-            return convert_format(
-                imagehandle,
+            convert_format(
+                output,
                 m_format_pipelines[std::to_underlying(ImageFormatGroup::UnsignedIntChannel)]
                     .pipeline->handle()
             );
@@ -157,8 +162,6 @@ auto SceneRenderer::render(const Camera& camera) -> ImageHandle {
 
         default: PANIC("Format {} is not supported for output!", format);
     }
-
-    return imagehandle;
 }
 
 auto SceneRenderer::convert_format(
@@ -172,8 +175,8 @@ auto SceneRenderer::convert_format(
             .target =
                 RenderTarget{
                     .colors =
-                        RenderPassColorAttachments{
-                            RenderPassColorAttachment{
+                        TargetColorAttachments{
+                            TargetColorAttachment{
                                 .image           = m_output_image->handle(),
                                 .clear_color     = Rgba::ZERO(),
                                 .begin_operation = BeginOperation::Clear,
@@ -185,7 +188,7 @@ auto SceneRenderer::convert_format(
         },
         [&](RenderCommandEncoder& pass) {
             pass.bind_graphics_pipeline(pipeline_handle);
-            pass.bind_sampler(m_sampler->handle());
+            pass.bind_sampler(m_sampler->handle(), 0);
             pass.bind_image(imagehandle, 0);
             pass.draw_arrays(0, 3);
         }
@@ -213,7 +216,7 @@ auto SceneRenderer::set_method(const MethodKind kind) -> void {
     m_method = create_method(kind, m_device, m_assets, m_extent);
 }
 
-auto SceneRenderer::resize(const Extent2u extent) -> void {
+auto SceneRenderer::resize(const Extent2 extent) -> void {
     m_extent = extent;
     m_method->resize(extent);
     create_images();

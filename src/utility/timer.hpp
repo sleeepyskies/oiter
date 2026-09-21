@@ -40,4 +40,7 @@ private:
 };
 
 using TimerMs = Timer<std::milli>;
+
+#define TIMER(storage)                                                                             \
+    if (const auto t = Timer{[this](const f64 ms) { storage = static_cast<u32>(ms); }}; true)
 } // namespace oiter

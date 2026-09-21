@@ -5,6 +5,7 @@
 
 #include "2iREN/asset/mesh.hpp"
 #include "2iREN/asset/shader.hpp"
+#include "2iREN/graphics/commands.hpp"
 #include "2iREN/math/mat4x4.hpp"
 #include "2iREN/scene/camera.hpp"
 
@@ -20,9 +21,14 @@ public:
     Skybox(const std::string_view path, siren::Device& device, siren::AssetServer& server);
 
     /// @brief Renders the skybox behind the alpha contents of an image.
+    /// @param cmds The command buffer to record into.
     /// @param image Image to render the skybox into.
     /// @param camera Camera used to view the skybox.
-    auto render_behind(const siren::ImageHandle image, const siren::Camera& camera) const -> void;
+    auto render_behind(
+        siren::CommandBuffer& cmds,
+        siren::ImageHandle image,
+        const siren::Camera& camera
+    ) const -> void;
 
 private:
     /// @brief Uniform data used to render the skybox.

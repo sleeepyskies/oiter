@@ -20,7 +20,7 @@ namespace oiter {
 
 ScreenDoor::ScreenDoor(
     siren::Device& device,
-    const siren::Extent2u extent,
+    const siren::Extent2 extent,
     siren::AssetServer& assets
 ) : OitMethod(device, assets) {
     create_images(extent);
@@ -80,7 +80,7 @@ auto ScreenDoor::render(const siren::Camera& camera, const BakedScene& scene) co
     return m_output->handle();
 }
 
-auto ScreenDoor::resize(const siren::Extent2u extent) -> void {
+auto ScreenDoor::resize(const siren::Extent2 extent) -> void {
     create_images(extent);
 }
 
@@ -112,23 +112,26 @@ auto ScreenDoor::render_debug_info() -> void {
     ImGui::SameLine();
 }
 
-auto ScreenDoor::create_images(const siren::Extent2u extent) -> void {
+auto ScreenDoor::create_images(const siren::Extent2 extent) -> void {
     m_output = nullptr;
     m_depth  = nullptr;
 
     m_output = create_standard_image(extent, "ScreenDoor Output Image", siren::ImageFormat::RGBA8);
     m_depth  = create_standard_image(
-        extent, "ScreenDoor Depth Buffer", siren::ImageFormat::Depth24Stencil8
+        extent,
+        "ScreenDoor Depth Buffer",
+        siren::ImageFormat::Depth24Stencil8
     );
 }
 
 auto ScreenDoor::create_shaders() -> void {
-    m_screendoor_shader =
-        m_assets.load<siren::ShaderAsset>("oiter://assets/shaders/screendoor/dither.sshg");
+    m_screendoor_shader = m_assets.load<siren::ShaderAsset>(
+        "oiter://assets/shaders/screendoor/dither.sshg"
+    );
     m_assets.wait_until_loaded(m_screendoor_shader);
-    const auto& shader = m_assets.get_unsafe(m_screendoor_shader);
-    m_screendoor_pipeline =
-        std::make_unique<siren::GraphicsPipeline>(m_device.make_graphics_pipeline({
+    const auto& shader    = m_assets.get_unsafe(m_screendoor_shader);
+    m_screendoor_pipeline = std::make_unique<siren::GraphicsPipeline>(
+        m_device.make_graphics_pipeline({
             .label             = "ScreenDoor Dither Pipeline",
             .shader            = shader.shader.handle(),
             .alpha_mode        = siren::AlphaMode::Opaque,
@@ -136,7 +139,8 @@ auto ScreenDoor::create_shaders() -> void {
             .back_face_culling = false,
             .depth_test        = true,
             .depth_write       = true,
-        }));
+        })
+    );
 }
 
 auto ScreenDoor::create_buffer() -> void {

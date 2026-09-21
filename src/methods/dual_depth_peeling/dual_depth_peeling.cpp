@@ -11,7 +11,7 @@ namespace oiter {
 
 DualDepthPeeling::DualDepthPeeling(
     siren::Device& device,
-    const siren::Extent2u extent,
+    const siren::Extent2 extent,
     siren::AssetServer& assets
 ) : OitMethod(device, assets) {
     create_queries();
@@ -145,7 +145,7 @@ auto DualDepthPeeling::render(const siren::Camera& camera, const BakedScene& sce
     return m_final_image->handle();
 }
 
-auto DualDepthPeeling::resize(const siren::Extent2u extent) -> void {
+auto DualDepthPeeling::resize(const siren::Extent2 extent) -> void {
     create_images(extent);
     create_render_targets();
 }
@@ -164,19 +164,20 @@ void DualDepthPeeling::render_debug_info() {
 
 auto DualDepthPeeling::create_sampler() -> void {
     m_sampler = std::make_unique<siren::Sampler>(m_device.make_sampler({
-        .min_filter    = siren::ImageFilterMode::Nearest,
-        .max_filter    = siren::ImageFilterMode::Nearest,
-        .mipmap_filter = siren::ImageFilterMode::Nearest,
-        .s_wrap        = siren::ImageWrapMode::ClampEdge,
-        .t_wrap        = siren::ImageWrapMode::ClampEdge,
+        .min_filter = siren::FilterMode::Nearest,
+        .mag_filter = siren::FilterMode::Nearest,
+        .s_wrap     = siren::WrapMode::ClampEdge,
+        .t_wrap     = siren::WrapMode::ClampEdge,
     }));
 }
 
-auto DualDepthPeeling::create_images(const siren::Extent2u extent) -> void {
+auto DualDepthPeeling::create_images(const siren::Extent2 extent) -> void {
     // create ping pong dual depth images
     for (const auto i : siren::range(2)) {
         m_pingpong_colors[i * 3] = create_standard_image(
-            extent, std::format("Ping Pong {} Depth 0", i), siren::ImageFormat::RG32f
+            extent,
+            std::format("Ping Pong {} Depth 0", i),
+            siren::ImageFormat::RG32f
         );
     }
 
@@ -281,8 +282,8 @@ auto DualDepthPeeling::create_pipelines() -> void {
         );
         m_assets.wait_until_loaded(m_init_shader);
         const auto shader = m_assets.get(m_init_shader)->shader.handle();
-        m_init_pipeline =
-            std::make_unique<siren::GraphicsPipeline>(m_device.make_graphics_pipeline({
+        m_init_pipeline   = std::make_unique<siren::GraphicsPipeline>(
+            m_device.make_graphics_pipeline({
                 .label             = "Init Pipeline",
                 .layout            = siren::DEFAULT_VERTEX_LAYOUT,
                 .shader            = shader,
@@ -293,7 +294,8 @@ auto DualDepthPeeling::create_pipelines() -> void {
                 .back_face_culling = false,
                 .depth_test        = false,
                 .depth_write       = false,
-            }));
+            })
+        );
     }
 
     {
@@ -302,8 +304,8 @@ auto DualDepthPeeling::create_pipelines() -> void {
         );
         m_assets.wait_until_loaded(m_peel_shader);
         const auto shader = m_assets.get(m_peel_shader)->shader.handle();
-        m_peel_pipeline =
-            std::make_unique<siren::GraphicsPipeline>(m_device.make_graphics_pipeline({
+        m_peel_pipeline   = std::make_unique<siren::GraphicsPipeline>(
+            m_device.make_graphics_pipeline({
                 .label             = "Peel Pipeline",
                 .layout            = siren::DEFAULT_VERTEX_LAYOUT,
                 .shader            = shader,
@@ -314,7 +316,8 @@ auto DualDepthPeeling::create_pipelines() -> void {
                 .back_face_culling = false,
                 .depth_test        = false,
                 .depth_write       = false,
-            }));
+            })
+        );
     }
 
     {
@@ -324,8 +327,8 @@ auto DualDepthPeeling::create_pipelines() -> void {
         m_assets.wait_until_loaded(m_blend_shader);
         const auto shader = m_assets.get(m_blend_shader)->shader.handle();
 
-        m_blend_pipeline =
-            std::make_unique<siren::GraphicsPipeline>(m_device.make_graphics_pipeline({
+        m_blend_pipeline = std::make_unique<siren::GraphicsPipeline>(
+            m_device.make_graphics_pipeline({
                 .label      = "Blend Pipeline",
                 .layout     = siren::DEFAULT_VERTEX_LAYOUT,
                 .shader     = shader,
@@ -346,7 +349,8 @@ auto DualDepthPeeling::create_pipelines() -> void {
                 .back_face_culling = false,
                 .depth_test        = false,
                 .depth_write       = false,
-            }));
+            })
+        );
     }
 
     {
@@ -355,8 +359,8 @@ auto DualDepthPeeling::create_pipelines() -> void {
         );
         m_assets.wait_until_loaded(m_final_shader);
         const auto shader = m_assets.get(m_final_shader)->shader.handle();
-        m_final_pipeline =
-            std::make_unique<siren::GraphicsPipeline>(m_device.make_graphics_pipeline({
+        m_final_pipeline  = std::make_unique<siren::GraphicsPipeline>(
+            m_device.make_graphics_pipeline({
                 .label             = "Final Pipeline",
                 .layout            = siren::DEFAULT_VERTEX_LAYOUT,
                 .shader            = shader,
@@ -365,7 +369,8 @@ auto DualDepthPeeling::create_pipelines() -> void {
                 .back_face_culling = false,
                 .depth_test        = false,
                 .depth_write       = false,
-            }));
+            })
+        );
     }
 }
 

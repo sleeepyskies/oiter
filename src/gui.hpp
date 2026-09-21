@@ -5,8 +5,16 @@
 #include <utility>
 
 #include <imgui.h>
+
 #include <imgui/backends/imgui_impl_glfw.h>
+#include "2iREN/core/base.hpp"
+#if defined(OITER_LINUX) || defined(OITER_WINDOWS)
 #include <imgui/backends/imgui_impl_opengl3.h>
+#elifdef OITER_MACOS
+#include <imgui/backends/imgui_impl_metal.h>
+#include "2iREN/graphics/backend/metal/commands.hpp"
+#include "2iREN/graphics/backend/metal/device.hpp"
+#endif
 
 #include <GLFW/glfw3.h>
 
@@ -17,50 +25,76 @@
 #include "methods/method_kind.hpp"
 #include "methods/oit_method.hpp"
 
-namespace oiter {
 class OitMethod;
-}
+namespace oiter { }
 
 namespace gui {
 struct DebugPanelActions {
     std::optional<oiter::MethodKind> oit_method;
 };
 
-inline auto init(const siren::Window& window) -> void {
+inline auto init(const siren::Window& window, [[maybe_unused]] siren::Device& device) -> void {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+
+#if defined(OITER_LINUX) || defined(OITER_WINDOWS)
     ImGui_ImplGlfw_InitForOpenGL(window.native_handle(), true);
     ImGui_ImplOpenGL3_Init("#version 460");
+#elifdef OITER_MACOS
+    ImGui_ImplGlfw_InitForOther(window.native_handle(), true);
+    ImGui_ImplMetal_Init(dynamic_cast<siren::MetalDevice&>(device).metal_device());
+#endif
 
     ImGui::StyleColorsDark();
 }
 
 inline auto shutdown() -> void {
+#if defined(OITER_LINUX) || defined(OITER_WINDOWS)
     ImGui_ImplOpenGL3_Shutdown();
+#elifdef OITER_MACOS
+    ImGui_ImplMetal_Shutdown();
+#endif
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 }
 
-inline auto new_frame() -> void {
+inline auto new_frame([[maybe_unused]] siren::CommandBuffer& cmds) -> void {
+#if defined(OITER_LINUX) || defined(OITER_WINDOWS)
     ImGui_ImplOpenGL3_NewFrame();
+#elifdef OITER_MACOS
+    ImGui_ImplMetal_NewFrame(UNIMPLEMENTED());
+#endif
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 }
 
-inline auto end_frame() -> void {
+inline auto end_frame(siren::CommandBuffer& cmds) -> void {
     ImGui::Render();
+
+#if defined(OITER_LINUX) || defined(OITER_WINDOWS)
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+#elifdef OITER_MACOS
+    // HACK: hacky hacks
+    auto& mtl_cmds = static_cast<siren::metal::CommandBuffer&>(cmds);
+    ImGui_ImplMetal_RenderDrawData(
+        ImGui::GetDrawData(),
+        mtl_cmds.metal_commandbuffer(),
+        UNIMPLEMENTED()
+    );
+#endif
 }
 
 /// @brief Draws the debug overlay and returns requested state changes.
-[[nodiscard]] inline auto render_debug(
+[[nodiscard]]
+inline auto render_debug(
+    siren::CommandBuffer& cmds,
     const siren::Statistics& statistics,
     const oiter::FrameStats& frame_stats,
     oiter::OitMethod& oit_method
 ) -> DebugPanelActions {
     DebugPanelActions actions;
 
-    new_frame();
+    new_frame(cmds);
 
     const auto& io = ImGui::GetIO();
 
@@ -77,17 +111,23 @@ inline auto end_frame() -> void {
         auto method = static_cast<siren::i32>(oit_method.kind());
 
         ImGui::RadioButton(
-            "Depth Peeling", &method, std::to_underlying(oiter::MethodKind::DepthPeeling)
+            "Depth Peeling",
+            &method,
+            std::to_underlying(oiter::MethodKind::DepthPeeling)
         );
 
         ImGui::RadioButton(
-            "Dual Depth Peeling", &method, std::to_underlying(oiter::MethodKind::DualDepthPeeling)
+            "Dual Depth Peeling",
+            &method,
+            std::to_underlying(oiter::MethodKind::DualDepthPeeling)
         );
 
         ImGui::RadioButton("A-Buffer", &method, std::to_underlying(oiter::MethodKind::ABuffer));
 
         ImGui::RadioButton(
-            "Screen Door", &method, std::to_underlying(oiter::MethodKind::ScreenDoor)
+            "Screen Door",
+            &method,
+            std::to_underlying(oiter::MethodKind::ScreenDoor)
         );
 
         if (method != (siren::i32)std::to_underlying(oit_method.kind().value)) {
@@ -146,7 +186,7 @@ inline auto end_frame() -> void {
     ImGui::Text("F3 - RENDER SKYBOX  ");
     ImGui::End();
 
-    end_frame();
+    end_frame(cmds);
 
     return actions;
 }

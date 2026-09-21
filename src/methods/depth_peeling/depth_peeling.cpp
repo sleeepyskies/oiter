@@ -13,7 +13,7 @@ namespace oiter {
 
 DepthPeeling::DepthPeeling(
     siren::Device& device,
-    const siren::Extent2u extent,
+    const siren::Extent2 extent,
     siren::AssetServer& assets
 ) : OitMethod(device, assets) {
     create_images(extent);
@@ -94,12 +94,14 @@ auto DepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) 
                 }
 
                 // use different peel shader on the first pass
-                const auto first_pass = layer == 0;
-                const auto peel_pipeline =
-                    first_pass ? m_gather_first_pipeline->handle() : m_gather_pipeline->handle();
+                const auto first_pass    = layer == 0;
+                const auto peel_pipeline = first_pass ? m_gather_first_pipeline->handle()
+                                                      : m_gather_pipeline->handle();
                 if (!first_pass) {
                     pass.bind_sampled_image(
-                        m_depths[read_buffer_index]->handle(), m_sampler->handle(), 0
+                        m_depths[read_buffer_index]->handle(),
+                        m_sampler->handle(),
+                        0
                     );
                 }
                 pass.bind_graphics_pipeline(peel_pipeline);
@@ -165,7 +167,7 @@ auto DepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) 
     return m_accumulation_color->handle();
 }
 
-auto DepthPeeling::resize(const siren::Extent2u extent) -> void {
+auto DepthPeeling::resize(const siren::Extent2 extent) -> void {
     create_images(extent);
 }
 
@@ -204,16 +206,27 @@ auto DepthPeeling::render_debug_info() -> void {
     }
 }
 
-auto DepthPeeling::create_images(const siren::Extent2u extent) -> void {
+auto DepthPeeling::create_images(const siren::Extent2 extent) -> void {
     m_accumulation_color = create_standard_image(
-        extent, "Depth Peeling Accumulation Color", siren::ImageFormat::RGBA8
+        extent,
+        "Depth Peeling Accumulation Color",
+        siren::ImageFormat::RGBA8
     );
-    m_write_color =
-        create_standard_image(extent, "Depth Peeling Write Color", siren::ImageFormat::RGBA8);
-    m_depths[0] =
-        create_standard_image(extent, "Depth Peeling Depth0", siren::ImageFormat::Depth32f);
-    m_depths[1] =
-        create_standard_image(extent, "Depth Peeling Depth1", siren::ImageFormat::Depth32f);
+    m_write_color = create_standard_image(
+        extent,
+        "Depth Peeling Write Color",
+        siren::ImageFormat::RGBA8
+    );
+    m_depths[0] = create_standard_image(
+        extent,
+        "Depth Peeling Depth0",
+        siren::ImageFormat::Depth32f
+    );
+    m_depths[1] = create_standard_image(
+        extent,
+        "Depth Peeling Depth1",
+        siren::ImageFormat::Depth32f
+    );
 }
 
 auto DepthPeeling::create_sampler() -> void {
@@ -246,8 +259,8 @@ auto DepthPeeling::create_pipelines() -> void {
         );
         const auto shader = m_assets.get_unsafe(m_gather_first_shader).shader.handle();
 
-        m_gather_first_pipeline =
-            std::make_unique<siren::GraphicsPipeline>(m_device.make_graphics_pipeline({
+        m_gather_first_pipeline = std::make_unique<siren::GraphicsPipeline>(
+            m_device.make_graphics_pipeline({
                 .label             = "Depth Peeling Gather First",
                 .layout            = siren::DEFAULT_VERTEX_LAYOUT,
                 .shader            = shader,
@@ -257,16 +270,18 @@ auto DepthPeeling::create_pipelines() -> void {
                 .back_face_culling = false,
                 .depth_test        = true,
                 .depth_write       = true,
-            }));
+            })
+        );
     }
 
     {
-        m_gather_shader =
-            m_assets.load<siren::ShaderAsset>("oiter://assets/shaders/depth_peeling/gather.sshg");
+        m_gather_shader = m_assets.load<siren::ShaderAsset>(
+            "oiter://assets/shaders/depth_peeling/gather.sshg"
+        );
         const auto shader = m_assets.get_unsafe(m_gather_shader).shader.handle();
 
-        m_gather_pipeline =
-            std::make_unique<siren::GraphicsPipeline>(m_device.make_graphics_pipeline({
+        m_gather_pipeline = std::make_unique<siren::GraphicsPipeline>(
+            m_device.make_graphics_pipeline({
                 .label             = "Depth Peeling Gather",
                 .layout            = siren::DEFAULT_VERTEX_LAYOUT,
                 .shader            = shader,
@@ -276,15 +291,17 @@ auto DepthPeeling::create_pipelines() -> void {
                 .back_face_culling = false,
                 .depth_test        = true,
                 .depth_write       = true,
-            }));
+            })
+        );
     }
 
     {
-        m_blend_shader =
-            m_assets.load<siren::ShaderAsset>("oiter://assets/shaders/depth_peeling/blend.sshg");
+        m_blend_shader = m_assets.load<siren::ShaderAsset>(
+            "oiter://assets/shaders/depth_peeling/blend.sshg"
+        );
         const auto shader = m_assets.get_unsafe(m_blend_shader).shader.handle();
-        m_blend_pipeline =
-            std::make_unique<siren::GraphicsPipeline>(m_device.make_graphics_pipeline({
+        m_blend_pipeline  = std::make_unique<siren::GraphicsPipeline>(
+            m_device.make_graphics_pipeline({
                 .label      = "Depth Peeling Blend",
                 .layout     = siren::FULLSCREEN_VERTEX_LAYOUT,
                 .shader     = shader,
@@ -305,7 +322,8 @@ auto DepthPeeling::create_pipelines() -> void {
                 .back_face_culling = false,
                 .depth_test        = false,
                 .depth_write       = false,
-            }));
+            })
+        );
     }
 }
 

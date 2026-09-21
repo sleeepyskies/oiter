@@ -51,9 +51,9 @@ struct InteractiveApp::Impl {
         camera.lookat(options.camera_lookat);
         camera.set_aspect(window.aspect());
 
-        gui::init(window);
+        gui::init(window, *device);
 
-        window.on_resize([this](const Extent2u extent) {
+        window.on_resize([this](const Extent2 extent) {
             camera.set_aspect(static_cast<f32>(extent.x) / static_cast<f32>(extent.y));
             swapchain.update({.extent = extent});
             renderer.resize(extent);
@@ -75,7 +75,6 @@ struct InteractiveApp::Impl {
     CameraController controller = CameraController{5.f, 0.5f};
     InteractiveState& interactive_state;
     FrameStats frame_stats;
-    std::optional<MethodKind> pending_method;
 
     auto run() -> void {
         auto last_update = time::elapsed(); // used for fps update
@@ -96,7 +95,6 @@ struct InteractiveApp::Impl {
 
             handle_input();
             draw_scene();
-            draw_gui();
 
             interactive_state.camera_position = camera.position();
         }
@@ -127,31 +125,29 @@ struct InteractiveApp::Impl {
     }
 
     auto draw_scene() -> void {
-        TimerMs oit_render_timer{[this](const f64 ms) {
-            frame_stats.oit_render_ms = static_cast<u32>(ms);
-        }};
-        const auto imagehandle = renderer.render(camera);
-        if (interactive_state.skybox_visible) {
-            skybox.render_behind(imagehandle, camera);
+        auto cmds             = device->make_command_buffer();
+        const auto backbuffer = swapchain.next_image();
+
+        TIMER(frame_stats.oit_render_ms) {
+            renderer.render(*cmds, backbuffer, camera);
         }
-        device->blit_to_image(imagehandle, swapchain.next_image());
-    }
 
-    auto draw_gui() -> void {
-        swapchain.present_overlay([this] {
-            if (!interactive_state.debug_menu_visible) {
-                return;
+        if (interactive_state.skybox_visible) {
+            skybox.render_behind(*cmds, backbuffer, camera);
+        }
+
+        if (interactive_state.debug_menu_visible) {
+            const auto actions = gui::render_debug(
+                *cmds,
+                device->statistics(),
+                frame_stats,
+                renderer.method()
+            );
+
+            if (actions.oit_method.has_value()) {
+                interactive_state.oit_method = actions.oit_method.value();
+                renderer.set_method(interactive_state.oit_method);
             }
-
-            if (actions.oit_method) {
-                pending_method = actions.oit_method;
-            }
-        });
-
-        if (pending_method) {
-            interactive_state.oit_method = *pending_method;
-            renderer.set_method(interactive_state.oit_method);
-            pending_method.reset();
         }
     }
 };

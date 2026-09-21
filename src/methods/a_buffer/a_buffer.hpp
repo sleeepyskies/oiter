@@ -32,7 +32,7 @@ class ABuffer final : public OitMethod {
     } m_config;
 
 public:
-    ABuffer(siren::Device& device, siren::Extent2u extent, siren::AssetServer& assets);
+    ABuffer(siren::Device& device, siren::Extent2 extent, siren::AssetServer& assets);
 
     [[nodiscard]]
     auto render(
@@ -41,7 +41,7 @@ public:
         const BakedScene& scene
     ) const -> siren::ImageHandle override;
 
-    auto resize(const siren::Extent2u extent) -> void override;
+    auto resize(const siren::Extent2 extent) -> void override;
     auto reload_shaders() -> void override;
 
     [[nodiscard]]
@@ -72,8 +72,8 @@ private:
     std::unique_ptr<siren::GraphicsPipeline> m_gather_pipeline = nullptr;
     std::unique_ptr<siren::GraphicsPipeline> m_blend_pipeline  = nullptr;
 
-    auto create_buffers(const siren::Extent2u extent) -> void;
-    auto create_images(const siren::Extent2u extent) -> void;
+    auto create_buffers(const siren::Extent2 extent) -> void;
+    auto create_images(const siren::Extent2 extent) -> void;
     auto create_pipelines() -> void;
 };
 } // namespace oiter

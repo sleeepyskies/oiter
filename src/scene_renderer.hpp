@@ -26,17 +26,20 @@ public:
         siren::AssetServer& assets,
         const std::string& scene_path,
         const MethodKind kind,
-        const siren::Extent2u extent
+        const siren::Extent2 extent
     );
 
-    [[nodiscard]]
-    auto render(const siren::Camera& camera) -> siren::ImageHandle;
+    auto render(
+        siren::CommandBuffer& cmds,
+        const siren::ImageHandle output,
+        const siren::Camera& camera
+    ) -> void;
 
     [[nodiscard]]
     auto method() const noexcept -> OitMethod&;
 
     auto set_method(MethodKind kind) -> void;
-    auto resize(siren::Extent2u extent) -> void;
+    auto resize(siren::Extent2 extent) -> void;
     auto reload_shaders() -> void;
 
 private:
@@ -65,7 +68,7 @@ private:
 
     siren::Device& m_device;
     siren::AssetServer& m_assets;
-    siren::Extent2u m_extent;
+    siren::Extent2 m_extent;
     std::unique_ptr<OitMethod> m_method = nullptr;
 
     siren::StrongHandle<siren::Gltf> m_scene_asset = siren::NullHandle;
