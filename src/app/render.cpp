@@ -9,9 +9,9 @@
 #include "2iREN/asset/asset_server.hpp"
 #include "2iREN/asset/shader.hpp"
 #include "2iREN/core/context.hpp"
-#include "2iREN/graphics/buffer.hpp"
 #include "2iREN/graphics/commands.hpp"
 #include "2iREN/graphics/graphics_pipeline.hpp"
+#include "2iREN/graphics/image.hpp"
 #include "2iREN/scene/camera.hpp"
 #include "2iREN/utility/filesystem.hpp"
 #include "2iREN/window/window.hpp"
@@ -52,61 +52,56 @@ struct RenderApp::Impl {
     std::string output_path;
 
     auto run() -> void {
-        const auto imagehandle      = renderer.render(camera);
-        const auto image_descriptor = device->image_descriptor(imagehandle);
+        const auto output_descriptor = ImageDescriptor{
+            .label  = "Rendered Image",
+            .format = ImageFormat::sRGBA8,
+            .extent = window.extent().to_extent3(),
+            .flags  = ImageFlags::from(ImageFlag::RenderAttachment),
+        };
+        const auto output = device->make_image(output_descriptor);
 
-        const auto sampler = device->make_sampler({});
-        const auto output  = device->make_image({
-            .label         = "Rendered Image",
-            .format        = ImageFormat::sRGBA8,
-            .extent        = image_descriptor.extent,
-            .dimension     = ImageDimension::D2,
-            .mipmap_levels = 1,
-            .flags         = ImageFlags::from(ImageFlag::RenderAttachment),
-        });
+        // render image
+        {
+            auto cmds = device->make_command_buffer();
+            renderer.render(*cmds, output.handle(), camera);
+            device->submit(std::move(cmds));
+        }
 
-        const auto shader_handle =
-            assets.load<ShaderAsset>("oiter://assets/shaders/unpremultiply.sshg");
+        const auto shader_handle = assets.load<ShaderAsset>(
+            "oiter://assets/shaders/unpremultiply.sshg"
+        );
         assets.wait_until_loaded(shader_handle);
 
+        auto cmds           = device->make_command_buffer();
+        const auto sampler  = device->make_sampler({});
         const auto pipeline = device->make_graphics_pipeline({
-            .label         = "Image Output Pipeline",
-            .shader        = assets.get_unsafe(shader_handle).shader.handle(),
-            .layout        = FULLSCREEN_VERTEX_LAYOUT,
-            .topology      = PrimitiveTopology::Triangles,
-            .colors        = {},
-            .depth_stencil = std::nullopt,
-            .cull_mode     = CullMode::None,
+            .label     = "Image Output Pipeline",
+            .shader    = assets.get_unsafe(shader_handle).shader.handle(),
+            .layout    = FULLSCREEN_VERTEX_LAYOUT,
+            .cull_mode = CullMode::None,
         });
-
-        auto cmds = device->make_command_buffer();
 
         cmds->render_pass(
             {
-                .label = "Unpremultiply and Encode sRGBA",
                 .target =
-                    {
+                    RenderTarget{
                         .colors =
-                            RenderPassColorAttachments{
-                                RenderPassColorAttachment{
-                                    .image           = output.handle(),
-                                    .clear_color     = Rgba::ZERO(),
-                                    .begin_operation = BeginOperation::Clear,
-                                    .end_operation   = EndOperation::Store,
-                                },
+                            TargetColorAttachments{
+                                TargetColorAttachment{.image = output.handle()},
                             },
-                        .depth_stencil = std::nullopt,
                     },
             },
             [&](RenderCommandEncoder& pass) {
                 pass.bind_graphics_pipeline(pipeline.handle());
-                pass.bind_sampler(sampler.handle(), 0);
-                pass.bind_image(imagehandle, 0);
-                pass.draw_arrays(0, 3);
+                pass.bind_sampler(sampler.handle(), Slot{0});
+                pass.bind_image(output.handle(), Slot{0});
+                pass.draw(3);
             }
         );
 
-        auto staging = device->make_buffer({.size = image_descriptor.extent.area()});
+        const auto img_size = output_descriptor.extent.to_extent2().area()
+            * output_descriptor.format.bytes_per_pixel();
+        auto staging = device->make_buffer({.size = img_size});
         cmds->copy_image_to_buffer(output.handle(), staging.handle(), 0);
 
         device->submit(std::move(cmds));
@@ -130,7 +125,6 @@ struct RenderApp::Impl {
             pixels.data(),
             static_cast<int>(descriptor.extent.x * 4)
         );
-
         ASSERT(result != 0);
     }
 };

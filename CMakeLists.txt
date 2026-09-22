@@ -33,6 +33,16 @@ target_sources(oiter PRIVATE
     src/methods/screen_door/screen_door.cpp
 )
 
+# HACK: workaround for imgui errs
+if(OITER_MACOS)
+    set_property(
+        SOURCE third_party/imgui/backends/imgui_impl_metal.mm
+        APPEND PROPERTY COMPILE_OPTIONS
+            -Wno-error=arc-bridge-casts-disallowed-in-nonarc
+            -Wno-error=deprecated-declarations
+    )
+endif()
+
 target_compile_options(oiter PRIVATE
     -Wall
     -Wextra
