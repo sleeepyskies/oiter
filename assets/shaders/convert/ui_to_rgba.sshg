@@ -1,22 +1,63 @@
 name: ui_to_rgba
-stages:
-  vertex:
-    path: ../fullscreen.vert
-  fragment:
-    name: fragment
-    source: |
-      #version 460
+glsl:
+  stages:
+    vertex:
+      name: vertex
+      source: |
+        #version 460
 
-      layout(binding = 0) uniform usampler2D t_texture;
-      layout(location = 0) out vec4 out_color;
+        void main() {
+            const vec2 positions[3] = vec2[](
+                vec2(-1.0, -1.0), vec2(3.0, -1.0), vec2(-1.0, 3.0)
+            );
+            gl_Position = vec4(positions[gl_VertexID], 0.0, 1.0);
+        }
+    fragment:
+      name: fragment
+      source: |
+        #version 460
 
-      void main() {
-          const ivec2 pixel = ivec2(gl_FragCoord.xy);
-          const uint index = texelFetch(t_texture, pixel, 0).r;
-          out_color = vec4(
-              (index >> 24) & 0xFF,
-              (index >> 16) & 0xFF,
-              (index >> 8)  & 0xFF,
-              255
-          ) / 255;
-      }
+        layout(binding = 0) uniform usampler2D t_texture;
+        layout(location = 0) out vec4 out_color;
+
+        void main() {
+            const ivec2 pixel = ivec2(gl_FragCoord.xy);
+            uint value = texelFetch(t_texture, pixel, 0).r;
+            out_color = vec4(
+                (value >> 24u) & 0xFFu,
+                (value >> 16u) & 0xFFu,
+                (value >> 8u) & 0xFFu,
+                255u
+            ) / 255.0;
+        }
+msl:
+  vertex: vconvert
+  fragment: fconvert
+  source: |
+    #include <metal_stdlib>
+    using namespace metal;
+
+    struct FragmentIn {
+        float4 position [[position]];
+    };
+
+    vertex FragmentIn vconvert(uint vertex_id [[vertex_id]]) {
+        const float2 positions[3] = {
+            float2(-1.0, -1.0), float2(3.0, -1.0), float2(-1.0, 3.0)
+        };
+        return FragmentIn{float4(positions[vertex_id], 0.0, 1.0)};
+    }
+
+    fragment float4 fconvert(
+        FragmentIn in [[stage_in]],
+        texture2d<uint, access::read> input [[texture(0)]]
+    ) {
+        const uint2 pixel = uint2(in.position.xy);
+        uint value = input.read(pixel).r;
+        return float4(
+            (value >> 24u) & 0xFFu,
+            (value >> 16u) & 0xFFu,
+            (value >> 8u) & 0xFFu,
+            255u
+        ) / 255.0;
+    }

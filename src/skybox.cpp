@@ -6,6 +6,7 @@
 #include "2iREN/graphics/commands.hpp"
 #include "2iREN/graphics/device.hpp"
 #include "2iREN/graphics/graphics_pipeline.hpp"
+#include "2iREN/graphics/types.hpp"
 
 namespace oiter {
 
@@ -60,7 +61,7 @@ auto Skybox::render_behind(CommandBuffer& cmds, ImageHandle image, const Camera&
     cmds.render_pass(
         {
             .target =
-                {
+                RenderTarget{
                     .colors =
                         TargetColorAttachments{
                             TargetColorAttachment{
@@ -73,14 +74,11 @@ auto Skybox::render_behind(CommandBuffer& cmds, ImageHandle image, const Camera&
         },
         [&](RenderCommandEncoder& pass) {
             pass.bind_graphics_pipeline(m_skybox_pipeline->handle());
-            pass.bind_uniform_buffer(m_uniform_buffer->handle(), 0, 0);
-            pass.bind_sampler(texture.sampler.handle(), 0);
-            pass.bind_image(texture.image.handle(), 0);
-            pass.bind_vertex_buffer(surface.vertex_buffer.buffer.handle(), 0, 0);
-            pass.bind_index_buffer(
-                surface.index_buffer.buffer.handle(),
-                surface.index_buffer.format
-            );
+            pass.bind_uniform_buffer(m_uniform_buffer->handle(), Slot{0});
+            pass.bind_sampler(texture.sampler.handle(), Slot{0});
+            pass.bind_image(texture.image.handle(), Slot{0});
+            pass.bind_vertex_buffer(surface.vertex_buffer.buffer.handle(), Slot{1});
+            pass.bind_index_buffer(surface.index_buffer.buffer.handle(), surface.index_buffer.type);
             pass.draw_indexed(surface.index_buffer.count, 0);
         }
     );
@@ -90,7 +88,7 @@ auto Skybox::create_resources() -> void {
     m_uniform_buffer = std::make_unique<Buffer>(m_device.make_buffer({
         .label = "Skybox Uniform Buffer",
         .size  = sizeof(Uniforms),
-        .usage = BufferFlags::from(),
+        .usage = BufferFlags::from(BufferFlag::Uniform),
     }));
 
     auto texture_config = TextureLoader::ConfigType{
@@ -165,7 +163,6 @@ auto Skybox::create_resources() -> void {
         IndexBuffer{
             .buffer = std::move(index_buffer),
             .count  = cube_indices.size_as<i32>(),
-            .format = IndexFormat::UInt32,
         },
         VertexBuffer{
             .buffer = std::move(vertex_buffer),

@@ -1,37 +1,80 @@
 name: skybox
-stages:
-  vertex:
-    name: vertex
-    source: |
-      #version 460
-      
-      layout(location = 0) in vec3 a_position;
-      
-      layout(std140, binding = 0) uniform SceneUniforms {
-          mat4 projection_view;
-          vec3 camera_position;
-          float _pad0;
-      };
+glsl:
+  stages:
+    vertex:
+      name: vertex
+      source: |
+        #version 460
 
-      layout(location = 0) out vec3 v_position;
+        layout(location = 0) in vec3 a_position;
 
-      void main() {
-          v_position = a_position;
-          vec3 world_pos = a_position + camera_position;
-          gl_Position = projection_view * vec4(world_pos, 1.0);
-          gl_Position = gl_Position.xyww;
-      }
-  fragment:
-    name: fragment
-    source: |
-      #version 460
+        layout(std140, binding = 0) uniform SceneUniforms {
+            mat4 projection_view;
+            vec3 camera_position;
+            float _pad0;
+        };
 
-      layout(location = 0) in vec3 v_position;
-      layout(location = 0) out vec4 out_color;
-      
-      uniform samplerCube skybox_texture;
+        layout(location = 0) out vec3 v_position;
 
-      void main() {
-        const vec3 color = texture(skybox_texture, normalize(v_position)).rgb;
-        out_color = vec4(color, 1.0);
-      }
+        void main() {
+            v_position = a_position;
+            vec3 world_pos = a_position + camera_position;
+            gl_Position = projection_view * vec4(world_pos, 1.0);
+            gl_Position = gl_Position.xyww;
+        }
+    fragment:
+      name: fragment
+      source: |
+        #version 460
+
+        layout(location = 0) in vec3 v_position;
+        layout(location = 0) out vec4 out_color;
+
+        layout(binding = 0) uniform samplerCube skybox_texture;
+
+        void main() {
+          const vec3 color = texture(skybox_texture, normalize(v_position)).rgb;
+          out_color = vec4(color, 1.0);
+        }
+msl:
+  vertex: vmain
+  fragment: fmain
+  source: |
+    #include <metal_stdlib>
+    using namespace metal;
+
+    struct VertexIn {
+        float3 position [[attribute(0)]];
+    };
+
+    struct VertexOut {
+        float4 position [[position]];
+        float3 direction;
+    };
+
+    struct Uniforms {
+        float4x4 projection_view;
+        packed_float3 camera_position;
+        float _pad0;
+    };
+
+    vertex auto vmain(
+        constant Uniforms& uniforms [[buffer(0)]],
+        VertexIn in [[stage_in]]
+    ) -> VertexOut {
+        auto out = VertexOut{};
+        out.direction = in.position;
+        const float3 world_position = in.position + float3(uniforms.camera_position);
+        const float4 clip_position = uniforms.projection_view * float4(world_position, 1.0);
+        out.position = clip_position.xyww;
+        return out;
+    }
+
+    fragment auto fmain(
+        VertexOut in [[stage_in]],
+        texturecube<float, access::sample> skybox_texture [[texture(0)]],
+        sampler skybox_sampler [[sampler(0)]]
+    ) -> float4 {
+        const float3 color = skybox_texture.sample(skybox_sampler, normalize(in.direction)).rgb;
+        return float4(color, 1.0);
+    }

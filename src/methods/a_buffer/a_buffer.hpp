@@ -59,11 +59,12 @@ public:
 private:
     // todo: put into config?
     static constexpr siren::u8 k_list_length = 8;
+    siren::Extent2 m_extent;
 
     // should store per pixel, its corresponding entry in the SSBO
-    std::unique_ptr<siren::Image> m_list_head = nullptr;
-
+    std::unique_ptr<siren::Image> m_list_head       = nullptr;
     std::unique_ptr<siren::Buffer> m_storage_buffer = nullptr;
+    std::unique_ptr<siren::Buffer> m_staging        = nullptr;
 
     siren::StrongHandle<siren::ShaderAsset> m_gather_shader = siren::NullHandle;
     siren::StrongHandle<siren::ShaderAsset> m_blend_shader  = siren::NullHandle;

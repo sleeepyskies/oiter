@@ -1,73 +1,77 @@
 name: blend
-stages:
-  vertex:
-    name: vertex
-    path: ../fullscreen.vert
-  fragment:
-    name: fragment
-    source: !glsl |
-      #version 460
-      
-      struct Node {
-          vec4 color;
-          float depth;
-          uint next;
-      };
-      
-      layout(std430, binding = 0) coherent buffer linked_list {
-          uint counter;
-          Node[] nodes;
-      };
-      
-      layout(r32ui, binding = 0) uniform uimage2D heads; // of format R32UI
-      
-      layout(location = 0) out vec4 out_color;
-      
-      const uint INVALID = 0xFFFFFFFF; // identifies the final node next index
-      const uint MAX_NODES = 8;
-      
-      /// This fetch all colors in this pixels linked list, then sort them via their depth,
-      /// blend using over blending and then return the final color.
-      vec4 sorted_color(const uint first_index) {
-          Node sorted[MAX_NODES];
-          uint index = first_index;
-          uint node_count = 0;
-          
-          // insertion sort using node depth as sorting key
-          while (index < uint(nodes.length())) {
-              const Node node = nodes[index];
-
-              uint insertion = node_count;
-
-              while (
-                  insertion > 0u &&
-                  sorted[insertion - 1].depth > node.depth
-              ) {
-                  sorted[insertion] = sorted[insertion - 1];
-                  insertion--;
-              }
-
-              sorted[insertion] = node;
-              node_count++;
-              index = node.next;
-          }
-          
-          vec4 color = vec4(0);
-          
-          for (uint i = node_count; i > 0; i--) {
-              const Node node = sorted[i - 1];
-              const float remaining = 1. - node.color.a;
-
-              color.rgb = node.color.rgb * node.color.a + color.rgb * remaining;
-              color.a = node.color.a + color.a * remaining;
-          }
-          
-          return color;
-      }
-      
-      void main() {
-          const ivec2 pixel = ivec2(gl_FragCoord.xy);
-          const uint first_index = imageLoad(heads, pixel).r;
-          out_color = sorted_color(first_index);
-      }
-
+glsl:
+  stages:
+    vertex:
+      name: vertex
+      path: ../fullscreen.vert
+    fragment:
+      name: fragment
+      source: !glsl |
+        #version 460
+        
+        struct Node {
+            vec4 color;
+            float depth;
+            uint next;
+        };
+        
+        layout(std430, binding = 0) coherent buffer linked_list {
+            uint counter;
+            Node[] nodes;
+        };
+        
+        layout(r32ui, binding = 0) uniform uimage2D heads; // of format R32UI
+        
+        layout(location = 0) out vec4 out_color;
+        
+        const uint INVALID = 0xFFFFFFFF; // identifies the final node next index
+        const uint MAX_NODES = 8;
+        
+        /// This fetch all colors in this pixels linked list, then sort them via their depth,
+        /// blend using over blending and then return the final color.
+        vec4 sorted_color(const uint first_index) {
+            Node sorted[MAX_NODES];
+            uint index = first_index;
+            uint node_count = 0;
+            
+            // insertion sort using node depth as sorting key
+            while (index < uint(nodes.length())) {
+                const Node node = nodes[index];
+  
+                uint insertion = node_count;
+  
+                while (
+                    insertion > 0u &&
+                    sorted[insertion - 1].depth > node.depth
+                ) {
+                    sorted[insertion] = sorted[insertion - 1];
+                    insertion--;
+                }
+  
+                sorted[insertion] = node;
+                node_count++;
+                index = node.next;
+            }
+            
+            vec4 color = vec4(0);
+            
+            for (uint i = node_count; i > 0; i--) {
+                const Node node = sorted[i - 1];
+                const float remaining = 1. - node.color.a;
+  
+                color.rgb = node.color.rgb * node.color.a + color.rgb * remaining;
+                color.a = node.color.a + color.a * remaining;
+            }
+            
+            return color;
+        }
+        
+        void main() {
+            const ivec2 pixel = ivec2(gl_FragCoord.xy);
+            const uint first_index = imageLoad(heads, pixel).r;
+            out_color = sorted_color(first_index);
+        }
+msl:
+  path: ./msl/abuffer.metal
+  vertex: vblend
+  fragment: fblend

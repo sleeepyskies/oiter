@@ -18,6 +18,7 @@ namespace oiter {
 
 ABuffer::ABuffer(Device& device, const Extent2 extent, AssetServer& assets) :
     OitMethod(device, assets) {
+    m_extent = extent;
     create_buffers(extent);
     create_images(extent);
     create_pipelines();
@@ -34,26 +35,28 @@ auto ABuffer::render(
     {
         // reset the counter each frame
         const auto ssbodata = ByteBuffer::make({0});
-        m_storage_buffer->upload(ssbodata.view());
+        cmds.write_buffer(m_storage_buffer->handle(), 0, ssbodata.view());
 
         // reset the list heads each frame using 0xFFFFFFFF
-        auto staging = m_device.make_buffer({.size = m_list_head->descriptor().extent.volume()});
-        cmds.write_buffer(m_storage_buffer->handle(), 0, ssbodata.view());
-        cmds.fill_buffer(staging.handle(), std::numeric_limits<u8>::max());
-        cmds.copy_buffer_to_image(staging.handle(), 0, m_list_head->handle());
+        cmds.fill_buffer(m_staging->handle(), std::numeric_limits<u8>::max());
+        cmds.copy_buffer_to_image(m_staging->handle(), 0, m_list_head->handle());
     }
 
     cmds.render_pass(
         // we don't actually write to any output directly, we just manipulate the list_head and the
         // ssbo
-        {.target = {}},
+        {.target =
+             RenderTargetless{
+                 .extent = m_extent,
+             }},
         [&](RenderCommandEncoder& pass) {
             pass.bind_graphics_pipeline(m_gather_pipeline->handle());
 
             pass.bind_image(m_list_head->handle(), Slot{0});
 
-            pass.bind_storage_buffer(m_storage_buffer->handle(), Slot{0});
-            pass.bind_uniform_buffer(m_scene_buffer->handle(), Slot{1});
+            pass.bind_storage_buffer(m_storage_buffer->handle(), Slot{0}, Range<usize>::until(16));
+            pass.bind_storage_buffer(m_storage_buffer->handle(), Slot{1}, Range<usize>::litnu(16));
+            pass.bind_uniform_buffer(m_scene_buffer->handle(), Slot{2});
 
             for (u32 i = 0; i < scene.transparent.size(); i++) {
                 const auto& surface = scene.transparent[i];
@@ -62,11 +65,11 @@ auto ABuffer::render(
 
                 pass.bind_uniform_buffer(
                     m_mesh_buffer->handle(),
-                    Slot{2},
+                    Slot{3},
                     Range<usize>::make(rstart, rstart + sizeof(MeshUniforms))
                 );
 
-                pass.bind_vertex_buffer(surface.vertex.buffer.handle(), Slot{3});
+                pass.bind_vertex_buffer(surface.vertex.buffer.handle(), Slot{4});
                 pass.bind_index_buffer(surface.index.buffer.handle(), surface.index.type);
                 pass.draw_indexed(surface.index.count);
             }
@@ -94,13 +97,16 @@ auto ABuffer::render(
         [this](RenderCommandEncoder& pass) {
             pass.bind_graphics_pipeline(m_blend_pipeline->handle());
             pass.bind_image(m_list_head->handle(), Slot{0});
-            pass.bind_storage_buffer(m_storage_buffer->handle(), Slot{0});
+            pass.bind_storage_buffer(m_storage_buffer->handle(), Slot{0}, Range<usize>::until(16));
+            pass.bind_storage_buffer(m_storage_buffer->handle(), Slot{1}, Range<usize>::litnu(16));
             pass.draw(3);
         }
     );
 }
 
 auto ABuffer::resize(const Extent2 extent) -> void {
+    m_extent = extent;
+
     create_buffers(extent);
     create_images(extent);
 }
@@ -126,13 +132,16 @@ auto ABuffer::render_debug_info() -> void {
 
 auto ABuffer::create_buffers(const Extent2 extent) -> void {
     const auto max_ssbo_size = m_device.limits().max_shader_storage_block_size;
-    const auto desired_size  = sizeof(u32)
-        + (k_list_length * extent.x * extent.y * sizeof(ABufferNode));
+    const auto desired_size  = 16 + (k_list_length * extent.x * extent.y * sizeof(ABufferNode));
 
     ASSERT(max_ssbo_size > desired_size);
 
+    m_staging = std::make_unique<Buffer>(m_device.make_buffer({
+        .size = extent.area() * sizeof(u32),
+    }));
+
     m_storage_buffer = std::make_unique<Buffer>(m_device.make_buffer({
-        .label        = "A Buffer SSBO",
+        .label        = "A-Buffer SSBO",
         .size         = desired_size,
         .usage        = BufferFlags::from(BufferFlag::Storage),
         .memory_usage = MemoryUsage::CpuAndGpu,
@@ -145,7 +154,11 @@ auto ABuffer::create_images(const Extent2 extent) -> void {
         .format       = ImageFormat::R32UI,
         .extent       = extent.to_extent3(),
         .memory_usage = MemoryUsage::CpuAndGpu,
-        .flags        = ImageFlags::from(ImageFlag::ShaderRead, ImageFlag::ShaderWrite),
+        .flags        = ImageFlags::from(
+            ImageFlag::ShaderRead,
+            ImageFlag::ShaderWrite,
+            ImageFlag::UseAtomics
+        ),
     }));
 }
 
@@ -155,12 +168,10 @@ auto ABuffer::create_pipelines() -> void {
         m_gather_shader = m_assets.load<ShaderAsset>("oiter://assets/shaders/a_buffer/gather.sshg");
         m_assets.wait_until_loaded(m_gather_shader);
         m_gather_pipeline = std::make_unique<GraphicsPipeline>(m_device.make_graphics_pipeline({
-            .label         = "A-Buffer Gather Pipeline",
-            .shader        = m_assets.get_unsafe(m_gather_shader).shader.handle(),
-            .layout        = DEFAULT_VERTEX_LAYOUT,
-            .colors        = {},
-            .depth_stencil = std::nullopt,
-            .cull_mode     = CullMode::None,
+            .label     = "A-Buffer Gather Pipeline",
+            .shader    = m_assets.get_unsafe(m_gather_shader).shader.handle(),
+            .layout    = DEFAULT_VERTEX_LAYOUT,
+            .cull_mode = CullMode::None,
         }));
     }
 

@@ -6,5 +6,6 @@
 /compile_commands.json
 /.venv
 /scripts/out/
+.DS_Store
 imgui.ini
 .cache

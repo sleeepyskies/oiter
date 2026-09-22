@@ -12,11 +12,11 @@
 #include "2iREN/graphics/layout.hpp"
 
 #include "methods/a_buffer/a_buffer.hpp"
-#include "methods/depth_peeling/depth_peeling.hpp"
-#include "methods/dual_depth_peeling/dual_depth_peeling.hpp"
 #include "methods/method_kind.hpp"
 #include "methods/oit_method.hpp"
-#include "methods/screen_door/screen_door.hpp"
+// #include "methods/screen_door/screen_door.hpp"
+// #include "methods/depth_peeling/depth_peeling.hpp"
+// #include "methods/dual_depth_peeling/dual_depth_peeling.hpp"
 #include "utility/bake.hpp"
 
 using namespace siren;
@@ -29,14 +29,16 @@ auto create_method(
     const Extent2 extent
 ) -> std::unique_ptr<oiter::OitMethod> {
     switch (kind) {
+        case oiter::MethodKind::ABuffer:
+            return std::make_unique<oiter::ABuffer>(device, extent, assets);
+        /*
+        case oiter::MethodKind::ScreenDoor:
+            return std::make_unique<oiter::ScreenDoor>(device, extent, assets);
         case oiter::MethodKind::DepthPeeling:
             return std::make_unique<oiter::DepthPeeling>(device, extent, assets);
         case oiter::MethodKind::DualDepthPeeling:
             return std::make_unique<oiter::DualDepthPeeling>(device, extent, assets);
-        case oiter::MethodKind::ABuffer:
-            return std::make_unique<oiter::ABuffer>(device, extent, assets);
-        case oiter::MethodKind::ScreenDoor:
-            return std::make_unique<oiter::ScreenDoor>(device, extent, assets);
+        */
         default: PANIC("invalid method selected");
     }
 }
@@ -156,6 +158,7 @@ auto SceneRenderer::render(
                     .pipeline->handle()
             );
 
+        case ImageFormat::BGRA8:
         case ImageFormat::RGBA16f:
         case ImageFormat::sRGBA8:
         case ImageFormat::RGBA8: break; // format is already fine :D
@@ -188,9 +191,9 @@ auto SceneRenderer::convert_format(
         },
         [&](RenderCommandEncoder& pass) {
             pass.bind_graphics_pipeline(pipeline_handle);
-            pass.bind_sampler(m_sampler->handle(), 0);
-            pass.bind_image(imagehandle, 0);
-            pass.draw_arrays(0, 3);
+            pass.bind_sampler(m_sampler->handle(), Slot{0});
+            pass.bind_image(imagehandle, Slot{0});
+            pass.draw(3);
         }
     );
 

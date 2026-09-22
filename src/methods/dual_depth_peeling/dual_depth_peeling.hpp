@@ -28,9 +28,13 @@ public:
         siren::AssetServer& assets
     );
 
-    [[nodiscard]]
-    auto render(const siren::Camera& camera, const BakedScene& scene) const
-        -> siren::ImageHandle override;
+    auto render(
+        siren::CommandBuffer& cmds,
+        siren::ImageHandle output,
+        const siren::Camera& camera,
+        const BakedScene& scene
+    ) const -> void override;
+
     [[nodiscard]]
     auto name() const noexcept -> std::string_view override {
         return "Dual Depth Peeling";

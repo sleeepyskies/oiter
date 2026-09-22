@@ -1,10 +1,12 @@
 #pragma once
 
 #include <memory>
+
 #include "2iREN/asset/shader.hpp"
 #include "2iREN/graphics/graphics_pipeline.hpp"
 #include "2iREN/graphics/image.hpp"
 #include "2iREN/utility/identifier.hpp"
+
 #include "methods/oit_method.hpp"
 
 namespace oiter {
@@ -29,9 +31,12 @@ public:
         siren::AssetServer& assets
     );
 
-    [[nodiscard]]
-    auto render(const siren::Camera& camera, const BakedScene& scene) const
-        -> siren::ImageHandle override;
+    auto render(
+        siren::CommandBuffer& cmds,
+        siren::ImageHandle output,
+        const siren::Camera& camera,
+        const BakedScene& scene
+    ) const -> void override;
 
     auto resize(const siren::Extent2 extent) -> void override;
 

@@ -69,7 +69,7 @@ inline auto new_frame(
 #if defined(OITER_LINUX) || defined(OITER_WINDOWS)
     ImGui_ImplOpenGL3_NewFrame();
 #elifdef OITER_MACOS
-    auto mtldevice      = static_cast<siren::MetalDevice&>(device);
+    auto& mtldevice     = static_cast<siren::MetalDevice&>(device);
     auto* mtlbackbuffer = mtldevice.metal_texture(backbuffer);
     auto descriptor     = siren::metal::transfer_ptr(MTL::RenderPassDescriptor::alloc()->init());
     descriptor->colorAttachments()->object(0)->setTexture(mtlbackbuffer);

@@ -27,10 +27,11 @@ target_sources(oiter PRIVATE
     src/utility/bake.cpp
 
     src/methods/oit_method.cpp
-    src/methods/depth_peeling/depth_peeling.cpp
-    src/methods/dual_depth_peeling/dual_depth_peeling.cpp
     src/methods/a_buffer/a_buffer.cpp
-    src/methods/screen_door/screen_door.cpp
+    # TODO: add these back once building again
+    # src/methods/depth_peeling/depth_peeling.cpp
+    # src/methods/dual_depth_peeling/dual_depth_peeling.cpp
+    # src/methods/screen_door/screen_door.cpp
 )
 
 # HACK: workaround for imgui errs

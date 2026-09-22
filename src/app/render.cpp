@@ -100,7 +100,7 @@ struct RenderApp::Impl {
         );
 
         const auto img_size = output_descriptor.extent.to_extent2().area()
-            * output_descriptor.format.bytes_per_pixel();
+            * output_descriptor.format.size_bytes();
         auto staging = device->make_buffer({.size = img_size});
         cmds->copy_image_to_buffer(output.handle(), staging.handle(), 0);
 

@@ -54,6 +54,7 @@ auto OitMethod::create_buffers() -> void {
         .memory_usage = MemoryUsage::CpuAndGpu,
     }));
 
+    log::info("size: {}", m_device.limits().uniform_buffer_offset_alignment);
     m_mesh_buffer = std::make_unique<Buffer>(m_device.make_buffer({
         .label = "mesh uniforms",
         .size  = align_up(sizeof(MeshUniforms), m_device.limits().uniform_buffer_offset_alignment)
