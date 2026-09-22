@@ -1,7 +1,6 @@
 #include "depth_peeling.hpp"
 
 #include <imgui.h>
-#include <ranges>
 
 #include "2iREN/asset/asset_server.hpp"
 #include "2iREN/core/base.hpp"
@@ -22,8 +21,12 @@ DepthPeeling::DepthPeeling(
     create_queries();
 }
 
-auto DepthPeeling::render(const siren::Camera& camera, const BakedScene& scene) const
-    -> siren::ImageHandle {
+auto DepthPeeling::render(
+    siren::CommandBuffer& cmds,
+    siren::ImageHandle output,
+    const siren::Camera& camera,
+    const BakedScene& scene
+) const -> siren::ImageHandle {
     update_buffers(camera, scene);
 
     auto draw_scene = [&](siren::RenderPassRecorder& pass) {

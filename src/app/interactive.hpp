@@ -11,7 +11,6 @@ namespace oiter {
 
 /// @brief Mutable state for running in interactive mode.
 struct InteractiveState {
-    MethodKind oit_method = MethodKind::default_kind();
     siren::Point3f camera_position;
     bool debug_menu_visible = true;
     bool skybox_visible     = true;
@@ -44,7 +43,6 @@ public:
     auto run() -> void;
 
 private:
-    InteractiveState m_interactive_state;
     FrameStats m_frame_stats;
 
     struct Impl;

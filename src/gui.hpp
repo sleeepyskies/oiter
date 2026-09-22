@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Metal/MTLRenderPass.hpp>
 #include <format>
 #include <optional>
 #include <utility>
@@ -12,8 +13,10 @@
 #include <imgui/backends/imgui_impl_opengl3.h>
 #elifdef OITER_MACOS
 #include <imgui/backends/imgui_impl_metal.h>
+
 #include "2iREN/graphics/backend/metal/commands.hpp"
 #include "2iREN/graphics/backend/metal/device.hpp"
+#include "2iREN/graphics/backend/metal/util.hpp"
 #endif
 
 #include <GLFW/glfw3.h>
@@ -58,43 +61,68 @@ inline auto shutdown() -> void {
     ImGui::DestroyContext();
 }
 
-inline auto new_frame([[maybe_unused]] siren::CommandBuffer& cmds) -> void {
+inline auto new_frame(
+    [[maybe_unused]] siren::Device& device,
+    [[maybe_unused]] siren::CommandBuffer& cmds,
+    [[maybe_unused]] const siren::ImageHandle backbuffer
+) -> void {
 #if defined(OITER_LINUX) || defined(OITER_WINDOWS)
     ImGui_ImplOpenGL3_NewFrame();
 #elifdef OITER_MACOS
-    ImGui_ImplMetal_NewFrame(UNIMPLEMENTED());
+    auto mtldevice      = static_cast<siren::MetalDevice&>(device);
+    auto* mtlbackbuffer = mtldevice.metal_texture(backbuffer);
+    auto descriptor     = siren::metal::transfer_ptr(MTL::RenderPassDescriptor::alloc()->init());
+    descriptor->colorAttachments()->object(0)->setTexture(mtlbackbuffer);
+    ImGui_ImplMetal_NewFrame(descriptor.get());
 #endif
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 }
 
-inline auto end_frame(siren::CommandBuffer& cmds) -> void {
+inline auto end_frame(
+    [[maybe_unused]] siren::Device& device,
+    [[maybe_unused]] siren::CommandBuffer& cmds,
+    [[maybe_unused]] const siren::ImageHandle backbuffer
+) -> void {
     ImGui::Render();
 
 #if defined(OITER_LINUX) || defined(OITER_WINDOWS)
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 #elifdef OITER_MACOS
-    // HACK: hacky hacks
-    auto& mtl_cmds = static_cast<siren::metal::CommandBuffer&>(cmds);
-    ImGui_ImplMetal_RenderDrawData(
-        ImGui::GetDrawData(),
-        mtl_cmds.metal_commandbuffer(),
-        UNIMPLEMENTED()
-    );
+    AUTORELEASE {
+        auto& mtl_cmds      = static_cast<siren::metal::CommandBuffer&>(cmds);
+        auto mtldevice      = static_cast<siren::MetalDevice&>(device);
+        auto* mtlbackbuffer = mtldevice.metal_texture(backbuffer);
+        auto descriptor = siren::metal::transfer_ptr(MTL::RenderPassDescriptor::alloc()->init());
+        descriptor->colorAttachments()->object(0)->setTexture(mtlbackbuffer);
+        descriptor->colorAttachments()->object(0)->setLoadAction(MTL::LoadActionLoad);
+        descriptor->colorAttachments()->object(0)->setStoreAction(MTL::StoreActionStore);
+        auto encoder = siren::metal::retain_ptr(
+            mtl_cmds.metal_commandbuffer()->renderCommandEncoder(descriptor.get())
+        );
+        ImGui_ImplMetal_RenderDrawData(
+            ImGui::GetDrawData(),
+            mtl_cmds.metal_commandbuffer(),
+            encoder.get()
+        );
+        encoder->endEncoding();
+    }
 #endif
 }
 
 /// @brief Draws the debug overlay and returns requested state changes.
 [[nodiscard]]
 inline auto render_debug(
+    siren::Device& device,
     siren::CommandBuffer& cmds,
+    siren::ImageHandle backbuffer,
     const siren::Statistics& statistics,
     const oiter::FrameStats& frame_stats,
     oiter::OitMethod& oit_method
 ) -> DebugPanelActions {
     DebugPanelActions actions;
 
-    new_frame(cmds);
+    new_frame(device, cmds, backbuffer);
 
     const auto& io = ImGui::GetIO();
 
@@ -186,7 +214,7 @@ inline auto render_debug(
     ImGui::Text("F3 - RENDER SKYBOX  ");
     ImGui::End();
 
-    end_frame(cmds);
+    end_frame(device, cmds, backbuffer);
 
     return actions;
 }

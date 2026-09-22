@@ -33,9 +33,12 @@ class DepthPeeling final : public OitMethod {
 public:
     DepthPeeling(siren::Device& device, siren::Extent2 extent, siren::AssetServer& assets);
 
-    [[nodiscard]]
-    auto render(const siren::Camera& camera, const BakedScene& scene) const
-        -> siren::ImageHandle override;
+    auto render(
+        siren::CommandBuffer& cmds,
+        siren::ImageHandle output,
+        const siren::Camera& camera,
+        const BakedScene& scene
+    ) const -> void override;
 
     auto resize(const siren::Extent2 extent) -> void override;
     auto reload_shaders() -> void override;

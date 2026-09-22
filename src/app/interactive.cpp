@@ -38,14 +38,13 @@ static auto create_swapchain(Device& device, Window& window) -> Swapchain {
 }
 
 struct InteractiveApp::Impl {
-    Impl(const InteractiveAppOptions& options, InteractiveState& interactive_state) :
+    Impl(const InteractiveAppOptions& options) :
         context(Context::make({.level = options.log_level})),
         window(context.make_window({.title = "Oiter"})), device(context.make_device()),
         assets(*device),
         renderer(*device, assets, options.scene_path, options.method, window.extent()),
         swapchain(create_swapchain(*device, window)),
-        skybox("oiter://assets/textures/skybox/skybox.cubemap", *device, assets),
-        interactive_state(interactive_state), frame_stats({}) {
+        skybox("oiter://assets/textures/skybox/skybox.cubemap", *device, assets), frame_stats({}) {
 
         camera.set_position(options.camera_position);
         camera.lookat(options.camera_lookat);
@@ -73,11 +72,12 @@ struct InteractiveApp::Impl {
     Skybox skybox;
     Camera camera               = Camera{{}};
     CameraController controller = CameraController{5.f, 0.5f};
-    InteractiveState& interactive_state;
     FrameStats frame_stats;
+    bool debug_menu_visible = true;
+    bool skybox_visible     = true;
 
     auto run() -> void {
-        auto last_update = time::elapsed(); // used for fps update
+        auto last_update = time::elapsed();
 
         while (!window.should_close()) {
             time::step();
@@ -95,8 +95,6 @@ struct InteractiveApp::Impl {
 
             handle_input();
             draw_scene();
-
-            interactive_state.camera_position = camera.position();
         }
     }
 
@@ -112,7 +110,7 @@ struct InteractiveApp::Impl {
         }
 
         if (window.input().keyboard().just_pressed(Key::F1)) {
-            interactive_state.debug_menu_visible = !interactive_state.debug_menu_visible;
+            debug_menu_visible = !debug_menu_visible;
         }
 
         if (window.input().keyboard().just_pressed(Key::F2)) {
@@ -120,7 +118,7 @@ struct InteractiveApp::Impl {
         }
 
         if (window.input().keyboard().just_pressed(Key::F3)) {
-            interactive_state.skybox_visible = !interactive_state.skybox_visible;
+            skybox_visible = !skybox_visible;
         }
     }
 
@@ -130,35 +128,34 @@ struct InteractiveApp::Impl {
 
         TIMER(frame_stats.oit_render_ms) {
             renderer.render(*cmds, backbuffer, camera);
+
+            if (skybox_visible) {
+                skybox.render_behind(*cmds, backbuffer, camera);
+            }
         }
 
-        if (interactive_state.skybox_visible) {
-            skybox.render_behind(*cmds, backbuffer, camera);
-        }
-
-        if (interactive_state.debug_menu_visible) {
+        if (debug_menu_visible) {
             const auto actions = gui::render_debug(
+                *device,
                 *cmds,
+                backbuffer,
                 device->statistics(),
                 frame_stats,
                 renderer.method()
             );
 
             if (actions.oit_method.has_value()) {
-                interactive_state.oit_method = actions.oit_method.value();
-                renderer.set_method(interactive_state.oit_method);
+                renderer.set_method(*actions.oit_method);
             }
         }
+
+        swapchain.present(std::move(cmds));
     }
 };
 
-InteractiveApp::InteractiveApp(const InteractiveAppOptions& options) :
-    m_interactive_state{
-        .oit_method      = options.method,
-        .camera_position = options.camera_position,
-    } {
+InteractiveApp::InteractiveApp(const InteractiveAppOptions& options) {
     FileSystem::mount("oiter", OITER_VFS);
-    m_impl = std::make_unique<Impl>(options, m_interactive_state);
+    m_impl = std::make_unique<Impl>(options);
 }
 
 InteractiveApp::~InteractiveApp() = default;
