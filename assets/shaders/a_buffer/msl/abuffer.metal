@@ -4,6 +4,9 @@
 
 using namespace metal;
 
+constant uint INVALID = 0xFFFFFFFFu;
+constant uint MAX_NODES = 8u;
+
 struct VertexIn {
     float4 position [[attribute(0)]];
 };
@@ -43,14 +46,21 @@ vertex auto vgather(
 
 fragment auto fgather(
     texture2d<uint, access::read_write> heads  [[texture(0)]],
-    device atomic_uint& counter           [[buffer(0)]],
-    device Node* nodes                    [[buffer(1)]],
-    constant MeshUniforms& mesh_uniforms  [[buffer(3)]],
-    FragmentIn in                         [[stage_in]]
+    device atomic_uint& counter                [[buffer(0)]],
+    device Node* nodes                         [[buffer(1)]],
+    constant MeshUniforms& mesh_uniforms       [[buffer(3)]],
+    FragmentIn in                              [[stage_in]]
 ) -> void {
     const uint2 pixel = uint2(in.position.xy);
-    const uint index  = atomic_fetch_add_explicit(&counter, 1i, memory_order_relaxed);
-    const uint old    = heads.atomic_exchange(pixel, uint4(index)).r;
+
+    const uint capacity = MAX_NODES * heads.get_width() * heads.get_height();
+    const uint index = atomic_fetch_add_explicit(&counter, 1u, memory_order_relaxed);
+
+    if (index >= capacity) {
+        return;
+    }
+
+    const uint old = heads.atomic_exchange(pixel, uint4(index)).r;
 
     nodes[index].color = mesh_uniforms.color;
     nodes[index].depth = in.position.z;
@@ -59,8 +69,6 @@ fragment auto fgather(
 
 // == BLEND ==
 
-constant uint INVALID = 0xFFFFFFFFu;
-constant uint MAX_NODES = 8u;
 
 vertex auto vblend(uint vertex_id [[vertex_id]]) -> FragmentIn {
     const float2 positions[3] = {
@@ -84,15 +92,15 @@ float4 sorted_color(
     uint node_count = 0u;
 
     while (
-        index != INVALID &&
-        index < node_capacity &&
+        index != INVALID and
+        index < node_capacity and
         node_count < MAX_NODES
     ) {
         const Node node = nodes[index];
         uint insertion = node_count;
 
         while (
-            insertion > 0u &&
+            insertion > 0u and
             sorted[insertion - 1u].depth > node.depth
         ) {
             sorted[insertion] = sorted[insertion - 1u];

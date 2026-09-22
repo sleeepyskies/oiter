@@ -119,7 +119,7 @@ auto Skybox::create_resources() -> void {
         .colors =
             ColorAttachmentDescriptors{
                 ColorAttachmentDescriptor{
-                    .format     = {},
+                    .format     = ImageFormat::BGRA8,
                     .alpha_mode = AlphaMode::Blend,
                     .color_blend =
                         BlendDescription{
@@ -136,7 +136,7 @@ auto Skybox::create_resources() -> void {
                 },
             },
         .depth_stencil = std::nullopt,
-        .cull_mode     = CullMode::Back,
+        .cull_mode     = CullMode::None,
     }));
 
     auto vertex_buffer = m_device.make_buffer(

@@ -75,11 +75,12 @@ struct InteractiveApp::Impl {
     FrameStats frame_stats;
     bool debug_menu_visible = true;
     bool skybox_visible     = true;
+    bool exit               = false;
 
     auto run() -> void {
         auto last_update = time::elapsed();
 
-        while (!window.should_close()) {
+        while (!window.should_close() and not exit) {
             time::step();
 
             auto since_update = time::elapsed().miliseconds() - last_update.miliseconds();
@@ -109,16 +110,20 @@ struct InteractiveApp::Impl {
             controller.process_movement(camera, window.input().keyboard(), time::delta().seconds());
         }
 
-        if (window.input().keyboard().just_pressed(Key::F1)) {
+        if (window.input().keyboard().just_pressed(Key::Num1)) {
             debug_menu_visible = !debug_menu_visible;
         }
 
-        if (window.input().keyboard().just_pressed(Key::F2)) {
+        if (window.input().keyboard().just_pressed(Key::Num2)) {
             renderer.reload_shaders();
         }
 
-        if (window.input().keyboard().just_pressed(Key::F3)) {
+        if (window.input().keyboard().just_pressed(Key::Num3)) {
             skybox_visible = !skybox_visible;
+        }
+
+        if (window.input().keyboard().just_pressed(Key::Esc)) {
+            exit = true;
         }
     }
 

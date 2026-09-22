@@ -29,7 +29,7 @@ struct InteractiveAppOptions {
     std::string scene_path         = "oiter://assets/meshes/stresstest.glb";
     MethodKind method              = MethodKind::default_kind();
     siren::Point3f camera_position = siren::Point3f{0.f, 0.f, 2.f};
-    siren::Point3f camera_lookat   = siren::Point3f{-1.f, 0.f, 2.f};
+    siren::Point3f camera_lookat   = siren::Point3f{0.f, 0.f, -2.f};
 };
 
 /// @brief The Oiter interactive application. Handles launching the

@@ -209,9 +209,10 @@ inline auto render_debug(
             | ImGuiWindowFlags_NoBackground
     );
 
-    ImGui::Text("F1 - TOGGLE DEBUG   ");
-    ImGui::Text("F2 - RELOAD SHADERS ");
-    ImGui::Text("F3 - RENDER SKYBOX  ");
+    ImGui::Text("ESC - EXIT           ");
+    ImGui::Text("1   - TOGGLE DEBUG   ");
+    ImGui::Text("2   - RELOAD SHADERS ");
+    ImGui::Text("3   - RENDER SKYBOX  ");
     ImGui::End();
 
     end_frame(device, cmds, backbuffer);
