@@ -35,7 +35,7 @@ auto ABuffer::render(
     {
         // reset the counter each frame
         const auto ssbodata = ByteBuffer::make({0});
-        cmds.write_buffer(m_storage_buffer->handle(), 0, ssbodata.view());
+        cmds.fill_buffer(m_storage_buffer->handle(), 0, Range<usize>::until(sizeof(u32)));
 
         // reset the list heads each frame using 0xFFFFFFFF
         cmds.fill_buffer(m_staging->handle(), std::numeric_limits<u8>::max());
@@ -45,10 +45,12 @@ auto ABuffer::render(
     cmds.render_pass(
         // we don't actually write to any output directly, we just manipulate the list_head and the
         // ssbo
-        {.target =
-             RenderTargetless{
-                 .extent = m_extent,
-             }},
+        {
+            .target =
+                RenderTargetless{
+                    .extent = m_extent,
+                },
+        },
         [&](RenderCommandEncoder& pass) {
             pass.bind_graphics_pipeline(m_gather_pipeline->handle());
 

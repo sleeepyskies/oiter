@@ -41,8 +41,9 @@ const auto cube_layout = LayoutBuilder::make().add(DataType::Float32, 3).finish(
 
 } // namespace
 
-Skybox::Skybox(const std::string_view path, Device& device, AssetServer& server) :
-    m_device(device), m_assets(server), m_path(path) {
+Skybox::Skybox(Device& device, AssetServer& server) :
+    m_device(device),
+    m_assets(server) {
     create_resources();
 }
 
@@ -102,7 +103,7 @@ auto Skybox::create_resources() -> void {
         .generate_mipmap_levels = false,
     };
 
-    m_skybox_texture = m_assets.load<Texture>(m_path, std::move(texture_config));
+    m_skybox_texture = m_assets.load<Texture>(path, std::move(texture_config));
 
     m_skybox_shader = m_assets.load<ShaderAsset>("oiter://assets/shaders/skybox.sshg");
 

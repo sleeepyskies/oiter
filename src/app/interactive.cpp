@@ -39,12 +39,19 @@ static auto create_swapchain(Device& device, Window& window) -> Swapchain {
 
 struct InteractiveApp::Impl {
     Impl(const InteractiveAppOptions& options) :
-        context(Context::make({.level = options.log_level})),
-        window(context.make_window({.title = "Oiter"})), device(context.make_device()),
+        context(
+            Context::make({
+                .level      = options.log_level,
+                .validation = false,
+            })
+        ),
+        window(context.make_window({.title = "Oiter"})),
+        device(context.make_device()),
         assets(*device),
-        renderer(*device, assets, options.scene_path, options.method, window.extent()),
+        renderer(*device, assets, options.scene_path, options.method, window.framebuffer_extent()),
         swapchain(create_swapchain(*device, window)),
-        skybox("oiter://assets/textures/skybox/skybox.cubemap", *device, assets), frame_stats({}) {
+        skybox(*device, assets),
+        frame_stats({}) {
 
         camera.set_position(options.camera_position);
         camera.lookat(options.camera_lookat);
@@ -54,7 +61,7 @@ struct InteractiveApp::Impl {
 
         window.on_resize([this](const Extent2 extent) {
             camera.set_aspect(static_cast<f32>(extent.x) / static_cast<f32>(extent.y));
-            swapchain.update({.extent = extent});
+            swapchain.reconfigure({.extent = extent});
             renderer.resize(extent);
         });
     }
@@ -119,6 +126,11 @@ struct InteractiveApp::Impl {
         }
 
         if (window.input().keyboard().just_pressed(Key::Num3)) {
+            skybox_visible = !skybox_visible;
+        }
+
+        if (window.input().keyboard().just_pressed(Key::Num4)) {
+            swapchain.reconfigure({.vsync = !swapchain.info().vsync});
             skybox_visible = !skybox_visible;
         }
 

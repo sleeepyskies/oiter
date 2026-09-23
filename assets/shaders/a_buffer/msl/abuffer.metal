@@ -87,40 +87,65 @@ float4 sorted_color(
     const device Node* nodes,
     uint node_capacity
 ) {
-    Node sorted[MAX_NODES];
-    uint index = first_index;
-    uint node_count = 0u;
-
-    while (
-        index != INVALID and
-        index < node_capacity and
-        node_count < MAX_NODES
-    ) {
-        const Node node = nodes[index];
-        uint insertion = node_count;
-
-        while (
-            insertion > 0u and
-            sorted[insertion - 1u].depth > node.depth
-        ) {
-            sorted[insertion] = sorted[insertion - 1u];
-            --insertion;
-        }
-
-        sorted[insertion] = node;
-        ++node_count;
-        index = node.next;
-    }
-
     float4 color = float4(0.0);
 
-    for (uint i = node_count; i > 0u; --i) {
-        const Node node = sorted[i - 1u];
+    bool has_upper = false;
+    float upper_depth = 0.0;
+    uint upper_index = 0u;
+
+    while (true) {
+        uint index = first_index;
+
+        uint best_index = INVALID;
+        float best_depth = -INFINITY;
+
+        uint steps = 0u;
+
+        while (
+            index != INVALID and
+            index < node_capacity and
+            steps < node_capacity
+        ) {
+            const Node node = nodes[index];
+
+            bool below_upper =
+                !has_upper or
+                node.depth < upper_depth or
+                (node.depth == upper_depth and index < upper_index);
+
+            bool better =
+                best_index == INVALID or
+                node.depth > best_depth or
+                (node.depth == best_depth and index > best_index);
+
+            if (below_upper and better) {
+                best_index = index;
+                best_depth = node.depth;
+            }
+
+            index = node.next;
+            ++steps;
+        }
+
+        if (best_index == INVALID) {
+            break;
+        }
+
+        const Node node = nodes[best_index];
+
         const float remaining = 1.0 - node.color.a;
 
-        color.rgb = node.color.rgb * node.color.a
-                  + color.rgb * remaining;
-        color.a = node.color.a + color.a * remaining;
+        color.rgb =
+            node.color.rgb * node.color.a +
+            color.rgb * remaining;
+
+        color.a =
+            node.color.a +
+            color.a * remaining;
+
+        upper_depth = node.depth;
+        upper_index = best_index;
+        has_upper = true;
     }
 
     return color;

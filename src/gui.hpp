@@ -213,6 +213,7 @@ inline auto render_debug(
     ImGui::Text("1   - TOGGLE DEBUG   ");
     ImGui::Text("2   - RELOAD SHADERS ");
     ImGui::Text("3   - RENDER SKYBOX  ");
+    ImGui::Text("4   - TOGGLE VSYNC   ");
     ImGui::End();
 
     end_frame(device, cmds, backbuffer);

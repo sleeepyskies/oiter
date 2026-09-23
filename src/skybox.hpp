@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <string_view>
 
 #include "2iREN/asset/mesh.hpp"
 #include "2iREN/asset/shader.hpp"
@@ -14,11 +13,12 @@ namespace oiter {
 /// @brief Utility class for rendering a skybox.
 class Skybox {
 public:
+    static constexpr auto path = "oiter://assets/textures/skybox/skybox.cubemap";
+
     /// @brief Creates a skybox from the given cube map path.
-    /// @param path Path to the skybox cube map asset.
     /// @param device Device used to create skybox resources.
     /// @param server Asset server used to load skybox assets.
-    Skybox(const std::string_view path, siren::Device& device, siren::AssetServer& server);
+    Skybox(siren::Device& device, siren::AssetServer& server);
 
     /// @brief Renders the skybox behind the alpha contents of an image.
     /// @param cmds The command buffer to record into.
@@ -46,9 +46,6 @@ private:
 
     /// @brief Cached reference to the asset server.
     siren::AssetServer& m_assets;
-
-    /// @brief Path to the cube map texture.
-    std::string m_path;
 
     /// @brief Uniform buffer containing camera data.
     std::unique_ptr<siren::Buffer> m_uniform_buffer;
