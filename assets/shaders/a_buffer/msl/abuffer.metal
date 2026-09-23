@@ -18,7 +18,6 @@ struct FragmentIn {
 struct SceneUniforms {
     float4x4 projection_view;
     packed_float3 camera_position;
-    float _0pad;
 };
 
 struct MeshUniforms {
@@ -51,16 +50,37 @@ fragment auto fgather(
     constant MeshUniforms& mesh_uniforms       [[buffer(3)]],
     FragmentIn in                              [[stage_in]]
 ) -> void {
-    const uint2 pixel = uint2(in.position.xy);
+    // helper threads shouldnt aollocate nodes so ignore please
+    if (simd_is_helper_thread()) {
+        return;
+    }
 
+    const uint2 pixel   = uint2(in.position.xy);
+
+    // basically returns size of subgroup
+    const uint count  = simd_sum(1u);
+    // gives each thread a unique value starting from 1
+    // works by summing 1u for each thread before this one
+    const uint offset = simd_prefix_exclusive_sum(1u);
+
+    uint base = 0u;
+    // elect the big boss thread and reserve a block of indices at once
+    // also returns the first index reserved
+    if (simd_is_first()) {
+        base = atomic_fetch_add_explicit(&counter, count, memory_order_relaxed);
+    }
+
+    // this will give every thread the base index, which we can add their unique number to :D
+    base = simd_broadcast_first(base);
+
+    // check if we over buffer size, in which case we gotta stop
     const uint capacity = MAX_NODES * heads.get_width() * heads.get_height();
-    const uint index = atomic_fetch_add_explicit(&counter, 1u, memory_order_relaxed);
-
+    const uint index = base + offset;
     if (index >= capacity) {
         return;
     }
 
-    const uint old = heads.atomic_exchange(pixel, uint4(index)).r;
+    const uint old   = heads.atomic_exchange(pixel, uint4(index)).r;
 
     nodes[index].color = mesh_uniforms.color;
     nodes[index].depth = in.position.z;
