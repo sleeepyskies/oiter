@@ -4,8 +4,7 @@
 
 auto main(const int argc, const char** argv) -> int {
     try {
-        const auto command = oiter::Cli::parse(argc, argv);
-        if (command) {
+        if (const auto command = oiter::Cli::parse(argc, argv)) {
             command->run();
         }
     } catch (std::exception& exception) {

@@ -44,7 +44,7 @@ public:
     virtual ~OitMethod() = default;
 
     /// @brief The main render function of the OIT method.
-    /// @param cmds The command buffer to rende commands into.
+    /// @param cmds The command buffer to render commands into.
     /// @param output The target output image.
     /// @param camera The camera to render the scene from.
     /// @param scene The scene to render.

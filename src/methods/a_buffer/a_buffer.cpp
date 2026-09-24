@@ -145,7 +145,7 @@ auto ABuffer::create_buffers(const Extent2 extent) -> void {
     m_storage_buffer = std::make_unique<Buffer>(m_device.make_buffer({
         .label        = "A-Buffer SSBO",
         .size         = desired_size,
-        .usage        = BufferFlags::from(BufferFlag::Storage),
+        .usage        = BufferFlags::make(BufferFlag::Storage),
         .memory_usage = MemoryUsage::CpuAndGpu,
     }));
 }
@@ -156,7 +156,7 @@ auto ABuffer::create_images(const Extent2 extent) -> void {
         .format       = ImageFormat::R32UI,
         .extent       = extent.to_extent3(),
         .memory_usage = MemoryUsage::CpuAndGpu,
-        .flags        = ImageFlags::from(
+        .flags        = ImageFlags::make(
             ImageFlag::ShaderRead,
             ImageFlag::ShaderWrite,
             ImageFlag::UseAtomics

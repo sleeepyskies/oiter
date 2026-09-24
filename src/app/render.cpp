@@ -24,16 +24,18 @@ namespace oiter {
 
 struct RenderApp::Impl {
     Impl(const RenderAppOptions& options) :
-        context(Context::make({.level = options.log_level})), window(context.make_window({
-                                                                  .title     = "Oiter",
-                                                                  .width     = options.dimensions.x,
-                                                                  .height    = options.dimensions.y,
-                                                                  .decorated = false,
-                                                                  .resizable = false,
-                                                                  .transparent = false,
-                                                                  .mode        = WindowMode::Normal,
-                                                              })),
-        device(context.make_device()), assets(*device),
+        context(Context::make({.level = options.log_level})),
+        window(context.make_window({
+            .title       = "Oiter",
+            .width       = options.dimensions.x,
+            .height      = options.dimensions.y,
+            .decorated   = false,
+            .resizable   = false,
+            .transparent = false,
+            .mode        = WindowMode::Normal,
+        })),
+        device(context.make_device()),
+        assets(*device),
         renderer(*device, assets, options.scene_path, options.method, options.dimensions),
         output_path(options.output_path) {
         camera.set_position(options.camera_position);
@@ -56,7 +58,7 @@ struct RenderApp::Impl {
             .label  = "Rendered Image",
             .format = ImageFormat::sRGBA8,
             .extent = window.extent().to_extent3(),
-            .flags  = ImageFlags::from(ImageFlag::RenderAttachment),
+            .flags  = ImageFlags::make(ImageFlag::RenderAttachment),
         };
         const auto output = device->make_image(output_descriptor);
 

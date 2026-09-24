@@ -130,6 +130,8 @@ struct InteractiveApp::Impl {
         }
 
         if (window.input().keyboard().just_pressed(Key::Num4)) {
+            const auto newval = not swapchain.info().vsync;
+            siren::log::info("vsync {}", newval ? "enabled" : "disabled");
             swapchain.reconfigure({.vsync = !swapchain.info().vsync});
             skybox_visible = !skybox_visible;
         }

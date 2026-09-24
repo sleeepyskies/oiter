@@ -52,7 +52,9 @@ SceneRenderer::SceneRenderer(
     const MethodKind kind,
     const Extent2 extent
 ) :
-    m_device(device), m_assets(assets), m_extent(extent),
+    m_device(device),
+    m_assets(assets),
+    m_extent(extent),
     m_method(create_method(kind, device, assets, extent)) {
     // samplers
     m_sampler = std::make_unique<Sampler>(m_device.make_sampler({}));
@@ -207,7 +209,7 @@ auto SceneRenderer::create_images() -> void {
         .extent        = m_extent.to_extent3(),
         .dimension     = ImageDimension::D2,
         .mipmap_levels = 1,
-        .flags         = ImageFlags::from(ImageFlag::RenderAttachment),
+        .flags         = ImageFlags::make(ImageFlag::RenderAttachment),
     }));
 }
 

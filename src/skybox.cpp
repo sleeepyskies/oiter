@@ -89,7 +89,7 @@ auto Skybox::create_resources() -> void {
     m_uniform_buffer = std::make_unique<Buffer>(m_device.make_buffer({
         .label = "Skybox Uniform Buffer",
         .size  = sizeof(Uniforms),
-        .usage = BufferFlags::from(BufferFlag::Uniform),
+        .usage = BufferFlags::make(BufferFlag::Uniform),
     }));
 
     auto texture_config = TextureLoader::ConfigType{
@@ -144,7 +144,7 @@ auto Skybox::create_resources() -> void {
         {
             .label = "Skybox Vertex Buffer",
             .size  = cube_vertices.size_bytes(),
-            .usage = BufferFlags::from(BufferFlag::Vertex),
+            .usage = BufferFlags::make(BufferFlag::Vertex),
         },
         cube_vertices.view()
     );
@@ -153,7 +153,7 @@ auto Skybox::create_resources() -> void {
         {
             .label = "Skybox Index Buffer",
             .size  = cube_indices.size_bytes(),
-            .usage = BufferFlags::from(BufferFlag::Index),
+            .usage = BufferFlags::make(BufferFlag::Index),
         },
         cube_indices.view()
     );

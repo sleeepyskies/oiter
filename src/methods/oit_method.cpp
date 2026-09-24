@@ -9,7 +9,9 @@ namespace oiter {
 
 using namespace siren;
 
-OitMethod::OitMethod(Device& device, AssetServer& assets) : m_device(device), m_assets(assets) {
+OitMethod::OitMethod(Device& device, AssetServer& assets) :
+    m_device(device),
+    m_assets(assets) {
     create_buffers();
 }
 
@@ -50,7 +52,7 @@ auto OitMethod::create_buffers() -> void {
     m_scene_buffer = std::make_unique<Buffer>(m_device.make_buffer({
         .label        = "scene uniforms",
         .size         = sizeof(SceneUniforms),
-        .usage        = BufferFlags::from(BufferFlag::Uniform),
+        .usage        = BufferFlags::make(BufferFlag::Uniform),
         .memory_usage = MemoryUsage::CpuAndGpu,
     }));
 
@@ -59,7 +61,7 @@ auto OitMethod::create_buffers() -> void {
         .label = "mesh uniforms",
         .size  = align_up(sizeof(MeshUniforms), m_device.limits().uniform_buffer_offset_alignment)
             * MAX_MESHES,
-        .usage        = BufferFlags::from(BufferFlag::Uniform),
+        .usage        = BufferFlags::make(BufferFlag::Uniform),
         .memory_usage = MemoryUsage::CpuAndGpu,
     }));
 }
