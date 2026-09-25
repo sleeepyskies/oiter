@@ -90,14 +90,14 @@ stages:
       );
 
       void main() {
-          int gridsize = (size == 0) ? 2 : ((size == 1) ? 4 : 8);
+          int gridsize = size == 0 ? 2 : ((size == 1) ? 4 : 8);
 
           const ivec2 cell = ivec2(gl_FragCoord.xy) % ivec2(gridsize);
 
           float threshold;
 
           if (size == 0) {
-              threshold = bayer4[cell.y * gridsize + cell.x];
+              threshold = bayer4[cell.y *  gridsize + cell.x];
           } else if (size == 1) {
               threshold = bayer16[cell.y * gridsize + cell.x];
           } else {

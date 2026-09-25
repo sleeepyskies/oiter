@@ -7,8 +7,8 @@ from trimesh.visual.texture import TextureVisuals
 
 rng = np.random.default_rng(42)
 
-NUM_OBJECTS = 300
-SCENE_SIZE = 20.0
+NUM_OBJECTS = 500
+SCENE_SIZE = 50
 
 scene = trimesh.Scene()
 
@@ -20,9 +20,10 @@ def random_mesh():
         return trimesh.creation.box(extents=rng.uniform(0.3, 1.8, size=3))
 
     if kind == "sphere":
-        return trimesh.creation.uv_sphere(
+        return trimesh.creation.icosphere(
             radius=rng.uniform(0.25, 0.9),
             count=[12, 12],
+            subdivisions=5,
         )
 
     if kind == "ico":
@@ -35,9 +36,9 @@ def random_mesh():
 
     if kind == "cylinder":
         return trimesh.creation.cylinder(
-            radius=rng.uniform(0.2, 0.7),
+            radius=rng.uniform(0.2, 2.5),
             height=rng.uniform(0.4, 1.8),
-            sections=12,
+            sections=20,
         )
 
     points = rng.normal(size=(20, 3))
@@ -84,33 +85,6 @@ for i in range(NUM_OBJECTS):
     )
 
 
-for i in range(15):
-    mesh = trimesh.creation.icosphere(subdivisions=2, radius=2.5)
-
-    material = PBRMaterial(
-        name=f"big_transparent_{i}",
-        baseColorFactor=[
-            float(rng.random()),
-            float(rng.random()),
-            float(rng.random()),
-            0.12,
-        ],
-        roughnessFactor=0.4,
-        alphaMode="BLEND",
-        doubleSided=True,
-    )
-
-    mesh.visual = TextureVisuals(material=material)
-
-    transform = trimesh.transformations.translation_matrix(rng.uniform(-5, 5, size=3))
-
-    scene.add_geometry(
-        mesh,
-        node_name=f"big_object_{i}",
-        transform=transform,
-    )
-
-
-scene.export("oit_test.glb")
+scene.export("shapes.glb")
 
 print(f"Wrote oit_test.glb with {len(scene.geometry)} transparent objects")
