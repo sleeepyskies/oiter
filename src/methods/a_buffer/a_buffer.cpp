@@ -9,8 +9,10 @@
 #include "2iREN/graphics/commands.hpp"
 #include "2iREN/graphics/graphics_pipeline.hpp"
 #include "2iREN/graphics/types.hpp"
+#include "2iREN/math/extent.hpp"
 #include "2iREN/scene/camera.hpp"
 #include "methods/oit_method.hpp"
+#include "utility/imgui_extras.hpp"
 
 using namespace siren;
 
@@ -19,9 +21,13 @@ namespace oiter {
 ABuffer::ABuffer(Device& device, const Extent2 extent, AssetServer& assets) :
     OitMethod(device, assets) {
     m_extent = extent;
-    create_buffers(extent);
-    create_images(extent);
+    create_buffers();
+    create_images();
     create_pipelines();
+
+    m_staging = std::make_unique<Buffer>(m_device.make_buffer({
+        .size = m_extent.area() * sizeof(u32),
+    }));
 }
 
 auto ABuffer::render(
@@ -68,18 +74,13 @@ auto ABuffer::render(
                     Slot{3},
                     mesh_uniforms_alignment() * (scene.opaque.size() + i)
                 );
-
+                pass.bind_uniform_buffer(m_abuffer_uniforms->handle(), Slot{4});
                 pass.bind_vertex_buffer(surface.vertex.buffer.handle(), Slot{4});
                 pass.bind_index_buffer(surface.index.buffer.handle(), surface.index.type);
                 pass.draw_indexed(surface.index.count);
             }
         }
     );
-
-    if (m_config.inspecting == Config::ListHead) {
-        // FIXME: how should we handle this case?
-        // return m_list_head->handle();
-    }
 
     cmds.render_pass(
         {
@@ -107,52 +108,58 @@ auto ABuffer::render(
 auto ABuffer::resize(const Extent2 extent) -> void {
     m_extent = extent;
 
-    create_buffers(extent);
-    create_images(extent);
+    create_buffers();
+    create_images();
 }
 
 auto ABuffer::reload_shaders() -> void {
-    m_gather_shader   = NullHandle;
+    m_gather_shader = NullHandle;
+    m_blend_shader  = NullHandle;
+
     m_gather_pipeline = nullptr;
-    m_blend_shader    = NullHandle;
     m_blend_pipeline  = nullptr;
     create_pipelines();
 }
 
 auto ABuffer::render_debug_info() -> void {
-    auto inspecting = (i32*)(&m_config.inspecting);
+    auto changed = ImGuiExtra::SliderUint("Nodes Per Pixel", &m_config.nodes_per_pixel, 1, 16);
 
-    if (ImGui::RadioButton("See Final Output         ", inspecting, 0)) {
-        m_config.inspecting = Config::None;
-    }
-    if (ImGui::RadioButton("Inspect List Head Texture", inspecting, 1)) {
-        m_config.inspecting = Config::ListHead;
+    if (changed) {
+        create_buffers();
     }
 }
 
-auto ABuffer::create_buffers(const Extent2 extent) -> void {
+auto ABuffer::create_buffers() -> void {
     const auto max_ssbo_size = m_device.limits().max_shader_storage_block_size;
-    const auto desired_size  = 16 + (k_list_length * extent.x * extent.y * sizeof(ABufferNode));
+    const auto desired_size  = 16
+        + (m_config.nodes_per_pixel * m_extent.x * m_extent.y * sizeof(ABufferNode));
 
     ASSERT(max_ssbo_size > desired_size);
 
-    m_staging = std::make_unique<Buffer>(m_device.make_buffer({
-        .size = extent.area() * sizeof(u32),
-    }));
-
     m_storage_buffer = std::make_unique<Buffer>(m_device.make_buffer({
-        .label        = "A-Buffer SSBO",
+        .label        = "ABuffer SSBO",
         .size         = desired_size,
         .flags        = BufferFlags::make(BufferFlag::Storage),
         .memory_usage = MemoryUsage::Shared,
     }));
+
+    const auto uniforms = ByteBuffer::make(m_config.nodes_per_pixel);
+    m_abuffer_uniforms  = std::make_unique<Buffer>(m_device.make_buffer(
+        {
+            .label        = "ABuffer Uniforms",
+            .size         = sizeof(u32),
+            .flags        = BufferFlags::make(BufferFlag::Uniform),
+            .memory_usage = MemoryUsage::Shared,
+        },
+        uniforms.view()
+    ));
 }
 
-auto ABuffer::create_images(const Extent2 extent) -> void {
+auto ABuffer::create_images() -> void {
     m_list_head = std::make_unique<Image>(m_device.make_image({
         .label        = "A-Buffer List Head Image",
         .format       = ImageFormat::R32UI,
-        .extent       = extent.to_extent3(),
+        .extent       = m_extent.to_extent3(),
         .memory_usage = MemoryUsage::Shared,
         .flags        = ImageFlags::make(
             ImageFlag::ShaderRead,

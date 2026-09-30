@@ -5,7 +5,6 @@
 using namespace metal;
 
 constant uint INVALID = 0xFFFFFFFFu;
-constant uint MAX_NODES = 8u;
 
 struct VertexIn {
     float4 position [[attribute(0)]];
@@ -23,6 +22,10 @@ struct SceneUniforms {
 struct MeshUniforms {
     float4 color;
     float4x4 model;
+};
+
+struct ABufferUniforms {
+    uint nodes_per_pixel;
 };
 
 struct Node {
@@ -48,6 +51,7 @@ fragment auto fgather(
     device atomic_uint& counter                [[buffer(0)]],
     device Node* nodes                         [[buffer(1)]],
     constant MeshUniforms& mesh_uniforms       [[buffer(3)]],
+    constant ABufferUniforms& abuffer_uniforms [[buffer(4)]],
     FragmentIn in                              [[stage_in]]
 ) -> void {
     // helper threads shouldnt aollocate nodes so ignore please
@@ -74,7 +78,7 @@ fragment auto fgather(
     base = simd_broadcast_first(base);
 
     // check if we over buffer size, in which case we gotta stop
-    const uint capacity = MAX_NODES * heads.get_width() * heads.get_height();
+    const uint capacity = abuffer_uniforms.nodes_per_pixel * heads.get_width() * heads.get_height();
     const uint index = base + offset;
     if (index >= capacity) {
         return;

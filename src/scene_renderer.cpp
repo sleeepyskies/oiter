@@ -1,15 +1,11 @@
 #include "scene_renderer.hpp"
 
 #include <memory>
-#include <utility>
 
 #include "2iREN/asset/asset_server.hpp"
 
 #include "2iREN/graphics/commands.hpp"
 #include "2iREN/graphics/fwd.hpp"
-#include "2iREN/graphics/graphics_pipeline.hpp"
-#include "2iREN/graphics/image.hpp"
-#include "2iREN/graphics/layout.hpp"
 
 #include "methods/a_buffer/a_buffer.hpp"
 #include "methods/method_kind.hpp"

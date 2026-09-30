@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include "2iREN/asset/shader.hpp"
 #include "2iREN/math/extent.hpp"
 
@@ -23,12 +24,13 @@ struct alignas(16) ABufferNode {
     siren::u32 next;
 };
 
+struct alignas(16) ABufferUniforms {
+    siren::u32 nodes_per_pixel;
+};
+
 class ABuffer final : public OitMethod {
     struct Config {
-        enum Inspecting : siren::i32 {
-            None     = 0,
-            ListHead = 1,
-        } inspecting = None;
+        siren::u32 nodes_per_pixel = 8;
     } m_config;
 
 public:
@@ -57,14 +59,13 @@ public:
     auto render_debug_info() -> void override;
 
 private:
-    // todo: put into config?
-    static constexpr siren::u8 k_list_length = 8;
     siren::Extent2 m_extent;
 
-    // should store per pixel, its corresponding entry in the SSBO
-    std::unique_ptr<siren::Image> m_list_head       = nullptr;
-    std::unique_ptr<siren::Buffer> m_storage_buffer = nullptr;
-    std::unique_ptr<siren::Buffer> m_staging        = nullptr;
+    std::unique_ptr<siren::Image> m_list_head = nullptr;
+
+    std::unique_ptr<siren::Buffer> m_storage_buffer   = nullptr;
+    std::unique_ptr<siren::Buffer> m_staging          = nullptr;
+    std::unique_ptr<siren::Buffer> m_abuffer_uniforms = nullptr;
 
     siren::StrongHandle<siren::ShaderAsset> m_gather_shader = siren::NullHandle;
     siren::StrongHandle<siren::ShaderAsset> m_blend_shader  = siren::NullHandle;
@@ -72,8 +73,8 @@ private:
     std::unique_ptr<siren::GraphicsPipeline> m_gather_pipeline = nullptr;
     std::unique_ptr<siren::GraphicsPipeline> m_blend_pipeline  = nullptr;
 
-    auto create_buffers(const siren::Extent2 extent) -> void;
-    auto create_images(const siren::Extent2 extent) -> void;
+    auto create_buffers() -> void;
+    auto create_images() -> void;
     auto create_pipelines() -> void;
 };
 } // namespace oiter

@@ -1,16 +1,12 @@
 #pragma once
 
 #include <memory>
-#include <utility>
 
 #include "2iREN/asset/asset_handle.hpp"
 #include "2iREN/asset/asset_server.hpp"
 #include "2iREN/asset/gltf.hpp"
-#include "2iREN/asset/shader.hpp"
 #include "2iREN/graphics/device.hpp"
 #include "2iREN/graphics/fwd.hpp"
-#include "2iREN/graphics/image.hpp"
-#include "2iREN/graphics/sampler.hpp"
 #include "2iREN/math/extent.hpp"
 #include "2iREN/scene/camera.hpp"
 

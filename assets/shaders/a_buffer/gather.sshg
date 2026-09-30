@@ -45,6 +45,10 @@ glsl:
             BakedMaterial material;
             mat4 model;
         };
+
+        layout(std140, binding = 3) uniform ABufferUniforms {
+            uint nodes_per_pixel;
+        };
         
         struct Node {
             vec4 color;
