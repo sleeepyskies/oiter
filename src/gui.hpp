@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Metal/MTLRenderPass.hpp>
 #include <format>
 #include <optional>
 #include <utility>
@@ -9,9 +8,10 @@
 
 #include <imgui/backends/imgui_impl_glfw.h>
 #include "2iREN/core/base.hpp"
-#if defined(OITER_LINUX) || defined(OITER_WINDOWS)
+#if defined(OITER_LINUX) or defined(OITER_WINDOWS)
 #include <imgui/backends/imgui_impl_opengl3.h>
 #elifdef OITER_MACOS
+#include <Metal/MTLRenderPass.hpp>
 #include <imgui/backends/imgui_impl_metal.h>
 
 #include "2iREN/graphics/backend/metal/commands.hpp"
@@ -40,7 +40,7 @@ inline auto init(const siren::Window& window, [[maybe_unused]] siren::Device& de
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
-#if defined(OITER_LINUX) || defined(OITER_WINDOWS)
+#if defined(OITER_LINUX) or defined(OITER_WINDOWS)
     ImGui_ImplGlfw_InitForOpenGL(window.native_handle(), true);
     ImGui_ImplOpenGL3_Init("#version 460");
 #elifdef OITER_MACOS
@@ -52,7 +52,7 @@ inline auto init(const siren::Window& window, [[maybe_unused]] siren::Device& de
 }
 
 inline auto shutdown() -> void {
-#if defined(OITER_LINUX) || defined(OITER_WINDOWS)
+#if defined(OITER_LINUX) or defined(OITER_WINDOWS)
     ImGui_ImplOpenGL3_Shutdown();
 #elifdef OITER_MACOS
     ImGui_ImplMetal_Shutdown();
@@ -66,7 +66,7 @@ inline auto new_frame(
     [[maybe_unused]] siren::CommandBuffer& cmds,
     [[maybe_unused]] const siren::ImageHandle backbuffer
 ) -> void {
-#if defined(OITER_LINUX) || defined(OITER_WINDOWS)
+#if defined(OITER_LINUX) or defined(OITER_WINDOWS)
     ImGui_ImplOpenGL3_NewFrame();
 #elifdef OITER_MACOS
     auto& mtldevice     = static_cast<siren::MetalDevice&>(device);
@@ -86,7 +86,7 @@ inline auto end_frame(
 ) -> void {
     ImGui::Render();
 
-#if defined(OITER_LINUX) || defined(OITER_WINDOWS)
+#if defined(OITER_LINUX) or defined(OITER_WINDOWS)
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 #elifdef OITER_MACOS
     AUTORELEASE {

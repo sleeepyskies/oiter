@@ -28,6 +28,10 @@ build-debug: (_build "debug")
 interactive *args: build
     ./build/Release/oiter interactive {{ args }}
 
+# Starts the Oiter interactive mode.
+interactive-debug *args: build
+    ./build/Debug/oiter interactive {{ args }}
+
 # Runs the Oiter render mode.
 render *args: build
     ./build/Release/oiter render {{ args }}

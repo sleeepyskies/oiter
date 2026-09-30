@@ -131,34 +131,42 @@ auto SceneRenderer::render(
 
     // TODO: use texture views here instead?
     switch (format) {
-        case ImageFormat::R8:
+        case ImageFormat::R8: {
             convert_format(
                 output,
                 m_format_pipelines[std::to_underlying(ImageFormatGroup::SingleChannel)]
                     .pipeline->handle()
             );
+            break;
+        }
 
-        case ImageFormat::RG32f:
+        case ImageFormat::RG32f: {
             convert_format(
                 output,
                 m_format_pipelines[std::to_underlying(ImageFormatGroup::DualChannel)]
                     .pipeline->handle()
             );
+            break;
+        }
 
         case ImageFormat::Depth32f:
-        case ImageFormat::Depth24Stencil8:
+        case ImageFormat::Depth24Stencil8: {
             convert_format(
                 output,
                 m_format_pipelines[std::to_underlying(ImageFormatGroup::DepthChannel)]
                     .pipeline->handle()
             );
+            break;
+        }
 
-        case ImageFormat::R32UI:
+        case ImageFormat::R32UI: {
             convert_format(
                 output,
                 m_format_pipelines[std::to_underlying(ImageFormatGroup::UnsignedIntChannel)]
                     .pipeline->handle()
             );
+            break;
+        }
 
         case ImageFormat::BGRA8:
         case ImageFormat::RGBA16f:
@@ -193,8 +201,7 @@ auto SceneRenderer::convert_format(
         },
         [&](RenderCommandEncoder& pass) {
             pass.bind_graphics_pipeline(pipeline_handle);
-            pass.bind_sampler(m_sampler->handle(), Slot{0});
-            pass.bind_image(imagehandle, Slot{0});
+            pass.bind_sampled_image(imagehandle, m_sampler->handle(), Slot{0});
             pass.draw(3);
         }
     );
@@ -208,7 +215,6 @@ auto SceneRenderer::create_images() -> void {
         .format        = ImageFormat::RGBA8,
         .extent        = m_extent.to_extent3(),
         .dimension     = ImageDimension::D2,
-        .mipmap_levels = 1,
         .flags         = ImageFlags::make(ImageFlag::RenderAttachment),
     }));
 }

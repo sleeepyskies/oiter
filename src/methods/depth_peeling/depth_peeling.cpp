@@ -104,7 +104,7 @@ auto DepthPeeling::render(
                     pass.bind_sampled_image(
                         m_depths[read_buffer_index]->handle(),
                         m_sampler->handle(),
-                        0
+                        Slot{0}
                     );
                 }
                 pass.bind_graphics_pipeline(peel_pipeline);
@@ -149,7 +149,11 @@ auto DepthPeeling::render(
             },
             [&](siren::RenderPassRecorder& pass) {
                 pass.bind_graphics_pipeline(m_blend_pipeline->handle());
-                pass.bind_sampled_image(m_write_color->handle(), m_sampler->handle(), 0);
+                pass.bind_sampled_image(
+                    m_write_color->handle(),
+                    m_sampler->handle(),
+                    Slot{0}
+                );
                 pass.draw_fullscreen();
             }
         );

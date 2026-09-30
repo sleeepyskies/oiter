@@ -1,4 +1,5 @@
 #include "screen_door.hpp"
+
 #include <imgui.h>
 #include <memory>
 
@@ -11,7 +12,7 @@
 #include "2iREN/graphics/render_target.hpp"
 #include "2iREN/math/extent.hpp"
 
-#include "2iREN/utility/byte_buffer.hpp"
+#include "2iREN/utility/bytebuffer.hpp"
 #include "2iREN/utility/identifier.hpp"
 
 #include "methods/oit_method.hpp"

@@ -4,7 +4,7 @@
 #include <limits>
 
 #include "2iREN/asset/asset_server.hpp"
-#include "2iREN/container/byte_buffer.hpp"
+#include "2iREN/container/bytebuffer.hpp"
 #include "2iREN/graphics/buffer.hpp"
 #include "2iREN/graphics/commands.hpp"
 #include "2iREN/graphics/graphics_pipeline.hpp"
@@ -54,21 +54,22 @@ auto ABuffer::render(
         [&](RenderCommandEncoder& pass) {
             pass.bind_graphics_pipeline(m_gather_pipeline->handle());
 
-            pass.bind_image(m_list_head->handle(), Slot{0});
+            pass.bind_storage_image(
+                m_list_head->handle(),
+                Slot{0}
+            );
 
-            pass.bind_storage_buffer(m_storage_buffer->handle(), Slot{0}, Range<usize>::until(16));
-            pass.bind_storage_buffer(m_storage_buffer->handle(), Slot{1}, Range<usize>::litnu(16));
+            pass.bind_storage_buffer(m_storage_buffer->handle(), Slot{0}, 0);
+            pass.bind_storage_buffer(m_storage_buffer->handle(), Slot{1}, 16);
             pass.bind_uniform_buffer(m_scene_buffer->handle(), Slot{2});
 
             for (u32 i = 0; i < scene.transparent.size(); i++) {
                 const auto& surface = scene.transparent[i];
 
-                const auto rstart = mesh_uniforms_alignment() * (scene.opaque.size() + i);
-
                 pass.bind_uniform_buffer(
                     m_mesh_buffer->handle(),
                     Slot{3},
-                    Range<usize>::make(rstart, rstart + sizeof(MeshUniforms))
+                    mesh_uniforms_alignment() * (scene.opaque.size() + i)
                 );
 
                 pass.bind_vertex_buffer(surface.vertex.buffer.handle(), Slot{4});
@@ -98,9 +99,12 @@ auto ABuffer::render(
         },
         [this](RenderCommandEncoder& pass) {
             pass.bind_graphics_pipeline(m_blend_pipeline->handle());
-            pass.bind_image(m_list_head->handle(), Slot{0});
-            pass.bind_storage_buffer(m_storage_buffer->handle(), Slot{0}, Range<usize>::until(16));
-            pass.bind_storage_buffer(m_storage_buffer->handle(), Slot{1}, Range<usize>::litnu(16));
+            pass.bind_storage_image(
+                m_list_head->handle(),
+                Slot{0}
+            );
+            pass.bind_storage_buffer(m_storage_buffer->handle(), Slot{0}, 0);
+            pass.bind_storage_buffer(m_storage_buffer->handle(), Slot{1}, 16);
             pass.draw(3);
         }
     );
@@ -145,8 +149,8 @@ auto ABuffer::create_buffers(const Extent2 extent) -> void {
     m_storage_buffer = std::make_unique<Buffer>(m_device.make_buffer({
         .label        = "A-Buffer SSBO",
         .size         = desired_size,
-        .usage        = BufferFlags::make(BufferFlag::Storage),
-        .memory_usage = MemoryUsage::CpuAndGpu,
+        .flags        = BufferFlags::make(BufferFlag::Storage),
+        .memory_usage = MemoryUsage::Shared,
     }));
 }
 
@@ -155,7 +159,7 @@ auto ABuffer::create_images(const Extent2 extent) -> void {
         .label        = "A-Buffer List Head Image",
         .format       = ImageFormat::R32UI,
         .extent       = extent.to_extent3(),
-        .memory_usage = MemoryUsage::CpuAndGpu,
+        .memory_usage = MemoryUsage::Shared,
         .flags        = ImageFlags::make(
             ImageFlag::ShaderRead,
             ImageFlag::ShaderWrite,

@@ -24,7 +24,7 @@ namespace oiter {
 
 struct RenderApp::Impl {
     Impl(const RenderAppOptions& options) :
-        context(Context::make({.level = options.log_level})),
+        context(Context::make({.level = options.log_level, .validation = true})),
         window(context.make_window({
             .title       = "Oiter",
             .width       = options.dimensions.x,
@@ -95,8 +95,7 @@ struct RenderApp::Impl {
             },
             [&](RenderCommandEncoder& pass) {
                 pass.bind_graphics_pipeline(pipeline.handle());
-                pass.bind_sampler(sampler.handle(), Slot{0});
-                pass.bind_image(output.handle(), Slot{0});
+                pass.bind_sampled_image(output.handle(), sampler.handle(), Slot{0});
                 pass.draw(3);
             }
         );

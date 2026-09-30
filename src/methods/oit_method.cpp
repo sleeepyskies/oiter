@@ -1,7 +1,7 @@
 #include "oit_method.hpp"
 
 #include "2iREN/asset/asset_server.hpp"
-#include "2iREN/container/byte_buffer.hpp"
+#include "2iREN/container/bytebuffer.hpp"
 #include "2iREN/graphics/buffer.hpp"
 #include "2iREN/graphics/device.hpp"
 
@@ -20,7 +20,7 @@ auto OitMethod::update_buffers(const Camera& camera, const BakedScene& scene) co
         .projection_view = camera.projection_view(),
         .camera_position = camera.position(),
     }};
-    m_scene_buffer->upload(scenebuffer.view());
+    m_scene_buffer->write(scenebuffer.view());
 
     ASSERT(scene.opaque.size() + scene.transparent.size() <= MAX_MESHES);
 
@@ -45,15 +45,15 @@ auto OitMethod::update_buffers(const Camera& camera, const BakedScene& scene) co
 
     append_meshes(scene.opaque);
     append_meshes(scene.transparent);
-    m_mesh_buffer->upload(buffer.view());
+    m_mesh_buffer->write(buffer.view());
 }
 
 auto OitMethod::create_buffers() -> void {
     m_scene_buffer = std::make_unique<Buffer>(m_device.make_buffer({
         .label        = "scene uniforms",
         .size         = sizeof(SceneUniforms),
-        .usage        = BufferFlags::make(BufferFlag::Uniform),
-        .memory_usage = MemoryUsage::CpuAndGpu,
+        .flags        = BufferFlags::make(BufferFlag::Uniform),
+        .memory_usage = MemoryUsage::Shared,
     }));
 
     log::info("size: {}", m_device.limits().uniform_buffer_offset_alignment);
@@ -61,8 +61,8 @@ auto OitMethod::create_buffers() -> void {
         .label = "mesh uniforms",
         .size  = align_up(sizeof(MeshUniforms), m_device.limits().uniform_buffer_offset_alignment)
             * MAX_MESHES,
-        .usage        = BufferFlags::make(BufferFlag::Uniform),
-        .memory_usage = MemoryUsage::CpuAndGpu,
+        .flags = BufferFlags::make(BufferFlag::Uniform),
+        .memory_usage = MemoryUsage::Shared,
     }));
 }
 } // namespace oiter

@@ -90,9 +90,21 @@ auto DualDepthPeeling::render(const siren::Camera& camera, const BakedScene& sce
             [&](siren::RenderPassRecorder& pass) {
                 pass.bind_graphics_pipeline(m_peel_pipeline->handle());
 
-                pass.bind_sampled_image(input_target.colors[0].image, m_sampler->handle(), 0);
-                pass.bind_sampled_image(input_target.colors[1].image, m_sampler->handle(), 1);
-                pass.bind_sampled_image(input_target.colors[2].image, m_sampler->handle(), 2);
+                pass.bind_sampled_image(
+                    input_target.colors[0].image,
+                    m_sampler->handle(),
+                    Slot{0}
+                );
+                pass.bind_sampled_image(
+                    input_target.colors[1].image,
+                    m_sampler->handle(),
+                    Slot{1}
+                );
+                pass.bind_sampled_image(
+                    input_target.colors[2].image,
+                    m_sampler->handle(),
+                    Slot{2}
+                );
 
                 draw_scene(pass);
             }
@@ -111,7 +123,11 @@ auto DualDepthPeeling::render(const siren::Camera& camera, const BakedScene& sce
                 }
 
                 pass.bind_graphics_pipeline(m_blend_pipeline->handle());
-                pass.bind_sampled_image(output_target.colors[2].image, m_sampler->handle(), 0);
+                pass.bind_sampled_image(
+                    output_target.colors[2].image,
+                    m_sampler->handle(),
+                    Slot{0}
+                );
                 pass.draw_fullscreen();
 
                 if (m_config.occlusion_query) {
@@ -134,8 +150,12 @@ auto DualDepthPeeling::render(const siren::Camera& camera, const BakedScene& sce
         siren::RenderPassDescriptor{.target = m_final_target},
         [this](siren::RenderPassRecorder& pass) {
             pass.bind_graphics_pipeline(m_final_pipeline->handle());
-            pass.bind_sampled_image(read_target().colors[1].image, m_sampler->handle(), 0);
-            pass.bind_sampled_image(m_blend_image->handle(), m_sampler->handle(), 1);
+            pass.bind_sampled_image(
+                read_target().colors[1].image,
+                m_sampler->handle(),
+                Slot{0}
+            );
+            pass.bind_sampled_image(m_blend_image->handle(), m_sampler->handle(), Slot{1});
             pass.draw_fullscreen();
         }
     );

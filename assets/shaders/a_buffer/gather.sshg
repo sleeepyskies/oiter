@@ -6,7 +6,7 @@ glsl:
       source: !glsl |
         #version 460
   
-        layout(std140, binding = 0) uniform SceneUniforms {
+        layout(std140, binding = 2) uniform SceneUniforms {
             mat4 projection_view;
             vec3 camera_position;
             float _pad0;
@@ -16,7 +16,7 @@ glsl:
             vec4 color;
         };
         
-        layout(std140, binding = 1) uniform MeshUniforms {
+        layout(std140, binding = 3) uniform MeshUniforms {
             BakedMaterial material;
             mat4 model;
         };
@@ -35,13 +35,13 @@ glsl:
             vec4 color;
         };
   
-        layout(std140, binding = 0) uniform SceneUniforms {
+        layout(std140, binding = 2) uniform SceneUniforms {
             mat4 projection_view;
             vec3 camera_position;
             float _pad0;
         };
   
-        layout(std140, binding = 1) uniform MeshUniforms {
+        layout(std140, binding = 3) uniform MeshUniforms {
             BakedMaterial material;
             mat4 model;
         };

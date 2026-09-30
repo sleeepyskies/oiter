@@ -53,7 +53,7 @@ auto Skybox::render_behind(CommandBuffer& cmds, ImageHandle image, const Camera&
         .projection_view = camera.projection_view(),
         .camera_position = camera.position(),
     }};
-    m_uniform_buffer->upload(bufferdata.view());
+    m_uniform_buffer->write(bufferdata.view());
 
     const auto& texture = m_assets.get_unsafe(m_skybox_texture);
     const auto& cube    = m_assets.get_unsafe(m_cube);
@@ -76,8 +76,11 @@ auto Skybox::render_behind(CommandBuffer& cmds, ImageHandle image, const Camera&
         [&](RenderCommandEncoder& pass) {
             pass.bind_graphics_pipeline(m_skybox_pipeline->handle());
             pass.bind_uniform_buffer(m_uniform_buffer->handle(), Slot{0});
-            pass.bind_sampler(texture.sampler.handle(), Slot{0});
-            pass.bind_image(texture.image.handle(), Slot{0});
+            pass.bind_sampled_image(
+                texture.image.handle(),
+                texture.sampler.handle(),
+                Slot{0}
+            );
             pass.bind_vertex_buffer(surface.vertex_buffer.buffer.handle(), Slot{1});
             pass.bind_index_buffer(surface.index_buffer.buffer.handle(), surface.index_buffer.type);
             pass.draw_indexed(surface.index_buffer.count, 0);
@@ -89,7 +92,7 @@ auto Skybox::create_resources() -> void {
     m_uniform_buffer = std::make_unique<Buffer>(m_device.make_buffer({
         .label = "Skybox Uniform Buffer",
         .size  = sizeof(Uniforms),
-        .usage = BufferFlags::make(BufferFlag::Uniform),
+        .flags = BufferFlags::make(BufferFlag::Uniform),
     }));
 
     auto texture_config = TextureLoader::ConfigType{
@@ -144,7 +147,7 @@ auto Skybox::create_resources() -> void {
         {
             .label = "Skybox Vertex Buffer",
             .size  = cube_vertices.size_bytes(),
-            .usage = BufferFlags::make(BufferFlag::Vertex),
+            .flags = BufferFlags::make(BufferFlag::Vertex),
         },
         cube_vertices.view()
     );
@@ -153,7 +156,7 @@ auto Skybox::create_resources() -> void {
         {
             .label = "Skybox Index Buffer",
             .size  = cube_indices.size_bytes(),
-            .usage = BufferFlags::make(BufferFlag::Index),
+            .flags = BufferFlags::make(BufferFlag::Index),
         },
         cube_indices.view()
     );
