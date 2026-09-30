@@ -1,13 +1,13 @@
 #pragma once
 
 #include <memory>
-#include <string>
 #include <utility>
 
 #include "2iREN/asset/asset_handle.hpp"
 #include "2iREN/asset/asset_server.hpp"
 #include "2iREN/asset/gltf.hpp"
 #include "2iREN/asset/shader.hpp"
+#include "2iREN/graphics/device.hpp"
 #include "2iREN/graphics/fwd.hpp"
 #include "2iREN/graphics/image.hpp"
 #include "2iREN/graphics/sampler.hpp"
@@ -43,29 +43,6 @@ public:
     auto reload_shaders() -> void;
 
 private:
-    auto convert_format(
-        const siren::ImageHandle image,
-        siren::GraphicsPipelineHandle pipeline_handle
-    ) -> siren::ImageHandle;
-    auto create_images() -> void;
-
-private:
-    struct FormatConverter {
-        std::unique_ptr<siren::GraphicsPipeline> pipeline = nullptr;
-        siren::StrongHandle<siren::ShaderAsset> shader    = siren::NullHandle;
-    };
-
-    enum class ImageFormatGroup : siren::u8 {
-        SingleChannel,
-        DualChannel,
-        TripleChannel,
-        DepthChannel,
-        UnsignedIntChannel,
-        Max,
-    };
-
-    std::array<FormatConverter, std::to_underlying(ImageFormatGroup::Max)> m_format_pipelines;
-
     siren::Device& m_device;
     siren::AssetServer& m_assets;
     siren::Extent2 m_extent;
@@ -73,10 +50,6 @@ private:
 
     siren::StrongHandle<siren::Gltf> m_scene_asset = siren::NullHandle;
     BakedScene m_scene;
-
-    std::unique_ptr<siren::Sampler> m_sampler    = nullptr;
-    std::unique_ptr<siren::Sampler> m_usampler   = nullptr;
-    std::unique_ptr<siren::Image> m_output_image = nullptr;
 };
 
 } // namespace oiter

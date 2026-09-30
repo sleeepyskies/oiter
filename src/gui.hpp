@@ -178,15 +178,10 @@ inline auto render_debug(
         ImGui::Text("Bind Vertex Buffer: %u", statistics.count_bind_vertex_buffer);
         ImGui::Text("Bind Index Buffer: %u", statistics.count_bind_index_buffer);
         ImGui::Text("Bind Uniform Buffer: %u", statistics.count_bind_uniform_buffer);
-        ImGui::Text("Bind Uniform Buffer: %u", statistics.count_bind_shader_storage_buffer);
+        ImGui::Text("Bind Uniform Buffer: %u", statistics.count_bind_storage_buffer);
         ImGui::Text("Bind Sampled Image: %u", statistics.count_bind_sampled_image);
         ImGui::Text("Bind Storage Image: %u", statistics.count_bind_storage_image);
-        ImGui::Text("Draw Arrays: %u", statistics.count_draw_arrays);
-        ImGui::Text("Draw Indexed: %u", statistics.count_draw_indexed);
-        ImGui::Text("Upload Buffer: %u", statistics.count_upload_buffer);
-        ImGui::Text("Upload Image: %u", statistics.count_upload_image);
-        ImGui::Text("Draw Calls: %u", statistics.count_draw_calls);
-        ImGui::Text("Render Passes: %u", statistics.count_render_passes);
+        ImGui::Text("Draws: %u", statistics.count_draw);
     }
 
     const auto title = std::format("{} Controls", oit_method.name().data());

@@ -54,10 +54,7 @@ auto ABuffer::render(
         [&](RenderCommandEncoder& pass) {
             pass.bind_graphics_pipeline(m_gather_pipeline->handle());
 
-            pass.bind_storage_image(
-                m_list_head->handle(),
-                Slot{0}
-            );
+            pass.bind_storage_image(m_list_head->handle(), Slot{0});
 
             pass.bind_storage_buffer(m_storage_buffer->handle(), Slot{0}, 0);
             pass.bind_storage_buffer(m_storage_buffer->handle(), Slot{1}, 16);
@@ -99,10 +96,7 @@ auto ABuffer::render(
         },
         [this](RenderCommandEncoder& pass) {
             pass.bind_graphics_pipeline(m_blend_pipeline->handle());
-            pass.bind_storage_image(
-                m_list_head->handle(),
-                Slot{0}
-            );
+            pass.bind_storage_image(m_list_head->handle(), Slot{0});
             pass.bind_storage_buffer(m_storage_buffer->handle(), Slot{0}, 0);
             pass.bind_storage_buffer(m_storage_buffer->handle(), Slot{1}, 16);
             pass.draw(3);
