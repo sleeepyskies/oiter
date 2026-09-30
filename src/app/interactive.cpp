@@ -87,6 +87,8 @@ struct InteractiveApp::Impl {
     auto run() -> void {
         auto last_update = time::elapsed();
 
+        const auto timer = Timer<>{};
+
         while (!window.should_close() and not exit) {
             time::step();
 
@@ -97,13 +99,15 @@ struct InteractiveApp::Impl {
                 frame_stats.fps = 1.f / static_cast<f32>(time::delta().seconds());
             }
 
-            TimerMs full_frame_timer{[this](const f64 ms) {
-                frame_stats.full_frame_ms = static_cast<u32>(ms);
-            }};
-
-            handle_input();
-            draw_scene();
+            TIMER_ms(frame_stats.frame_time) {
+                handle_input();
+                draw_scene();
+            }
         }
+
+        const auto endtime = timer.query();
+        log::info("average frame time: {:.3f}ms", endtime / time::current_frame());
+        log::info("average fps: {:.0f}fps", time::current_frame() * 1000 / endtime);
     }
 
     auto handle_input() -> void {
@@ -145,12 +149,10 @@ struct InteractiveApp::Impl {
         auto cmds             = device->make_command_buffer();
         const auto backbuffer = swapchain.next_image();
 
-        TIMER(frame_stats.oit_render_ms) {
-            renderer.render(*cmds, backbuffer, camera);
+        renderer.render(*cmds, backbuffer, camera);
 
-            if (skybox_visible) {
-                skybox.render_behind(*cmds, backbuffer, camera);
-            }
+        if (skybox_visible) {
+            skybox.render_behind(*cmds, backbuffer, camera);
         }
 
         if (debug_menu_visible) {

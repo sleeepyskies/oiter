@@ -39,8 +39,6 @@ private:
     Clock::time_point m_start;
 };
 
-using TimerMs = Timer<std::milli>;
-
-#define TIMER(storage)                                                                             \
-    if (const auto t = Timer{[this](const f64 ms) { storage = static_cast<u32>(ms); }}; true)
+#define TIMER_ms(storage)                                                                             \
+    if (const auto t = Timer{[&](const f64 ms) { storage = ms; }}; true)
 } // namespace oiter

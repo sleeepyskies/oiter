@@ -18,8 +18,7 @@ struct InteractiveState {
 
 /// @brief Per frame general stats.
 struct FrameStats {
-    siren::u32 full_frame_ms = 0;
-    siren::u32 oit_render_ms = 0;
+    siren::f32 frame_time    = 0;
     siren::f32 fps           = 0.f;
 };
 

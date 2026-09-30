@@ -169,8 +169,7 @@ inline auto render_debug(
 
         ImGui::Separator();
 
-        ImGui::Text("Frame took %ums", frame_stats.full_frame_ms);
-        ImGui::Text("Oit Render took %ums", frame_stats.oit_render_ms);
+        ImGui::Text("Frame time %fms", frame_stats.frame_time);
 
         ImGui::Separator();
 
