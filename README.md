@@ -1,14 +1,3 @@
 # Oiter
 
-Oiter demonstrates various techniques for implementing order independent
-transparency (OIT).
-
-## Techniques
-
-### Depth Peeling
-
-### Dual Depth Peeling
-
-### A-Buffer
-
-### K-Buffer
+This repository has migrated to https://git.sleeepy.dev/sleeepy/oiter
