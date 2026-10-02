@@ -1,14 +1,14 @@
 #pragma once
 
-#include "2iREN/graphics/fwd.hpp"
-#include "2iREN/graphics/image.hpp"
-#include "2iREN/math/bounded.hpp"
-#include "methods/oit_method.hpp"
-#include "utility/bake.hpp"
-
 #include "2iREN/asset/asset_server.hpp"
 #include "2iREN/asset/shader.hpp"
+#include "2iREN/graphics/fwd.hpp"
+#include "2iREN/graphics/image.hpp"
 #include "2iREN/graphics/query.hpp"
+#include "2iREN/math/bounded.hpp"
+
+#include "methods/oit_method.hpp"
+#include "utility/bake.hpp"
 
 namespace oiter {
 

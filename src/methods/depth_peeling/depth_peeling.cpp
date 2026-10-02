@@ -5,16 +5,18 @@
 #include "2iREN/asset/asset_server.hpp"
 #include "2iREN/core/base.hpp"
 
+#include "2iREN/graphics/commands.hpp"
+#include "2iREN/graphics/image.hpp"
+#include "2iREN/graphics/types.hpp"
 #include "2iREN/math/bounded.hpp"
 #include "utility/imgui_extras.hpp"
 
+using namespace siren;
+
 namespace oiter {
 
-DepthPeeling::DepthPeeling(
-    siren::Device& device,
-    const siren::Extent2 extent,
-    siren::AssetServer& assets
-) : OitMethod(device, assets) {
+DepthPeeling::DepthPeeling(Device& device, const Extent2 extent, AssetServer& assets) :
+    OitMethod(device, assets) {
     create_images(extent);
     create_sampler();
     create_pipelines();
@@ -22,15 +24,15 @@ DepthPeeling::DepthPeeling(
 }
 
 auto DepthPeeling::render(
-    siren::CommandBuffer& cmds,
-    siren::ImageHandle output,
-    const siren::Camera& camera,
+    CommandBuffer& cmds,
+    const ImageHandle output,
+    const Camera& camera,
     const BakedScene& scene
-) const -> siren::ImageHandle {
+) const -> void {
     update_buffers(camera, scene);
 
-    auto draw_scene = [&](siren::RenderPassRecorder& pass) {
-        pass.bind_uniform_buffer(m_scene_buffer->handle(), 0);
+    auto draw_scene = [&](RenderCommandEncoder& pass) {
+        pass.bind_uniform_buffer(m_scene_buffer->handle(), Slot{0});
         for (const auto& [index, surface] : std::views::enumerate(scene.transparent)) {
             pass.bind_uniform_buffer_range(
                 m_mesh_buffer->handle(),
@@ -45,21 +47,21 @@ auto DepthPeeling::render(
     };
 
     // we always use same color attachments, so we just create once
-    const auto write_color = siren::ColorAttachment{
+    const auto write_color = ColorAttachment{
         .image           = m_write_color->handle(),
-        .begin_operation = siren::BeginOperation::Clear,
-        .clear_color     = siren::Rgba::ZERO(),
+        .begin_operation = BeginOperation::Clear,
+        .clear_color     = Rgba::ZERO(),
     };
 
-    const auto accumulation_color = siren::ColorAttachment{
+    const auto accumulation_color = ColorAttachment{
         .image           = m_accumulation_color->handle(),
-        .begin_operation = siren::BeginOperation::Preserve,
+        .begin_operation = BeginOperation::Preserve,
     };
 
     // set up image to back to front blending
-    m_accumulation_color->clear(siren::Rgba::ZERO());
+    m_accumulation_color->clear(Rgba::ZERO());
 
-    for (const auto layer : siren::range(m_config.layers)) {
+    for (const auto layer : range(m_config.layers)) {
         m_config.peels_last_frame++;
 
         const auto query_index      = layer % m_queries.size();
@@ -76,21 +78,21 @@ auto DepthPeeling::render(
         }
 
         // perform the peeling pass
-        m_device.render_pass(
-            siren::RenderPassDescriptor{
+        cmds.render_pass(
+            RenderPassDescriptor{
                 .target =
                     {
                         .colors = {write_color},
                         .depth_stencil =
-                            siren::DepthStencilAttachment{
+                            DepthStencilAttachment{
                                 .image           = m_depths[write_buffer_index]->handle(),
-                                .begin_operation = siren::BeginOperation::Clear,
+                                .begin_operation = BeginOperation::Clear,
                                 .clear_depth     = 1,
                                 .clear_stencil   = 0,
                             },
                     }
             },
-            [&](siren::RenderPassRecorder& pass) {
+            [&](RenderCommandEncoder& pass) {
                 // first pass never discards fragments
                 if (m_config.occlusion_query) {
                     pass.begin_query(query->handle());
@@ -140,20 +142,16 @@ auto DepthPeeling::render(
 
         // perform on the fly blending
         m_device.render_pass(
-            siren::RenderPassDescriptor{
+            RenderPassDescriptor{
                 .target =
                     {
                         .colors        = {accumulation_color},
                         .depth_stencil = std::nullopt,
                     }
             },
-            [&](siren::RenderPassRecorder& pass) {
+            [&](RenderPassRecorder& pass) {
                 pass.bind_graphics_pipeline(m_blend_pipeline->handle());
-                pass.bind_sampled_image(
-                    m_write_color->handle(),
-                    m_sampler->handle(),
-                    Slot{0}
-                );
+                pass.bind_sampled_image(m_write_color->handle(), m_sampler->handle(), Slot{0});
                 pass.draw_fullscreen();
             }
         );
@@ -162,19 +160,17 @@ auto DepthPeeling::render(
             m_device.end_conditional_render();
 
             if (layer > 0 && m_device.query_available(last_query->handle())) {
-                siren::log::trace("query result available.");
+                log::trace("query result available.");
                 if (m_device.query_result(last_query->handle()) == 0) {
-                    siren::log::trace("query result: no samples passes, breaking.");
+                    log::trace("query result: no samples passes, breaking.");
                     break;
                 }
             }
         }
     }
-
-    return m_accumulation_color->handle();
 }
 
-auto DepthPeeling::resize(const siren::Extent2 extent) -> void {
+auto DepthPeeling::resize(const Extent2 extent) -> void {
     create_images(extent);
 }
 
@@ -198,7 +194,7 @@ auto DepthPeeling::render_debug_info() -> void {
         };
     };
 
-    siren::i32* inspecting = (siren::i32*)(&m_config.inspecting);
+    i32* inspecting = (i32*)(&m_config.inspecting);
 
     ImGui::RadioButton("See Final Output     ", inspecting, 0);
 
@@ -213,67 +209,75 @@ auto DepthPeeling::render_debug_info() -> void {
     }
 }
 
-auto DepthPeeling::create_images(const siren::Extent2 extent) -> void {
-    m_accumulation_color = create_standard_image(
-        extent,
-        "Depth Peeling Accumulation Color",
-        siren::ImageFormat::RGBA8
-    );
-    m_write_color = create_standard_image(
-        extent,
-        "Depth Peeling Write Color",
-        siren::ImageFormat::RGBA8
-    );
-    m_depths[0] = create_standard_image(
-        extent,
-        "Depth Peeling Depth0",
-        siren::ImageFormat::Depth32f
-    );
-    m_depths[1] = create_standard_image(
-        extent,
-        "Depth Peeling Depth1",
-        siren::ImageFormat::Depth32f
-    );
+auto DepthPeeling::create_images(const Extent2 extent) -> void {
+    m_accumulation_color = std::make_unique(m_device.make_image({
+        .label  = "Depth Peeling Accumulation Color",
+        .format = ImageFormat::RGBA8,
+        .extent = extent.to_extent3(),
+        .flags  = ImageFlags::make(ImageFlag::ShaderWrite),
+    }));
+
+    m_write_color = std::make_unique(m_device.make_image({
+        .label  = "Depth Peeling Write Color",
+        .format = ImageFormat::RGBA8,
+        .extent = extent.to_extent3(),
+        .flags  = ImageFlags::make(ImageFlag::ShaderWrite),
+    }));
+
+    m_depths[0] = std::make_unique(m_device.make_image({
+        .label  = "Depth Peeling Depth0",
+        .format = ImageFormat::Depth32f,
+        .extent = extent.to_extent3(),
+        .flags  = ImageFlags::make(ImageFlag::ShaderRead),
+    }));
+
+    m_depths[1] = std::make_unique(m_device.make_image({
+        .label  = "Depth Peeling Depth1",
+        .format = ImageFormat::Depth32f,
+        .extent = extent.to_extent3(),
+        .flags  = ImageFlags::make(ImageFlag::ShaderRead),
+    }));
 }
 
 auto DepthPeeling::create_sampler() -> void {
-    m_sampler = std::make_unique<siren::Sampler>(m_device.make_sampler({
-        .min_filter    = siren::ImageFilterMode::Nearest,
-        .max_filter    = siren::ImageFilterMode::Nearest,
-        .mipmap_filter = siren::ImageFilterMode::Nearest,
-        .s_wrap        = siren::ImageWrapMode::ClampEdge,
-        .t_wrap        = siren::ImageWrapMode::ClampEdge,
-        .r_wrap        = siren::ImageWrapMode::ClampEdge,
+    m_sampler = std::make_unique<Sampler>(m_device.make_sampler({
+        .min_filter    = ImageFilterMode::Nearest,
+        .max_filter    = ImageFilterMode::Nearest,
+        .mipmap_filter = ImageFilterMode::Nearest,
+        .s_wrap        = ImageWrapMode::ClampEdge,
+        .t_wrap        = ImageWrapMode::ClampEdge,
+        .r_wrap        = ImageWrapMode::ClampEdge,
         .lod_min       = 0.f,
         .lod_max       = 1.f,
         .border_color  = std::nullopt,
-        .compare_mode  = siren::ImageCompareMode::None,
-        .compare_fn    = siren::ImageCompareFn::LessEqual,
+        .compare_mode  = ImageCompareMode::None,
+        .compare_fn    = ImageCompareFn::LessEqual,
     }));
 }
 
 auto DepthPeeling::create_pipelines() -> void {
-    m_gather_first_shader   = siren::NullHandle;
-    m_gather_shader         = siren::NullHandle;
-    m_blend_shader          = siren::NullHandle;
+    m_gather_first_shader = NullHandle;
+    m_gather_shader       = NullHandle;
+    m_blend_shader        = NullHandle;
+
     m_gather_first_pipeline = nullptr;
     m_gather_pipeline       = nullptr;
     m_blend_pipeline        = nullptr;
 
     {
-        m_gather_first_shader = m_assets.load<siren::ShaderAsset>(
+        m_gather_first_shader = m_assets.load<ShaderAsset>(
             "oiter://assets/shaders/depth_peeling/gather_first.sshg"
         );
         const auto shader = m_assets.get_unsafe(m_gather_first_shader).shader.handle();
 
-        m_gather_first_pipeline = std::make_unique<siren::GraphicsPipeline>(
+        m_gather_first_pipeline = std::make_unique<GraphicsPipeline>(
             m_device.make_graphics_pipeline({
                 .label             = "Depth Peeling Gather First",
-                .layout            = siren::DEFAULT_VERTEX_LAYOUT,
+                .layout            = DEFAULT_VERTEX_LAYOUT,
                 .shader            = shader,
-                .topology          = siren::PrimitiveTopology::Triangles,
-                .alpha_mode        = siren::AlphaMode::Opaque,
-                .depth_function    = siren::DepthFunction::Less,
+                .topology          = PrimitiveTopology::Triangles,
+                .alpha_mode        = AlphaMode::Opaque,
+                .depth_function    = DepthFunction::Less,
                 .back_face_culling = false,
                 .depth_test        = true,
                 .depth_write       = true,
@@ -282,63 +286,57 @@ auto DepthPeeling::create_pipelines() -> void {
     }
 
     {
-        m_gather_shader = m_assets.load<siren::ShaderAsset>(
+        m_gather_shader = m_assets.load<ShaderAsset>(
             "oiter://assets/shaders/depth_peeling/gather.sshg"
         );
         const auto shader = m_assets.get_unsafe(m_gather_shader).shader.handle();
 
-        m_gather_pipeline = std::make_unique<siren::GraphicsPipeline>(
-            m_device.make_graphics_pipeline({
-                .label             = "Depth Peeling Gather",
-                .layout            = siren::DEFAULT_VERTEX_LAYOUT,
-                .shader            = shader,
-                .topology          = siren::PrimitiveTopology::Triangles,
-                .alpha_mode        = siren::AlphaMode::Opaque,
-                .depth_function    = siren::DepthFunction::Less,
-                .back_face_culling = false,
-                .depth_test        = true,
-                .depth_write       = true,
-            })
-        );
+        m_gather_pipeline = std::make_unique<GraphicsPipeline>(m_device.make_graphics_pipeline({
+            .label             = "Depth Peeling Gather",
+            .layout            = DEFAULT_VERTEX_LAYOUT,
+            .shader            = shader,
+            .topology          = PrimitiveTopology::Triangles,
+            .alpha_mode        = AlphaMode::Opaque,
+            .depth_function    = DepthFunction::Less,
+            .back_face_culling = false,
+            .depth_test        = true,
+            .depth_write       = true,
+        }));
     }
 
     {
-        m_blend_shader = m_assets.load<siren::ShaderAsset>(
+        m_blend_shader = m_assets.load<ShaderAsset>(
             "oiter://assets/shaders/depth_peeling/blend.sshg"
         );
         const auto shader = m_assets.get_unsafe(m_blend_shader).shader.handle();
-        m_blend_pipeline  = std::make_unique<siren::GraphicsPipeline>(
-            m_device.make_graphics_pipeline({
-                .label      = "Depth Peeling Blend",
-                .layout     = siren::FULLSCREEN_VERTEX_LAYOUT,
-                .shader     = shader,
-                .topology   = siren::PrimitiveTopology::Triangles,
-                .alpha_mode = siren::AlphaMode::Blend,
-                .color_blend =
-                    {
-                        .function      = siren::BlendFunction::Add,
-                        .source_factor = siren::BlendFactor::OneMinusDestinationAlpha,
-                        .dest_factor   = siren::BlendFactor::One,
-                    },
-                .alpha_blend =
-                    {
-                        .function      = siren::BlendFunction::Add,
-                        .source_factor = siren::BlendFactor::OneMinusDestinationAlpha,
-                        .dest_factor   = siren::BlendFactor::One,
-                    },
-                .back_face_culling = false,
-                .depth_test        = false,
-                .depth_write       = false,
-            })
-        );
+        m_blend_pipeline  = std::make_unique<GraphicsPipeline>(m_device.make_graphics_pipeline({
+            .label      = "Depth Peeling Blend",
+            .layout     = FULLSCREEN_VERTEX_LAYOUT,
+            .shader     = shader,
+            .topology   = PrimitiveTopology::Triangles,
+            .alpha_mode = AlphaMode::Blend,
+            .color_blend =
+                {
+                    .function      = BlendFunction::Add,
+                    .source_factor = BlendFactor::OneMinusDestinationAlpha,
+                    .dest_factor   = BlendFactor::One,
+                },
+            .alpha_blend =
+                {
+                    .function      = BlendFunction::Add,
+                    .source_factor = BlendFactor::OneMinusDestinationAlpha,
+                    .dest_factor   = BlendFactor::One,
+                },
+            .back_face_culling = false,
+            .depth_test        = false,
+            .depth_write       = false,
+        }));
     }
 }
 
 auto DepthPeeling::create_queries() -> void {
     for (auto& query : m_queries) {
-        query = std::make_unique<siren::Query>(
-            m_device.make_query({.kind = siren::QueryKind::AnySamplesPassed})
-        );
+        query = std::make_unique<Query>(m_device.make_query({.kind = QueryKind::AnySamplesPassed}));
     }
 }
 } // namespace oiter

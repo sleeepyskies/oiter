@@ -28,8 +28,8 @@ target_sources(oiter PRIVATE
 
     src/methods/oit_method.cpp
     src/methods/a_buffer/a_buffer.cpp
+    src/methods/depth_peeling/depth_peeling.cpp
     # TODO: add these back once building again
-    # src/methods/depth_peeling/depth_peeling.cpp
     # src/methods/dual_depth_peeling/dual_depth_peeling.cpp
     # src/methods/screen_door/screen_door.cpp
 )

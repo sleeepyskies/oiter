@@ -113,11 +113,6 @@ auto ABuffer::resize(const Extent2 extent) -> void {
 }
 
 auto ABuffer::reload_shaders() -> void {
-    m_gather_shader = NullHandle;
-    m_blend_shader  = NullHandle;
-
-    m_gather_pipeline = nullptr;
-    m_blend_pipeline  = nullptr;
     create_pipelines();
 }
 
@@ -170,6 +165,12 @@ auto ABuffer::create_images() -> void {
 }
 
 auto ABuffer::create_pipelines() -> void {
+    m_gather_shader = NullHandle;
+    m_blend_shader  = NullHandle;
+
+    m_gather_pipeline = nullptr;
+    m_blend_pipeline  = nullptr;
+
     // gather pipeline
     {
         m_gather_shader = m_assets.load<ShaderAsset>("oiter://assets/shaders/a_buffer/gather.sshg");
